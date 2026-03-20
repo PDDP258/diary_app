@@ -1,8 +1,8 @@
-﻿# 小记日记 - AI协作指南
+# 小记日记 - AI协作指南
 
 版本
 
-: 1.0.1 (2026-03-20) 📅 农历日历 + 🎯 目标提醒 + 🏷️ 三级标签 |   技术栈  : Flutter 3.x + Provider + SQLite
+: 1.0.2 (2026-03-19) 🔧 Profile修复 + 🐛 编码问题 |   技术栈  : Flutter 3.x + Provider + SQLite
 
 ## 快速开始
 
@@ -55,6 +55,41 @@ Consumer<DiaryProvider>(builder: (context, provider, child) => ...)
 await provider.addTag/updateTag/deleteTag
 ```
 
+### 4. 编码处理（⚠️ 重要）
+
+**文件操作必须使用 UTF-8 编码：**
+
+```dart
+// ✅ 正确 - 显式指定 UTF-8
+import 'dart:convert';
+import 'dart:io';
+
+// 读取文件
+final content = await File('file.dart').readAsString(encoding: utf8);
+
+// 写入文件
+await File('file.dart').writeAsString(content, encoding: utf8);
+```
+
+**PowerShell 特别注意：**
+
+```powershell
+# ❌ 错误 - 使用系统默认编码（GBK）
+Get-Content file.dart | Set-Content file.dart
+
+# ✅ 正确 - 显式指定 UTF-8
+Get-Content file.dart -Encoding UTF8 | Set-Content file.dart -Encoding UTF8
+```
+
+**VS Code 设置：**
+
+```json
+{
+  "files.encoding": "utf8",
+  "files.autoGuessEncoding": true
+}
+```
+
 ## 项目结构
 
 ```
@@ -77,8 +112,6 @@ lib/
 
 ### 1. interaction-design（交互设计）
 
-
-
 位置
 
 : `.kimi/skills/interaction-design/`
@@ -91,8 +124,6 @@ lib/
 - 手势交互（滑动、拖拽）
 
 ### 2. visual-design-foundations（视觉设计基础）
-
-
 
 位置
 
@@ -108,8 +139,6 @@ lib/
 
 ### 3. design-system-patterns（设计系统模式）
 
-
-
 位置
 
 : `.kimi/skills/design-system-patterns/`
@@ -122,8 +151,6 @@ lib/
 - 多平台适配
 
 ### 4. react-native-design（React Native 设计）
-
-
 
 位置
 
@@ -366,7 +393,7 @@ flower.x += (random.nextDouble() - 0.5) * 0.02;
 
 ### 功能特性
 
--   九宫格手势密码  ：3x3 点阵，最多9个点
+- 九宫格手势密码  ：3x3 点阵，最多9个点
 - 启动保护  ：开场动画后显示解锁界面
 - 密码备份  ：自动生成可视化备份图片
 - 忘记密码  ：可查看本地备份图片找回
@@ -375,10 +402,10 @@ flower.x += (random.nextDouble() - 0.5) * 0.02;
 
 ### 功能特性
 
--   日历页定制  ：顶部常驻纪念日按钮，为选中日期添加纪念日或倒数日
+- 日历页定制  ：顶部常驻纪念日按钮，为选中日期添加纪念日或倒数日
 - 自动纪念文字  ：写日记时自动在底部添加纪念日相关文字
 - 特殊日子提示  ：周年（365天）、百天（100/200/500/1000天）、月纪念日等特殊日子配有佳句
--   倒数日提醒  ：距离倒数日7天内会显示提醒文字
+- 倒数日提醒  ：距离倒数日7天内会显示提醒文字
 - 文字样式  ：比正文小两号，居中显示，特殊日子加粗
 
 ## 日历顶部功能区说明
@@ -391,13 +418,13 @@ flower.x += (random.nextDouble() - 0.5) * 0.02;
 - 今天跳转  ：当选中日期不是今天时，显示"今天"快捷按钮，一键回到当前日期
 - 本月统计  ：显示当前月份的日记数量（如"本月 12 篇"）
 - 搜索入口  ：快速跳转到日记搜索页面
--   纪念日入口  ：快速打开纪念日管理对话框
+- 纪念日入口  ：快速打开纪念日管理对话框
 
 ## 实况图片（Motion Photo）说明
 
 ### 功能特性
 
--   自动检测  ：自动识别小米、三星、OPPO、Pixel 等 Android 实况照片
+- 自动检测  ：自动识别小米、三星、OPPO、Pixel 等 Android 实况照片
 - 全屏播放  ：图片查看器支持长按播放实况视频
 - 视觉标识  ：实况图片显示发光"实况"角标和"长按播放"提示
 
@@ -405,9 +432,9 @@ flower.x += (random.nextDouble() - 0.5) * 0.02;
 
 ### 功能特性
 
--   统计页入口  ：统计页新增"按标签分类"卡片
+- 统计页入口  ：统计页新增"按标签分类"卡片
 - 标签网格  ：每个标签占一个大格，显示名称、数量和预览
--   8格预览  ：每个标签下8个小格，预览最近使用该标签的日记
+- 8格预览  ：每个标签下8个小格，预览最近使用该标签的日记
 - 点击查看  ：点击标签查看所有使用该标签的日记，点击日记跳转详情
 
 ## PDF 自动字体说明
@@ -457,9 +484,9 @@ final status = ImageCacheService().getCacheStatus();
 
 ### 功能特性
 
--   写日记获得抽奖  ：每日初始3次，写第一篇日记+1次，满3篇再+1次
+- 写日记获得抽奖  ：每日初始3次，写第一篇日记+1次，满3篇再+1次
 - 四种稀有度  ：普通(60%)、稀有(25%)、史诗(12%)、传说(3%)
--   40+种奖励  ：贴图类、日记提示、徽章提示、幸运语、额外抽奖、里程碑祝福、回忆提示、心情建议、标签创意、贴图包、日记模板、照片挑战、情感分析、纪念日提示、成就加成
+- 40+种奖励  ：贴图类、日记提示、徽章提示、幸运语、额外抽奖、里程碑祝福、回忆提示、心情建议、标签创意、贴图包、日记模板、照片挑战、情感分析、纪念日提示、成就加成
 - 重复奖励转换  ：获得已有奖励时自动转换为额外抽奖，每次扭蛋都有价值
 - 精美动画  ：扭蛋机缩放+旋转动画，奖励卡片渐显效果
 - 历史记录  ：保存最近10次抽奖记录
@@ -473,15 +500,12 @@ final status = ImageCacheService().getCacheStatus();
 - 全屏浏览  ：黑色背景沉浸式体验
 - 左右滑动  ：手势切换上一张/下一张照片
 - 双指缩放  ：支持放大查看细节
--   底部缩略图  ：快速跳转到任意照片
+- 底部缩略图  ：快速跳转到任意照片
 - 页码指示  ：显示当前页码和总页数
 
 ## 常见问题
 
-
-
 Q: 异步回调获取主题报错？
-
 
 A: `Provider.of<ThemeProvider>(context, listen: false).currentScheme`
 
@@ -489,17 +513,11 @@ Q: 底部弹窗被键盘遮挡？
 
 A: `isScrollControlled: true` + `MediaQuery.of(context).viewInsets.bottom`
 
-
-
 Q: 构建失败/缓存问题？
-
 
 A: `flutter clean && flutter pub get`
 
-
-
 Q: 图标生成？
-
 
 A: `dart run tool/generate_icons.dart`
 
@@ -564,18 +582,11 @@ flutter build web --release
 
 ### ⚠️ 文件编码问题（重要！）
 
-
-
 问题描述：
-
 
 在 Windows PowerShell 中使用字符串替换命令时，UTF-8 编码的中文字符被错误解释为 GBK，导致文件大面积乱码。
 
-
-
 错误示例：
-
-
 
 ```powershell
 # ❌ 错误 - 会导致中文乱码
@@ -583,11 +594,7 @@ flutter build web --release
 Set-Content lib\screens\profile_screen.dart -NoNewline
 ```
 
-
-
 正确做法：
-
-
 
 ```powershell
 # ✅ 正确 - 显式指定 UTF-8 编码
@@ -596,11 +603,7 @@ $content = $content.Replace("旧文本", "新文本")
 $content | Set-Content lib\screens\profile_screen.dart -Encoding UTF8 -NoNewline
 ```
 
-
-
 或者使用 Python（推荐）：
-
-
 
 ```python
 # ✅ 推荐 - Python 更可靠
@@ -611,31 +614,36 @@ with open('lib/screens/profile_screen.dart', 'w', encoding='utf-8') as f:
     f.write(content)
 ```
 
-
-
 预防措施：
 
-
-
-1.   使用 Git  ：每次修改前提交，可随时回滚
-2.   备份文件  ：修改前创建 `.bak` 备份
-3.   验证编码  ：修改后立即检查文件是否能正常编译
-4.   IDE 操作  ：优先使用 IDE（VS Code/Android Studio）的替换功能
-
-
+1. 使用 Git  ：每次修改前提交，可随时回滚
+2. 备份文件  ：修改前创建 `.bak` 备份
+3. 验证编码  ：修改后立即检查文件是否能正常编译
+4. IDE 操作  ：优先使用 IDE（VS Code/Android Studio）的替换功能
 
 恢复方案：
-
-
 
 - 如果已乱码且没有 Git 备份：
   1. 立即停止继续修改
   2. 检查 `.bak` 备份文件是否完好
   3. 如备份也损坏，基于当前干净代码重新实现功能
-  4.   不要尝试手动修复乱码  （信息已丢失，不可逆）
+  4. 不要尝试手动修复乱码  （信息已丢失，不可逆）
 
 ## 版本记录
 
+- v1.0.2   (2026-03-19) - Profile修复与Git初始化:
+  - 🔧 修复profile\_screen.dart中文乱码问题
+    - 根因：PowerShell默认使用GBK编码导致UTF-8文件损坏
+    - 解决：完全重写profile\_screen，使用UTF-8显式编码
+  - ✅ 完整还原UI功能
+    - 用户卡片（头像/昵称/签名编辑）
+    - 徽章展示区域（已解锁预览+图鉴入口）
+    - 数据管理（云同步/本地备份/导出）
+    - 主题配色/桌面图标/应用锁
+    - 心情管理/标签管理/自定义贴纸
+    - 关于日记（彩蛋）/版权信息
+  - 📝 添加编码处理规范到AGENTS.md
+  - 🔒 初始化Git版本控制
 - v1.0.1   (2026-03-20) - 新功能更新:
   - 📅 农历日历系统
     - 内置算法支持任意年份（1900-2100）
