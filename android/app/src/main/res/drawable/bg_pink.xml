@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+    樱花粉主题背景 - 渐变
+    角度：135°（从左上到右下）
+    色标：深粉色 -> 浅粉色
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:type="linear"
+        android:angle="135"
+        android:startColor="#E87AA8"
+        android:centerColor="#FF8FB8"
+        android:centerX="0.5"
+        android:endColor="#FFB0D0"
+        android:gradientRadius="108" />
+</shape>

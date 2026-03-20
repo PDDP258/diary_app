@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    小记日记 - Android 启动屏背景（深色模式）
+    使用深色背景，与深色主题一致
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 深色模式背景 -->
+    <item android:drawable="@color/ic_launcher_background" />
+</layer-list>

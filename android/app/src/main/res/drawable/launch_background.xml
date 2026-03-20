@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    小记日记 - Android 启动屏背景
+    使用与 Flutter 一致的背景色（珊瑙红），避免启动时闪白屏
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 使用与图标一致的背景色 -->
+    <item android:drawable="@color/ic_launcher_background" />
+</layer-list>

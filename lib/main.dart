@@ -1,0 +1,84 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:provider/provider.dart';
+import 'providers/diary_provider.dart';
+import 'providers/theme_provider.dart';
+import 'providers/settings_provider.dart';
+import 'providers/goal_provider.dart';
+import 'screens/splash_screen.dart';
+import 'screens/protection_violation_screen.dart';
+import 'services/auto_backup_service.dart';
+import 'services/cloud_sync_service.dart';
+import 'services/sound_service.dart';
+import 'services/debug_log_service.dart';
+import 'services/sync_log_service.dart';
+import 'services/app_protection_service.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 初始化日期格式（中文）
+  await initializeDateFormatting('zh_CN', null);
+
+  // 执行应用保护检查（发布模式下）
+  ProtectionResult? protectionResult;
+  if (!kDebugMode) {
+    protectionResult = await AppProtectionService.checkAppIntegrity();
+  }
+
+  // 初始化云同步服务
+  await CloudSyncFactory.initialize();
+
+  // 初始化同步日志服务
+  await SyncLogService.initialize();
+
+  // 初始化音效服务
+  await SoundService.initialize();
+
+  // 检查并执行自动备份（在后台执行，不阻塞启动）
+  AutoBackupService.checkAndBackup().then((success) {
+    if (success) {
+      print('自动备份执行成功');
+    }
+  }).catchError((e) {
+    print('自动备份执行失败: $e');
+  });
+
+  // 如果保护检查失败，显示警告页面
+  if (protectionResult != null && !protectionResult.isValid) {
+    runApp(ProtectionViolationApp(result: protectionResult));
+    return;
+  }
+
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => DiaryProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()..loadSettings()),
+        ChangeNotifierProvider(
+            create: (_) => SettingsProvider()..loadSettings()),
+        ChangeNotifierProvider(create: (_) => GoalProvider()),
+      ],
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return DebugLogOverlay(
+            child: MaterialApp(
+              title: '小记日记',
+              debugShowCheckedModeBanner: false,
+              theme: themeProvider.theme,
+              home: const SplashScreen(),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}

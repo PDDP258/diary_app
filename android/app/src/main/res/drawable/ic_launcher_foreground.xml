@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- 
+        「笔迹·成长」图标设计 v2
+        基于详细设计规范优化
+        画布：108dp × 108dp（对应1024px）
+        缩放因子：108/1024 ≈ 0.105
+    -->
+    
+    <!-- 铅笔主体 - 45度角倾斜 -->
+    <!-- 笔身：从左上到右下 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M28,32 
+            L32,28 
+            L52,48 
+            L48,52 
+            Z" />
+    
+    <!-- 笔身延长部分 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M32,28 
+            L36,24 
+            L56,44 
+            L52,48 
+            Z" />
+    
+    <!-- 笔尾（橡皮）- 半圆形 -->
+    <path
+        android:fillColor="#F5F5F5"
+        android:pathData="M28,32 
+            C26,30 26,28 28,26 
+            C30,24 32,24 34,26 
+            L32,28 
+            Z" />
+    
+    <!-- 红色条纹 - 笔身左侧 -->
+    <path
+        android:fillColor="#FF5252"
+        android:fillAlpha="0.9"
+        android:pathData="M30,30 
+            L32,28 
+            L52,48 
+            L50,50 
+            Z" />
+    
+    <!-- 金属箍环 - 笔身与笔尖连接处 -->
+    <path
+        android:fillColor="#1A1A1A"
+        android:pathData="M48,52 
+            L50,50 
+            L51,51 
+            L49,53 
+            Z" />
+    
+    <!-- 笔尖 - 红色三角形 -->
+    <path
+        android:fillColor="#FF4444"
+        android:pathData="M48,52 
+            L52,48 
+            L54,56 
+            Z" />
+    
+    <!-- 笔尖高光 -->
+    <path
+        android:fillColor="#FF6B6B"
+        android:pathData="M49,51 
+            L51,49 
+            L52,53 
+            Z" />
+    
+    <!-- 螺旋星轨 - 阿基米德螺旋 -->
+    <!-- 中心与笔尖对齐 (52,52) -->
+    <!-- 第一段：冷白色 -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#E0E0E0"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M54,52
+            C54,50 56,50 57,51
+            C58,52 58,54 57,55
+            C56,57 54,57 53,56
+            C51,54 51,52 53,50
+            C55,48 58,48 60,50
+            C62,53 62,57 59,59
+            C56,62 52,62 50,59
+            C47,56 47,51 50,48
+            C54,45 60,45 63,49" />
+    
+    <!-- 第二段：过渡到粉白 -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFC4D0"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M63,49
+            C66,54 65,61 60,64
+            C55,68 48,67 45,62
+            C41,56 42,48 47,44
+            C53,40 62,41 66,47" />
+    
+    <!-- 第三段：柔粉色 -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFB3C1"
+        android:strokeWidth="3"
+        android:strokeAlpha="0.85"
+        android:strokeLineCap="round"
+        android:pathData="M66,47
+            C70,55 68,65 61,70
+            C53,76 43,74 38,66
+            C33,57 35,46 43,41" />
+    
+    <!-- 小星球 - 螺旋第二圈外侧 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M68,42
+            C69.5,42 70.5,43 70.5,44.5
+            C70.5,46 69.5,47 68,47
+            C66.5,47 65.5,46 65.5,44.5
+            C65.5,43 66.5,42 68,42 Z" />
+    
+    <!-- 小星球阴影 -->
+    <path
+        android:fillColor="#000000"
+        android:fillAlpha="0.2"
+        android:pathData="M68,47
+            C69.2,47 70,47.5 70,48.2
+            C70,48.8 69.2,49.2 68,49.2
+            C66.8,49.2 66,48.8 66,48.2
+            C66,47.5 66.8,47 68,47 Z" />
+    
+    <!-- 右上角星星 - 五角星 -->
+    <!-- 位置：右上区域，发光效果用多层path模拟 -->
+    <!-- 外层发光 -->
+    <path
+        android:fillColor="#FFB3B3"
+        android:fillAlpha="0.2"
+        android:pathData="M82,24
+            L83.5,29
+            L89,29
+            L84.5,32.5
+            L86,38
+            L82,34.5
+            L78,38
+            L79.5,32.5
+            L75,29
+            L80.5,29
+            Z" />
+    
+    <!-- 中层发光 -->
+    <path
+        android:fillColor="#FF8080"
+        android:fillAlpha="0.4"
+        android:pathData="M82,26
+            L83,30
+            L87,30
+            L84,32.5
+            L85,36.5
+            L82,34
+            L79,36.5
+            L80,32.5
+            L77,30
+            L81,30
+            Z" />
+    
+    <!-- 内层发光 -->
+    <path
+        android:fillColor="#FF9999"
+        android:fillAlpha="0.6"
+        android:pathData="M82,27.5
+            L82.8,30.5
+            L86,30.5
+            L83.5,32.2
+            L84.2,35.2
+            L82,33.5
+            L79.8,35.2
+            L80.5,32.2
+            L78,30.5
+            L81.2,30.5
+            Z" />
+    
+    <!-- 星星主体 -->
+    <path
+        android:fillColor="#FF6B6B"
+        android:fillAlpha="0.85"
+        android:pathData="M82,29
+            L82.5,31
+            L84.5,31
+            L83,32.2
+            L83.5,34.2
+            L82,33
+            L80.5,34.2
+            L81,32.2
+            L79.5,31
+            L81.5,31
+            Z" />
+    
+    <!-- 螺旋上的点 - 增加细节 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.8"
+        android:pathData="M58,50
+            C58.5,50 59,50.5 59,51
+            C59,51.5 58.5,52 58,52
+            C57.5,52 57,51.5 57,51
+            C57,50.5 57.5,50 58,50 Z" />
+    
+    <path
+        android:fillColor="#FFC4D0"
+        android:fillAlpha="0.7"
+        android:pathData="M64,48
+            C64.4,48 64.7,48.3 64.7,48.7
+            C64.7,49.1 64.4,49.4 64,49.4
+            C63.6,49.4 63.3,49.1 63.3,48.7
+            C63.3,48.3 63.6,48 64,48 Z" />
+    
+    <path
+        android:fillColor="#FFB3C1"
+        android:fillAlpha="0.6"
+        android:pathData="M60,62
+            C60.3,62 60.6,62.3 60.6,62.6
+            C60.6,62.9 60.3,63.2 60,63.2
+            C59.7,63.2 59.4,62.9 59.4,62.6
+            C59.4,62.3 59.7,62 60,62 Z" />
+        
+</vector>

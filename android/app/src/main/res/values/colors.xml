@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 
+        「笔迹·成长」图标背景色配置
+        4种配色：3种纯色 + 1种渐变（星空主题）
+    -->
+    
+    <!-- 默认：珊瑚红 -->
+    <color name="ic_launcher_background">#FF6B6B</color>
+    
+    <!-- === 常用配色（纯色背景）=== -->
+    <!-- 珊瑚红 - 温暖热情 -->
+    <color name="theme_coral">#FF6B6B</color>
+    <!-- 青绿色 - 清新自然 -->
+    <color name="theme_mint">#4ECDC4</color>
+    <!-- 樱花粉 - 甜美浪漫 -->
+    <color name="theme_pink">#FF8FB8</color>
+    
+    <!-- === 商店特殊配色：星空主题（渐变背景在drawable中定义）=== -->
+    <!-- 星空主题使用 bg_starry.xml 渐变背景 -->
+    <color name="theme_starry">#0d0d12</color>
+    
+    <!-- 备用颜色 -->
+    <color name="theme_orange">#FFB74D</color>
+    <color name="theme_purple">#BA68C8</color>
+    <color name="theme_rose">#F06292</color>
+    <color name="theme_forest">#81C784</color>
+    <color name="theme_warm">#FFD54F</color>
+    <color name="theme_dark">#2D2D2D</color>
+</resources>

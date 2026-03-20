@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+    应用图标背景层
+    使用纯色背景，颜色由 colors.xml 中的 ic_launcher_background 定义
+    支持与 Flutter 主题色联动
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/ic_launcher_background" />
+</layer-list>

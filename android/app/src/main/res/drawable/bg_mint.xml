@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+    青绿色主题背景 - 渐变
+    角度：135°（从左上到右下）
+    色标：深青绿 -> 浅青绿
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:type="linear"
+        android:angle="135"
+        android:startColor="#3DBDB5"
+        android:centerColor="#4ECDC4"
+        android:centerX="0.5"
+        android:endColor="#6EDDD5"
+        android:gradientRadius="108" />
+</shape>
