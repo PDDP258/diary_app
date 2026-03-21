@@ -1250,7 +1250,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               primaryColor: primaryColor,
                               backgroundColor:
                                   Color(themeColors['background'] as int),
-                              cardColor: Colors.white,
+                              cardColor: themeColors['card'] != null
+                                  ? Color(themeColors['card'] as int)
+                                  : Colors.white,
                               lightColor: Color(themeColors['light'] as int),
                               darkColor: Color(themeColors['dark'] as int),
                               textDarkColor:

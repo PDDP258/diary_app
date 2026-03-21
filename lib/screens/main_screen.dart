@@ -30,6 +30,10 @@ class _MainScreenState extends State<MainScreen> {
   
   // 使用 PageController 来管理页面切换，提高性能
   late PageController _pageController;
+  
+  // 导航栏显示/隐藏控制
+  bool _isNavVisible = true;
+  double _lastScrollPixels = 0;
 
   // 页面列表，动态创建以避免循环依赖
   List<Widget> get _screens => [
@@ -193,6 +197,42 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
+  /// 处理滚动通知，控制导航栏显示/隐藏
+  bool _onScrollNotification(ScrollNotification notification) {
+    if (notification is ScrollUpdateNotification) {
+      final pixels = notification.metrics.pixels;
+      final maxScroll = notification.metrics.maxScrollExtent;
+      
+      // 只有在可以滚动的情况下才处理
+      if (maxScroll > 0) {
+        final scrollDelta = pixels - _lastScrollPixels;
+        
+        // 向下滚动超过阈值时隐藏导航栏
+        if (scrollDelta > 10 && pixels > 50) {
+          if (_isNavVisible) {
+            setState(() => _isNavVisible = false);
+          }
+        }
+        // 向上滚动时显示导航栏
+        else if (scrollDelta < -5) {
+          if (!_isNavVisible) {
+            setState(() => _isNavVisible = true);
+          }
+        }
+        
+        _lastScrollPixels = pixels;
+      }
+    }
+    // 滚动到顶部时显示导航栏
+    else if (notification is ScrollEndNotification) {
+      if (notification.metrics.pixels <= 0 && !_isNavVisible) {
+        setState(() => _isNavVisible = true);
+      }
+    }
+    
+    return false; // 允许事件继续传递
+  }
+
   void _onAddTap() async {
     // 播放点击音效
     SoundService.playClick();
@@ -239,28 +279,40 @@ class _MainScreenState extends State<MainScreen> {
       backgroundColor: isSpecialTheme ? themeProvider.currentScheme.backgroundColor : null,
       // 让 body 延伸到 bottomNavigationBar 下方
       extendBody: true,
-      body: SafeArea(
-        // 底部不处理，让内容延伸到屏幕底部
-        bottom: false,
-        child: ThemeBackgroundFactory.wrap(
-          themeName: currentTheme,
-          child: PageView(
-            controller: _pageController,
-            onPageChanged: _onPageChanged,
-            physics: const NeverScrollableScrollPhysics(), // 禁用滑动，使用底部导航切换
-            children: _screens,
+      body: NotificationListener<ScrollNotification>(
+        onNotification: _onScrollNotification,
+        child: SafeArea(
+          // 底部不处理，让内容延伸到屏幕底部
+          bottom: false,
+          child: ThemeBackgroundFactory.wrap(
+            themeName: currentTheme,
+            child: PageView(
+              controller: _pageController,
+              onPageChanged: _onPageChanged,
+              physics: const NeverScrollableScrollPhysics(), // 禁用滑动，使用底部导航切换
+              children: _screens,
+            ),
           ),
         ),
       ),
-      // bottomNavigationBar 被 SafeArea 包裹，自动避开系统导航栏
-      bottomNavigationBar: SafeArea(
-        top: false,
-        left: false,
-        right: false,
-        child: CustomBottomNav(
-          currentIndex: _currentIndex,
-          onTap: _onNavTap,
-          onAddTap: _onAddTap,
+      // bottomNavigationBar 使用动画控制显示/隐藏
+      bottomNavigationBar: AnimatedSlide(
+        offset: _isNavVisible ? Offset.zero : const Offset(0, 1.5),
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+        child: AnimatedOpacity(
+          opacity: _isNavVisible ? 1.0 : 0.0,
+          duration: const Duration(milliseconds: 200),
+          child: SafeArea(
+            top: false,
+            left: false,
+            right: false,
+            child: CustomBottomNav(
+              currentIndex: _currentIndex,
+              onTap: _onNavTap,
+              onAddTap: _onAddTap,
+            ),
+          ),
         ),
       ),
     );

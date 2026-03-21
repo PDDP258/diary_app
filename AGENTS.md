@@ -631,15 +631,18 @@ with open('lib/screens/profile_screen.dart', 'w', encoding='utf-8') as f:
 
 ## 版本记录
 
-- v1.0.4   (2026-03-19) - 主题加载修复 + 系统导航栏适配 + 日历UI修复:
-  - 主题加载修复（统一主动切换和启动加载样式）
-    - main.dart 中预加载主题设置，确保启动时主题已加载完成
-    - 使用预加载的 ThemeProvider 传递给 MyApp，避免启动时显示默认主题
+- v1.0.4   (2026-03-19) - 主题配色统一 + 系统导航栏适配 + SafeArea 优化:
+  - 主题配色统一（所有特殊主题统一成主动设置效果）
+    - 修复 gacha_service.dart 中樱花主题配色（添加白色卡片、iconColor）
+    - 修复 gacha_service.dart 中海洋主题配色（统一 theme_provider.dart 定义）
+    - 修复 gacha_service.dart 中极光主题配色（添加卡片和图标色）
+    - 确保所有特殊主题都有 card 和 iconColor 定义
   - 系统导航栏遮挡修复
-    - MainScreen 的 SafeArea 设置 bottom: false，让 bottomNavigationBar 自己处理
-    - CustomBottomNav 添加外层 SafeArea，根据系统导航栏高度动态调整 margin
-    - write_diary_screen 添加 SafeArea 保护
-    - stats_screen 添加 SafeArea 保护
+    - MainScreen: extendBody: true + body SafeArea(bottom: false)
+    - MainScreen: bottomNavigationBar 被 SafeArea 包裹（只处理底部）
+    - TimelineScreen: SafeArea 设置 bottom: false
+    - StatsScreen: SafeArea 设置 bottom: false
+    - 所有子页面内容由 MainScreen 统一处理系统导航栏适配
   - 日历页面修复
     - 修复日历被底部导航栏遮挡问题（使用LayoutBuilder动态计算高度）
     - 修改日历网格为固定高度计算，确保完整显示
