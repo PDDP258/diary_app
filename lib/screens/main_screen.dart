@@ -226,34 +226,28 @@ class _MainScreenState extends State<MainScreen> {
       '星空主题', '樱花主题', '海洋主题', '极光主题', '黄金主题'
     ].contains(currentTheme);
 
-    // 获取安全区域信息，适配三星等非全面屏设备的导航栏
-    final mediaQuery = MediaQuery.of(context);
-    final bottomPadding = mediaQuery.padding.bottom;
-    final isGestureNavigation = bottomPadding <= 16; // 手势导航的底部padding较小
-
     return Scaffold(
       backgroundColor: isSpecialTheme ? themeProvider.currentScheme.backgroundColor : null,
       body: SafeArea(
-        // 底部留出自定义底部导航栏的空间
+        // 底部不处理，由各个页面自己控制底部padding
         bottom: false,
-        child: Padding(
-          // 如果不是手势导航（有虚拟导航栏），添加额外的底部padding
-          padding: EdgeInsets.only(bottom: isGestureNavigation ? 0 : bottomPadding * 0.5),
-          child: ThemeBackgroundFactory.wrap(
-            themeName: currentTheme,
-            child: PageView(
-              controller: _pageController,
-              onPageChanged: _onPageChanged,
-              physics: const NeverScrollableScrollPhysics(), // 禁用滑动，使用底部导航切换
-              children: _screens,
-            ),
+        child: ThemeBackgroundFactory.wrap(
+          themeName: currentTheme,
+          child: PageView(
+            controller: _pageController,
+            onPageChanged: _onPageChanged,
+            physics: const NeverScrollableScrollPhysics(), // 禁用滑动，使用底部导航切换
+            children: _screens,
           ),
         ),
       ),
-      bottomNavigationBar: CustomBottomNav(
-        currentIndex: _currentIndex,
-        onTap: _onNavTap,
-        onAddTap: _onAddTap,
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: CustomBottomNav(
+          currentIndex: _currentIndex,
+          onTap: _onNavTap,
+          onAddTap: _onAddTap,
+        ),
       ),
     );
   }

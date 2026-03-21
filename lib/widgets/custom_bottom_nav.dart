@@ -19,16 +19,9 @@ class CustomBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = AppTheme.schemeOf(context);
 
-    // 获取底部安全区域高度（适配有虚拟导航栏的设备）
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
-    final isGestureNavigation = bottomPadding <= 16;
-
-    // 基础高度 + 系统导航栏高度
-    final navBarHeight = 80.0 + (isGestureNavigation ? 0.0 : bottomPadding);
-
     return Container(
-      height: navBarHeight,
-      margin: EdgeInsets.fromLTRB(12, 8, 12, isGestureNavigation ? 8 : 4),
+      height: 80,
+      margin: const EdgeInsets.fromLTRB(12, 8, 12, 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppTheme.xlRadius),
         boxShadow: [

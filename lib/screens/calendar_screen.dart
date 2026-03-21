@@ -436,10 +436,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   // 日期日记数量指示器
                   _buildDateIndicator(scheme, provider),
 
-                  // 底部装饰区域 - 固定小高度
+                  // 底部装饰区域 - 固定小高度（留出导航栏空间）
                   Expanded(
                     child: Container(
-                      margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+                      margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                       decoration: BoxDecoration(
                         color: scheme.cardColor.withOpacity(0.5),
                         borderRadius:
@@ -489,6 +489,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       ),
                     ),
                   ),
+                  // 底部留出导航栏空间（防止被遮挡）
+                  const SizedBox(height: 100),
                 ],
               ),
             ],
