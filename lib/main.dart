@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'providers/diary_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/settings_provider.dart';
-import 'providers/goal_provider.dart';
+import 'providers/custom_goal_provider.dart';
 import 'screens/splash_screen.dart';
 import 'screens/protection_violation_screen.dart';
 import 'services/auto_backup_service.dart';
@@ -36,6 +36,10 @@ void main() async {
   // 初始化音效服务
   await SoundService.initialize();
 
+  // 预加载主题设置（确保启动时主题已加载）
+  final themeProvider = ThemeProvider();
+  await themeProvider.loadSettings();
+
   // 检查并执行自动备份（在后台执行，不阻塞启动）
   AutoBackupService.checkAndBackup().then((success) {
     if (success) {
@@ -51,21 +55,26 @@ void main() async {
     return;
   }
 
-  runApp(const MyApp());
+  runApp(MyApp(preloadedThemeProvider: themeProvider));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final ThemeProvider? preloadedThemeProvider;
+  
+  const MyApp({super.key, this.preloadedThemeProvider});
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => DiaryProvider()),
-        ChangeNotifierProvider(create: (_) => ThemeProvider()..loadSettings()),
+        // 使用预加载的 ThemeProvider，如果没有则创建新的
+        ChangeNotifierProvider.value(
+          value: preloadedThemeProvider ?? (ThemeProvider()..loadSettings()),
+        ),
         ChangeNotifierProvider(
             create: (_) => SettingsProvider()..loadSettings()),
-        ChangeNotifierProvider(create: (_) => GoalProvider()),
+        ChangeNotifierProvider(create: (_) => CustomGoalProvider()..loadGoals()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {

@@ -28,7 +28,7 @@ class _RandomStickerOverlayState extends State<RandomStickerOverlay> {
   List<RandomStickerDisplay> _stickers = [];
   bool _isLoading = true;
   List<CustomSticker> _allAvailableStickers = [];
-  
+
   // 动画配置
   static const Duration _fadeInDuration = Duration(milliseconds: 400);
   static const Duration _fadeOutDuration = Duration(milliseconds: 300);
@@ -93,8 +93,8 @@ class _RandomStickerOverlayState extends State<RandomStickerOverlay> {
     if (_allAvailableStickers.isEmpty) return;
 
     // 随机选择一个贴图
-    final sticker =
-        _allAvailableStickers[_globalRandom.nextInt(_allAvailableStickers.length)];
+    final sticker = _allAvailableStickers[
+        _globalRandom.nextInt(_allAvailableStickers.length)];
 
     // 生成随机位置（避开中央和已有贴图）
     final position = _generateRandomPosition();
@@ -267,8 +267,8 @@ class _RandomStickerOverlayState extends State<RandomStickerOverlay> {
     final left = sticker.positionX * screenWidth;
     final top = sticker.positionY * screenHeight;
 
-    // 计算贴图最大显示尺寸（最长边）
-    final maxSize = 80 * sticker.scale;
+    // 计算贴图最大显示尺寸（最长边）- 缩小到70%
+    final maxSize = 56 * sticker.scale;
 
     return Positioned(
       left: left - maxSize / 2,

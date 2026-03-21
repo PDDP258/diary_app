@@ -367,12 +367,25 @@ class GoalSettingSheet extends StatefulWidget {
 class _GoalSettingSheetState extends State<GoalSettingSheet> {
   late GoalType _selectedType;
   late int _selectedTarget;
+  late TextEditingController _customTargetController;
+  bool _isCustomTarget = false;
   
   @override
   void initState() {
     super.initState();
     _selectedType = widget.currentGoal?.type ?? GoalType.diaryCount;
     _selectedTarget = widget.currentGoal?.targetCount ?? 12;
+    _customTargetController = TextEditingController(text: _selectedTarget.toString());
+    
+    // 检查是否是自定义值（不在预设中）
+    final presets = GoalPreset.getPresets(_selectedType);
+    _isCustomTarget = !presets.any((p) => p.target == _selectedTarget);
+  }
+  
+  @override
+  void dispose() {
+    _customTargetController.dispose();
+    super.dispose();
   }
   
   @override
@@ -473,43 +486,120 @@ class _GoalSettingSheetState extends State<GoalSettingSheet> {
             Wrap(
               spacing: 10,
               runSpacing: 10,
-              children: presets.map((preset) {
-                final isSelected = _selectedTarget == preset.target;
-                return ChoiceChip(
-                  label: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        '${preset.target}${_selectedType.unit}',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
+              children: [
+                ...presets.map((preset) {
+                  final isSelected = !_isCustomTarget && _selectedTarget == preset.target;
+                  return ChoiceChip(
+                    label: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '${preset.target}${_selectedType.unit}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      Text(
-                        preset.description,
-                        style: TextStyle(fontSize: 10),
-                      ),
-                    ],
-                  ),
-                  selected: isSelected,
+                        Text(
+                          preset.description,
+                          style: TextStyle(fontSize: 10),
+                        ),
+                      ],
+                    ),
+                    selected: isSelected,
+                    onSelected: (selected) {
+                      if (selected) {
+                        setState(() {
+                          _isCustomTarget = false;
+                          _selectedTarget = preset.target;
+                          _customTargetController.text = preset.target.toString();
+                        });
+                      }
+                    },
+                    selectedColor: scheme.primaryColor.withOpacity(0.15),
+                    backgroundColor: scheme.cardColor,
+                    labelStyle: TextStyle(
+                      color: isSelected ? scheme.primaryColor : scheme.textDarkColor,
+                      fontSize: 13,
+                    ),
+                    side: BorderSide(
+                      color: isSelected ? scheme.primaryColor : Colors.transparent,
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  );
+                }),
+                // 自定义选项
+                ChoiceChip(
+                  label: Text('自定义'),
+                  selected: _isCustomTarget,
                   onSelected: (selected) {
                     if (selected) {
-                      setState(() => _selectedTarget = preset.target);
+                      setState(() => _isCustomTarget = true);
                     }
                   },
                   selectedColor: scheme.primaryColor.withOpacity(0.15),
                   backgroundColor: scheme.cardColor,
                   labelStyle: TextStyle(
-                    color: isSelected ? scheme.primaryColor : scheme.textDarkColor,
+                    color: _isCustomTarget ? scheme.primaryColor : scheme.textDarkColor,
                     fontSize: 13,
                   ),
                   side: BorderSide(
-                    color: isSelected ? scheme.primaryColor : Colors.transparent,
+                    color: _isCustomTarget ? scheme.primaryColor : Colors.transparent,
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                );
-              }).toList(),
+                ),
+              ],
             ),
+            // 自定义输入框
+            if (_isCustomTarget) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: scheme.cardColor,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: scheme.primaryColor.withOpacity(0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _customTargetController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          hintText: '输入目标数量',
+                          hintStyle: TextStyle(
+                            color: scheme.textLightColor,
+                            fontSize: 14,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: scheme.textDarkColor,
+                        ),
+                        onChanged: (value) {
+                          final number = int.tryParse(value);
+                          if (number != null && number > 0 && number <= 999) {
+                            setState(() => _selectedTarget = number);
+                          }
+                        },
+                      ),
+                    ),
+                    Text(
+                      _selectedType.unit,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: scheme.textMediumColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 32),
             
             // 保存按钮

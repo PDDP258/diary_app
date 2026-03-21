@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart' hide Badge;
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/diary_provider.dart';
 import '../providers/theme_provider.dart';
@@ -226,10 +227,20 @@ class _MainScreenState extends State<MainScreen> {
       '星空主题', '樱花主题', '海洋主题', '极光主题', '黄金主题'
     ].contains(currentTheme);
 
+    // 设置系统导航栏颜色
+    // 极光主题：导航栏颜色与主题背景一致（特殊处理）
+    // 其他主题：导航栏颜色也与主题背景一致（与极光主题统一处理）
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      systemNavigationBarColor: themeProvider.currentScheme.backgroundColor,
+      systemNavigationBarIconBrightness: Brightness.light,
+    ));
+
     return Scaffold(
       backgroundColor: isSpecialTheme ? themeProvider.currentScheme.backgroundColor : null,
+      // 让 body 延伸到 bottomNavigationBar 下方
+      extendBody: true,
       body: SafeArea(
-        // 底部不处理，由各个页面自己控制底部padding
+        // 底部不处理，让内容延伸到屏幕底部
         bottom: false,
         child: ThemeBackgroundFactory.wrap(
           themeName: currentTheme,
@@ -241,8 +252,11 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ),
       ),
+      // bottomNavigationBar 被 SafeArea 包裹，自动避开系统导航栏
       bottomNavigationBar: SafeArea(
         top: false,
+        left: false,
+        right: false,
         child: CustomBottomNav(
           currentIndex: _currentIndex,
           onTap: _onNavTap,

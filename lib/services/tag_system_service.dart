@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/diary.dart';
 import '../models/tag_system.dart';
 import 'database_service.dart';
 
@@ -309,5 +310,10 @@ class TagSystemService {
   /// 保存标签系统（公共方法）
   static Future<void> saveTagSystem(TagSystem system) async {
     await _saveTagSystem(system);
+  }
+  
+  /// 根据标签ID获取日记列表
+  static Future<List<Diary>> getDiariesByTagId(String tagId) async {
+    return await DatabaseService.getDiariesByTagIdV3(tagId);
   }
 }

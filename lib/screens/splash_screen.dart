@@ -146,7 +146,7 @@ class _SplashScreenState extends State<SplashScreen> {
       ];
 
       return Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: scheme.backgroundColor,
         body: SplashPageTurn(
           pages: pages,
           initialPage: 0,
@@ -202,14 +202,14 @@ class _SplashScreenState extends State<SplashScreen> {
     // 使用主题的主色调作为文字颜色，保持美观
     final textColor = scheme.primaryColor;
     
-    // 使用纯白色背景，轮廓颜色为浅灰色
-    final backgroundColor = Colors.white;
-    final outlineColor = Colors.grey.shade200; // 更浅的灰色
+    // 使用主题背景色，轮廓颜色为主题浅色
+    final backgroundColor = scheme.backgroundColor;
+    final outlineColor = scheme.lightColor.withOpacity(0.3); // 主题浅色
     
     return Container(
       width: screenSize.width,
       height: screenSize.height,
-      color: backgroundColor, // 纯白色背景
+      color: backgroundColor, // 主题背景色
       child: Stack(
         children: [
           // 第一层：绘制的封面轮廓（更淡：50%透明度）

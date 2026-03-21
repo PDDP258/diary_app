@@ -12,7 +12,7 @@ import 'encryption_service.dart';
 class DatabaseService {
   static Database? _database;
   static const String _databaseName = 'diary_app.db';
-  static const int _databaseVersion = 2; // 升级版本号以支持加密
+  static const int _databaseVersion = 3; // 版本3：添加三级标签系统V3支持
 
   // 表名
   static const String tableDiaries = 'diaries';
@@ -109,6 +109,17 @@ class DatabaseService {
       )
     ''');
 
+    // 三级标签系统关联表（V3版本，支持String类型的tagId）
+    await db.execute('''
+      CREATE TABLE diary_tags_v3 (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        diary_id INTEGER NOT NULL,
+        tag_id TEXT NOT NULL,
+        created_at TEXT,
+        FOREIGN KEY (diary_id) REFERENCES $tableDiaries (id) ON DELETE CASCADE
+      )
+    ''');
+
     // 插入默认心情
     await _insertDefaultMoods(db);
   }
@@ -134,6 +145,18 @@ class DatabaseService {
       // 版本2添加加密支持
       await db.execute(
           'ALTER TABLE $tableDiaries ADD COLUMN is_encrypted INTEGER DEFAULT 0');
+    }
+    if (oldVersion < 3) {
+      // 版本3添加三级标签系统V3支持
+      await db.execute('''
+        CREATE TABLE diary_tags_v3 (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          diary_id INTEGER NOT NULL,
+          tag_id TEXT NOT NULL,
+          created_at TEXT,
+          FOREIGN KEY (diary_id) REFERENCES $tableDiaries (id) ON DELETE CASCADE
+        )
+      ''');
     }
   }
 
@@ -544,5 +567,57 @@ class DatabaseService {
       await _database!.close();
       _database = null;
     }
+  }
+
+  // ==================== 三级标签系统 V3 方法 ====================
+  
+  /// 保存日记的标签关联（V3版本，支持String类型的tagId）
+  static Future<void> insertDiaryTagsV3(int diaryId, List<String> tagIds) async {
+    final db = await database;
+    final batch = db.batch();
+    
+    for (final tagId in tagIds) {
+      batch.insert('diary_tags_v3', {
+        'diary_id': diaryId,
+        'tag_id': tagId,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+    }
+    
+    await batch.commit(noResult: true);
+  }
+  
+  /// 删除日记的所有标签关联（V3版本）
+  static Future<void> deleteDiaryTagsV3(int diaryId) async {
+    final db = await database;
+    await db.delete(
+      'diary_tags_v3',
+      where: 'diary_id = ?',
+      whereArgs: [diaryId],
+    );
+  }
+  
+  /// 获取日记的标签ID列表（V3版本）
+  static Future<List<String>> getDiaryTagIds(int diaryId) async {
+    final db = await database;
+    final maps = await db.query(
+      'diary_tags_v3',
+      columns: ['tag_id'],
+      where: 'diary_id = ?',
+      whereArgs: [diaryId],
+    );
+    return maps.map((m) => m['tag_id'] as String).toList();
+  }
+  
+  /// 根据标签ID获取日记列表（V3版本）
+  static Future<List<Diary>> getDiariesByTagIdV3(String tagId) async {
+    final db = await database;
+    final maps = await db.rawQuery('''
+      SELECT d.* FROM $tableDiaries d
+      INNER JOIN diary_tags_v3 dt ON d.id = dt.diary_id
+      WHERE dt.tag_id = ?
+      ORDER BY d.date DESC
+    ''', [tagId]);
+    return maps.map((map) => Diary.fromMap(map)).toList();
   }
 }

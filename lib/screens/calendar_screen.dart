@@ -5,17 +5,17 @@ import '../config/app_theme.dart';
 import '../models/anniversary.dart';
 import '../models/diary.dart';
 import '../providers/diary_provider.dart';
-import '../providers/goal_provider.dart';
+import '../providers/custom_goal_provider.dart';
 import '../services/database_service.dart';
 import '../providers/settings_provider.dart';
 import '../providers/theme_provider.dart';
-import '../services/goal_service.dart';
+import '../models/custom_goal.dart';
 
 import '../services/image_cache_service.dart';
 import '../services/lunar_calendar_service.dart';
 import '../widgets/custom_sticker_overlay.dart';
 import '../widgets/random_sticker_overlay.dart';
-import '../widgets/goal_progress_card.dart';
+import '../widgets/custom_goal_card.dart';
 import 'write_diary_screen.dart';
 import 'diary_detail_screen.dart';
 import 'diary_search_screen.dart';
@@ -41,10 +41,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
     // 加载目标
     _loadGoal();
   }
-  
+
   void _loadGoal() {
     Future.microtask(() {
-      context.read<GoalProvider>().loadCurrentGoal();
+      context.read<CustomGoalProvider>().loadActiveGoal();
     });
   }
 
@@ -98,9 +98,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
             children: [
               Column(
                 children: [
-                  // 目标进度卡片（迷你版，可点击展开）
-                  _buildMiniGoalProgressCard(scheme),
-                  
+                  // 自定义目标进度卡片（迷你版）
+                  _buildMiniCustomGoalCard(scheme),
+
                   // 顶部日期标题和导航 - 整合农历信息
                   Container(
                     margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
@@ -390,107 +390,111 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     ),
                   ),
 
-                  // 日历网格
-                  Expanded(
-                    flex: 2,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: GridView.count(
-                        crossAxisCount: 7,
-                        childAspectRatio: 0.9,
-                        physics: const NeverScrollableScrollPhysics(),
-                        children: _getDaysInMonth().map((date) {
-                          final dateStr = DateFormat('yyyy-MM-dd').format(date);
-                          final isSelected =
-                              DateFormat('yyyy-MM-dd').format(_selectedDate) ==
-                                  dateStr;
-                          final isCurrentMonth =
-                              date.month == _currentMonth.month;
-                          final hasDiary = datesWithDiaries.contains(dateStr);
+                  // 日历网格 - 使用固定高度确保完整显示
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      // 计算日历网格的最佳高度
+                      // 一周7天，最多6行，加上星期标题
+                      final cellHeight = (constraints.maxWidth / 7) * 1.1;
+                      final gridHeight = cellHeight * 6 + 40; // 6行 + 星期标题
 
-                          // 获取当天的日记，检查是否有图片
-                          final diaries = provider.getDiariesByDate(dateStr);
-                          final hasImages = diaries.isNotEmpty &&
-                              diaries.any((d) => d.imageList.isNotEmpty);
-                          final firstImagePath = hasImages
-                              ? diaries
-                                  .firstWhere((d) => d.imageList.isNotEmpty)
-                                  .imageList
-                                  .first
-                              : null;
+                      return Container(
+                        height: gridHeight,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: GridView.count(
+                          crossAxisCount: 7,
+                          childAspectRatio: 1.0,
+                          physics: const NeverScrollableScrollPhysics(),
+                          children: _getDaysInMonth().map((date) {
+                            final dateStr =
+                                DateFormat('yyyy-MM-dd').format(date);
+                            final isSelected = DateFormat('yyyy-MM-dd')
+                                    .format(_selectedDate) ==
+                                dateStr;
+                            final isCurrentMonth =
+                                date.month == _currentMonth.month;
+                            final hasDiary = datesWithDiaries.contains(dateStr);
 
-                          return _buildDayCell(
-                            date: date,
-                            isSelected: isSelected,
-                            isCurrentMonth: isCurrentMonth,
-                            hasDiary: hasDiary,
-                            hasImages: hasImages,
-                            firstImagePath: firstImagePath,
-                            scheme: scheme,
-                          );
-                        }).toList(),
-                      ),
-                    ),
+                            // 获取当天的日记，检查是否有图片
+                            final diaries = provider.getDiariesByDate(dateStr);
+                            final hasImages = diaries.isNotEmpty &&
+                                diaries.any((d) => d.imageList.isNotEmpty);
+                            final firstImagePath = hasImages
+                                ? diaries
+                                    .firstWhere((d) => d.imageList.isNotEmpty)
+                                    .imageList
+                                    .first
+                                : null;
+
+                            return _buildDayCell(
+                              date: date,
+                              isSelected: isSelected,
+                              isCurrentMonth: isCurrentMonth,
+                              hasDiary: hasDiary,
+                              hasImages: hasImages,
+                              firstImagePath: firstImagePath,
+                              scheme: scheme,
+                            );
+                          }).toList(),
+                        ),
+                      );
+                    },
                   ),
 
                   // 日期日记数量指示器
                   _buildDateIndicator(scheme, provider),
 
                   // 底部装饰区域 - 固定小高度（留出导航栏空间）
-                  Expanded(
-                    child: Container(
-                      margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                      decoration: BoxDecoration(
-                        color: scheme.cardColor.withOpacity(0.5),
-                        borderRadius:
-                            BorderRadius.circular(AppTheme.largeRadius),
-                      ),
-                      child: ClipRRect(
-                        borderRadius:
-                            BorderRadius.circular(AppTheme.largeRadius),
-                        child: Stack(
-                          children: [
-                            // 云朵
-                            Positioned(
-                              top: 20,
-                              left: 30,
-                              child: _buildCloud(50, scheme.cardColor),
-                            ),
-                            Positioned(
-                              top: 30,
-                              right: 40,
-                              child: _buildCloud(60, scheme.cardColor),
-                            ),
-                            Positioned(
-                              top: 60,
-                              left: 70,
-                              child: _buildCloud(40, scheme.cardColor),
-                            ),
-                            // 房子
-                            Positioned(
-                              bottom: 50,
-                              left: 30,
-                              child: _buildHouse(scheme),
-                            ),
-                            // 草地和花朵
-                            Positioned(
-                              bottom: 0,
-                              left: 0,
-                              right: 0,
-                              child: _buildGrassland(scheme),
-                            ),
-                            // 自定义贴图
-                            const CustomStickerOverlay(targetPage: 'calendar'),
-                            // 随机贴图装饰
-                            const RandomStickerOverlay(
-                                targetPage: 'calendar', appearProbability: 0.6),
-                          ],
-                        ),
+                  Container(
+                    height: 80,
+                    margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    decoration: BoxDecoration(
+                      color: scheme.cardColor.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(AppTheme.largeRadius),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(AppTheme.largeRadius),
+                      child: Stack(
+                        children: [
+                          // 云朵
+                          Positioned(
+                            top: 20,
+                            left: 30,
+                            child: _buildCloud(50, scheme.cardColor),
+                          ),
+                          Positioned(
+                            top: 30,
+                            right: 40,
+                            child: _buildCloud(60, scheme.cardColor),
+                          ),
+                          Positioned(
+                            top: 60,
+                            left: 70,
+                            child: _buildCloud(40, scheme.cardColor),
+                          ),
+                          // 房子
+                          Positioned(
+                            bottom: 50,
+                            left: 30,
+                            child: _buildHouse(scheme),
+                          ),
+                          // 草地和花朵
+                          Positioned(
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            child: _buildGrassland(scheme),
+                          ),
+                          // 自定义贴图
+                          const CustomStickerOverlay(targetPage: 'calendar'),
+                          // 随机贴图装饰
+                          const RandomStickerOverlay(
+                              targetPage: 'calendar', appearProbability: 0.6),
+                        ],
                       ),
                     ),
                   ),
-                  // 底部留出导航栏空间（防止被遮挡）
-                  const SizedBox(height: 100),
+                  // 底部间距已由 MainScreen 的 SafeArea 处理
                 ],
               ),
             ],
@@ -1830,6 +1834,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
         constraints: BoxConstraints(
           maxHeight: MediaQuery.of(context).size.height * 0.6,
         ),
+        // 添加上边距，使弹窗整体上移
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+          top: MediaQuery.of(context).size.height * 0.15,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1965,14 +1974,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   /// 显示目标设置弹窗
   void _showGoalSettings(BuildContext context) {
-    final goalProvider = context.read<GoalProvider>();
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => GoalSettingSheet(
-        currentGoal: goalProvider.currentGoal,
-      ),
+      builder: (context) => const CustomGoalSettingSheet(),
     );
   }
 
@@ -2588,16 +2594,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
     // 获取节日或节气
     final festivalOrTerm = lunarService.getFestival(date);
-    
+
     String displayText;
     Color textColor;
     bool isHighlight = false;
-    
+
     if (festivalOrTerm != null) {
       // 节日或节气显示
       displayText = festivalOrTerm;
       isHighlight = true;
-      textColor = festivalOrTerm.contains('节') || festivalOrTerm.contains('元宵') || festivalOrTerm.contains('妇女')
+      textColor = festivalOrTerm.contains('节') ||
+              festivalOrTerm.contains('元宵') ||
+              festivalOrTerm.contains('妇女')
           ? Colors.red
           : scheme.primaryColor;
     } else {
@@ -2609,8 +2617,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: isHighlight 
-            ? (textColor == Colors.red 
+        color: isHighlight
+            ? (textColor == Colors.red
                 ? Colors.red.withOpacity(0.1)
                 : scheme.primaryColor.withOpacity(0.1))
             : scheme.lightColor.withOpacity(0.3),
@@ -2629,199 +2637,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   // ==================== 迷你目标进度卡片 ====================
 
-  bool _isGoalExpanded = false;
-
-  Widget _buildMiniGoalProgressCard(ThemeScheme scheme) {
-    return Consumer<GoalProvider>(
-      builder: (context, goalProvider, child) {
-        final goal = goalProvider.currentGoal;
-        if (goal == null) return const SizedBox.shrink();
-
-        final progress = goal.completedCount;
-        final percentage = goal.progress * 100;
-        final remaining = goal.remaining;
-        
-        // 根据目标类型显示名称
-        String goalName;
-        switch (goal.type) {
-          case GoalType.diaryCount:
-            goalName = '日记目标';
-            break;
-          case GoalType.wordCount:
-            goalName = '字数目标';
-            break;
-          case GoalType.photoCount:
-            goalName = '照片目标';
-            break;
-          case GoalType.streakDays:
-            goalName = '连续记录';
-            break;
-          default:
-            goalName = '本月目标';
-        }
-
-        return GestureDetector(
-          onTap: () {
-            setState(() {
-              _isGoalExpanded = !_isGoalExpanded;
-            });
-          },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  scheme.cardColor,
-                  scheme.cardColor.withOpacity(0.9),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(AppTheme.xlRadius),
-              boxShadow: AppTheme.cardShadow,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // 迷你进度条（始终显示）
-                Row(
-                  children: [
-                    // 进度圆环（小）
-                    SizedBox(
-                      width: 36,
-                      height: 36,
-                      child: CircularProgressIndicator(
-                        value: goal.progress,
-                        strokeWidth: 3,
-                        backgroundColor: scheme.lightColor.withOpacity(0.3),
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          goal.isCompleted ? Colors.green : scheme.primaryColor,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    // 进度文字
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.flag_outlined,
-                                size: 14,
-                                color: scheme.primaryColor,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                goalName,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: scheme.textDarkColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '${goal.completedCount} / ${goal.targetCount}篇 · 还剩${goal.remaining}篇',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: scheme.textMediumColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // 展开/收起图标
-                    AnimatedRotation(
-                      turns: _isGoalExpanded ? 0.5 : 0,
-                      duration: const Duration(milliseconds: 300),
-                      child: Icon(
-                        Icons.keyboard_arrow_down,
-                        color: scheme.textLightColor,
-                      ),
-                    ),
-                    // 设置按钮
-                    GestureDetector(
-                      onTap: () => _showGoalSettings(context),
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        margin: const EdgeInsets.only(left: 8),
-                        decoration: BoxDecoration(
-                          color: scheme.lightColor.withOpacity(0.3),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.settings_outlined,
-                          size: 16,
-                          color: scheme.textMediumColor,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                // 展开后的详细内容
-                if (_isGoalExpanded) ...[
-                  const SizedBox(height: 12),
-                  Divider(height: 1, color: scheme.lightColor.withOpacity(0.3)),
-                  const SizedBox(height: 12),
-                  // 详细进度条
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: goal.progress,
-                      minHeight: 8,
-                      backgroundColor: scheme.lightColor.withOpacity(0.3),
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        goal.isCompleted ? Colors.green : scheme.primaryColor,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '完成度 ${(goal.progress * 100).toStringAsFixed(1)}%',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: scheme.textMediumColor,
-                        ),
-                      ),
-                      if (goal.isCompleted)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.check_circle, size: 12, color: Colors.green),
-                              const SizedBox(width: 4),
-                              Text(
-                                '已达成',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.green,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-              ],
-            ),
-          ),
-        );
-      },
+  Widget _buildMiniCustomGoalCard(ThemeScheme scheme) {
+    return CustomGoalMiniCard(
+      onTapSettings: () => _showGoalSettings(context),
     );
   }
 }

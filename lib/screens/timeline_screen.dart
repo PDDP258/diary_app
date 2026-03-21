@@ -62,6 +62,8 @@ class _TimelineScreenState extends State<TimelineScreen>
         return Scaffold(
           backgroundColor: Colors.transparent,
           body: SafeArea(
+            // 底部不处理，让 MainScreen 的 SafeArea 统一处理
+            bottom: false,
             child: Column(
               children: [
                 // 顶部标题栏 - 玻璃态效果
@@ -78,8 +80,8 @@ class _TimelineScreenState extends State<TimelineScreen>
                           strokeWidth: 3,
                           child: ListView.builder(
                             controller: _scrollController,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
+                            padding: const EdgeInsets.only(
+                                left: 16, right: 16, top: 8, bottom: 16),
                             itemCount:
                                 diaries.length + (provider.hasMoreData ? 1 : 0),
                             itemBuilder: (context, index) {
@@ -464,24 +466,24 @@ class _TimelineScreenState extends State<TimelineScreen>
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                    onTap: () async {
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => DiaryDetailScreen(diary: diary),
-                        ),
-                      );
-                      if (result == true) {
-                        context.read<DiaryProvider>().loadDiaries();
-                      }
-                    },
-                    splashColor: scheme.primaryColor.withOpacity(0.15),
-                    highlightColor: scheme.primaryColor.withOpacity(0.08),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                  onTap: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => DiaryDetailScreen(diary: diary),
+                      ),
+                    );
+                    if (result == true) {
+                      context.read<DiaryProvider>().loadDiaries();
+                    }
+                  },
+                  splashColor: scheme.primaryColor.withOpacity(0.15),
+                  highlightColor: scheme.primaryColor.withOpacity(0.08),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         // 日期行 + 心情
                         Row(
                           children: [

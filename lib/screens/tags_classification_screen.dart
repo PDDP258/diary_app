@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
 import '../models/diary.dart';
-import '../models/tag.dart';
+import '../models/tag_system.dart';
 import '../providers/theme_provider.dart';
 import '../services/database_service.dart';
+import '../services/tag_system_service.dart';
 import '../utils/platform_helpers.dart';
 import 'tag_diaries_screen.dart';
 
 /// 按标签分类页面
-/// 显示所有标签的网格布局，每个标签显示最近9篇日记的预览（3x3九宫格）
+/// 显示所有三级标签的网格布局，每个标签显示最近9篇日记的预览（3x3九宫格）
 class TagsClassificationScreen extends StatefulWidget {
   const TagsClassificationScreen({super.key});
 
@@ -17,8 +18,8 @@ class TagsClassificationScreen extends StatefulWidget {
 }
 
 class _TagsClassificationScreenState extends State<TagsClassificationScreen> {
-  List<Tag> _tags = [];
-  Map<int, List<Diary>> _tagDiaries = {};
+  List<TagLevel3> _tags = [];
+  Map<String, List<Diary>> _tagDiaries = {};
   bool _isLoading = true;
 
   @override
@@ -31,21 +32,30 @@ class _TagsClassificationScreenState extends State<TagsClassificationScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // 获取所有标签
-      final tags = await DatabaseService.getAllTags();
+      // 获取三级标签系统
+      final tagSystem = await TagSystemService.getTagSystem();
+      
+      // 获取所有三级标签
+      final List<TagLevel3> allTags = [];
+      for (final category in tagSystem.categories) {
+        for (final subCategory in category.subCategories) {
+          allTags.addAll(subCategory.tags);
+        }
+      }
+      
+      // 按使用次数排序
+      allTags.sort((a, b) => b.usageCount.compareTo(a.usageCount));
       
       // 获取每个标签的日记（最多9篇用于预览）
-      final Map<int, List<Diary>> tagDiaries = {};
-      for (final tag in tags) {
-        if (tag.id != null) {
-          final diaries = await DatabaseService.getDiariesByTagId(tag.id!);
-          tagDiaries[tag.id!] = diaries.take(9).toList();
-        }
+      final Map<String, List<Diary>> tagDiaries = {};
+      for (final tag in allTags) {
+        final diaries = await TagSystemService.getDiariesByTagId(tag.id);
+        tagDiaries[tag.id] = diaries.take(9).toList();
       }
 
       if (mounted) {
         setState(() {
-          _tags = tags;
+          _tags = allTags;
           _tagDiaries = tagDiaries;
           _isLoading = false;
         });
@@ -97,13 +107,13 @@ class _TagsClassificationScreenState extends State<TagsClassificationScreen> {
           Icon(
             Icons.label_outlined,
             size: 64,
-            color: scheme.textLightColor.withValues(alpha: 0.5),
+            color: scheme.textLightColor.withOpacity(0.5),
           ),
           const SizedBox(height: 16),
           Text(
             '还没有标签',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 16,
               color: scheme.textMediumColor,
             ),
           ),
@@ -111,7 +121,7 @@ class _TagsClassificationScreenState extends State<TagsClassificationScreen> {
           Text(
             '在写日记时添加标签，这里会显示分类',
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 13,
               color: scheme.textLightColor,
             ),
           ),
@@ -121,206 +131,142 @@ class _TagsClassificationScreenState extends State<TagsClassificationScreen> {
   }
 
   Widget _buildTagsGrid(ThemeScheme scheme) {
-    return SingleChildScrollView(
+    return ListView.builder(
       padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 标题
-          Text(
-            '标签分类',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: scheme.textDarkColor,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '点击标签查看所有相关日记',
-            style: TextStyle(
-              fontSize: 14,
-              color: scheme.textMediumColor,
-            ),
-          ),
-          const SizedBox(height: 20),
-          // 标签网格 - 每行1个（扩大两倍）
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 1,  // 改为1列，每个卡片占满整行（扩大两倍）
-              childAspectRatio: 0.85,  // 调整宽高比，让卡片更高以容纳九宫格
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-            ),
-            itemCount: _tags.length,
-            itemBuilder: (context, index) {
-              return _buildTagCard(_tags[index], scheme);
-            },
-          ),
-        ],
-      ),
+      itemCount: _tags.length,
+      itemBuilder: (context, index) {
+        final tag = _tags[index];
+        final diaries = _tagDiaries[tag.id] ?? [];
+        
+        return _buildTagCard(tag, diaries, scheme);
+      },
     );
   }
 
-  Widget _buildTagCard(Tag tag, ThemeScheme scheme) {
-    final tagColor = Color(int.parse(tag.color.replaceFirst('#', '0xFF')));
-    final diaries = _tagDiaries[tag.id] ?? [];
-    final diaryCount = diaries.length;
-
+  Widget _buildTagCard(TagLevel3 tag, List<Diary> diaries, ThemeScheme scheme) {
     return GestureDetector(
-      onTap: () => _navigateToTagDiaries(tag),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => TagDiariesScreen(
+              tagId: tag.id,
+              tagName: tag.emoji != null ? '${tag.emoji} ${tag.name}' : tag.name,
+            ),
+          ),
+        ).then((_) => _loadData()); // 返回后刷新
+      },
       child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: scheme.cardColor,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: AppTheme.softShadow,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: scheme.textDarkColor.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 标签头部
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: tagColor.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        tag.name,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: tagColor,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
+            // 标签标题
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: scheme.primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  const SizedBox(width: 12),
-                  Text(
-                    '$diaryCount篇',
+                  child: Text(
+                    tag.emoji != null ? '${tag.emoji} ${tag.name}' : tag.name,
                     style: TextStyle(
                       fontSize: 14,
-                      color: scheme.textLightColor,
+                      fontWeight: FontWeight.w600,
+                      color: scheme.primaryColor,
                     ),
                   ),
-                ],
-              ),
+                ),
+                const Spacer(),
+                Text(
+                  '${tag.usageCount} 篇日记',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: scheme.textLightColor,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.chevron_right,
+                  size: 16,
+                  color: scheme.textLightColor,
+                ),
+              ],
             ),
-            // 9宫格预览（3x3）
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: SizedBox(
-                height: 320, // 增加高度确保九宫格完整显示
-                child: _buildPreviewGrid(diaries, scheme),
-              ),
-            ),
+            
+            // 日记预览九宫格
+            if (diaries.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _buildDiaryPreviewGrid(diaries, scheme),
+            ],
           ],
         ),
       ),
     );
   }
 
-  Widget _buildPreviewGrid(List<Diary> diaries, ThemeScheme scheme) {
-    // 生成9个格子（3x3九宫格）
-    final items = <Widget>[];
-    for (int i = 0; i < 9; i++) {
-      if (i < diaries.length) {
-        items.add(_buildPreviewItem(diaries[i], scheme));
-      } else {
-        items.add(_buildEmptyPreviewItem(scheme));
-      }
-    }
-
-    return GridView.count(
-      crossAxisCount: 3,  // 3x3九宫格
-      childAspectRatio: 1,
-      crossAxisSpacing: 8,
-      mainAxisSpacing: 8,
+  Widget _buildDiaryPreviewGrid(List<Diary> diaries, ThemeScheme scheme) {
+    return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      children: items,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 4,
+        mainAxisSpacing: 4,
+        childAspectRatio: 1,
+      ),
+      itemCount: diaries.length.clamp(0, 9),
+      itemBuilder: (context, index) {
+        final diary = diaries[index];
+        return _buildDiaryPreviewItem(diary, scheme);
+      },
     );
   }
 
-  Widget _buildPreviewItem(Diary diary, ThemeScheme scheme) {
-    final images = diary.imageList;
+  Widget _buildDiaryPreviewItem(Diary diary, ThemeScheme scheme) {
+    final hasImage = diary.imageList.isNotEmpty;
     
-    // 如果有图片，只显示图片，不显示文字
-    if (images.isNotEmpty) {
+    if (hasImage) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(8),
-        child: Container(
-          color: Colors.grey[200],
-          child: PlatformImage(
-            path: images.first,
-            fit: BoxFit.cover,
-            cacheWidth: 150,
-            cacheHeight: 150,
-          ),
+        child: PlatformImage(
+          path: diary.imageList.first,
+          fit: BoxFit.cover,
         ),
       );
     }
-
-    // 无图片时显示文字（取标题前2字或内容前2字或"记"）
-    String displayText = '记';
-    if (diary.title != null && diary.title!.isNotEmpty) {
-      displayText = diary.title!.length >= 2 
-          ? diary.title!.substring(0, 2) 
-          : diary.title!;
-    } else if (diary.content != null && diary.content!.isNotEmpty) {
-      displayText = diary.content!.length >= 2 
-          ? diary.content!.substring(0, 2) 
-          : diary.content!;
-    }
-
+    
     return Container(
       decoration: BoxDecoration(
-        color: scheme.lightColor.withValues(alpha: 0.3),
+        color: scheme.lightColor.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Center(
         child: Text(
-          displayText,
+          diary.title?.isNotEmpty == true
+              ? diary.title!.substring(0, diary.title!.length.clamp(1, 2))
+              : diary.date.substring(5),
           style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w500,
-            color: scheme.textMediumColor,
+            fontSize: 12,
+            color: scheme.textLightColor,
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
         ),
       ),
     );
-  }
-
-  Widget _buildEmptyPreviewItem(ThemeScheme scheme) {
-    return Container(
-      decoration: BoxDecoration(
-        color: scheme.lightColor.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(8),
-      ),
-    );
-  }
-
-  void _navigateToTagDiaries(Tag tag) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => TagDiariesScreen(tag: tag),
-      ),
-    );
-    // 如果有日记被删除，刷新数据
-    if (result == true) {
-      _loadData();
-    }
   }
 }

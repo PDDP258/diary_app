@@ -116,6 +116,29 @@ class LunarCalendarService {
     '10-1': '国庆节', '12-25': '圣诞节',
   };
   
+  // 节日假期定义（节日名称 -> 假期天数）
+  static final Map<String, int> _festivalHolidays = {
+    '春节 🧧': 7,
+    '除夕 🎊': 1,
+    '元旦': 1,
+    '劳动节': 3,
+    '国庆节': 7,
+    '端午 🐲': 3,
+    '中秋 🥮': 3,
+    '清明': 3,
+  };
+  
+  // 节日开始日期映射（用于计算假期范围）- 2026年
+  static final Map<String, DateTime> _festivalStartDates2026 = {
+    '春节 🧧': DateTime(2026, 2, 17),
+    '除夕 🎊': DateTime(2026, 2, 16),
+    '元旦': DateTime(2026, 1, 1),
+    '劳动节': DateTime(2026, 5, 1),
+    '国庆节': DateTime(2026, 10, 1),
+    '端午 🐲': DateTime(2026, 6, 19),
+    '中秋 🥮': DateTime(2026, 9, 25),
+  };
+  
   /// 获取农历日期（带缓存）
   LunarDate getLunarDate(DateTime date) {
     final key = '${date.year}-${date.month}-${date.day}';
@@ -253,13 +276,26 @@ class LunarCalendarService {
   
   /// 获取2026年节日
   String? _getFestival2026(DateTime date, int lunarMonth, int lunarDay) {
-    // 检查阳历节日
+    // 首先检查是否在节日假期范围内
+    for (final entry in _festivalStartDates2026.entries) {
+      final festivalName = entry.key;
+      final startDate = entry.value;
+      final duration = _festivalHolidays[festivalName] ?? 1;
+      final endDate = startDate.add(Duration(days: duration - 1));
+      
+      // 检查当前日期是否在节日假期范围内
+      if (!date.isBefore(startDate) && !date.isAfter(endDate)) {
+        return festivalName;
+      }
+    }
+    
+    // 检查阳历节日（单日节日）
     final solarKey = '${date.month}-${date.day}';
     if (_solarFestivals.containsKey(solarKey)) {
       return _solarFestivals[solarKey];
     }
     
-    // 检查农历节日
+    // 检查农历节日（单日节日）
     final lunarKey = '$lunarMonth-$lunarDay';
     if (_lunarFestivals2026.containsKey(lunarKey)) {
       return _lunarFestivals2026[lunarKey];

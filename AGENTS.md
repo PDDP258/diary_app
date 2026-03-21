@@ -2,7 +2,7 @@
 
 版本
 
-: 1.0.2 (2026-03-19) 🔧 Profile修复 + 🐛 编码问题 |   技术栈  : Flutter 3.x + Provider + SQLite
+: 1.0.3 (2026-03-19) 🎨 UI优化 + 🐛 调试功能 |   技术栈  : Flutter 3.x + Provider + SQLite
 
 ## 快速开始
 
@@ -631,6 +631,56 @@ with open('lib/screens/profile_screen.dart', 'w', encoding='utf-8') as f:
 
 ## 版本记录
 
+- v1.0.4   (2026-03-19) - 主题加载修复 + 系统导航栏适配 + 日历UI修复:
+  - 主题加载修复（统一主动切换和启动加载样式）
+    - main.dart 中预加载主题设置，确保启动时主题已加载完成
+    - 使用预加载的 ThemeProvider 传递给 MyApp，避免启动时显示默认主题
+  - 系统导航栏遮挡修复
+    - MainScreen 的 SafeArea 设置 bottom: false，让 bottomNavigationBar 自己处理
+    - CustomBottomNav 添加外层 SafeArea，根据系统导航栏高度动态调整 margin
+    - write_diary_screen 添加 SafeArea 保护
+    - stats_screen 添加 SafeArea 保护
+  - 日历页面修复
+    - 修复日历被底部导航栏遮挡问题（使用LayoutBuilder动态计算高度）
+    - 修改日历网格为固定高度计算，确保完整显示
+    - 优化cell宽高比（0.9 → 1.0）
+  - 全新自定义目标系统（完全与日记脱钩）
+    - 用户可以创建完全自定义的目标（如：每天喝水8杯、每周运动3次）
+    - 支持自定义目标名称、图标、数量、周期（日/周/月）
+    - 提供10+快捷模板（喝水、运动、阅读、冥想等）
+    - 目标进度手动记录（+/-按钮）
+    - 保留原有UI设计风格（卡片式、渐变色、圆角）
+    - 日历页显示迷你目标卡片，支持展开/收起
+  - 标签分类功能修复
+    - 更新标签分类页面支持三级标签系统（String tagId）
+    - 添加 diary_tags_v3 数据库表支持
+    - 更新 TagDiariesScreen 兼容新旧标签系统
+    - 添加 getDiariesByTagIdV3 方法到数据库服务
+  - 调试功能修复
+    - 修复解锁主题功能（使用正确的 unlocked_themes key）
+    - 修复扭蛋机会功能（使用 GachaService.addDraws()）
+    - 修复解锁徽章功能（使用 BadgeService.unlockBadge()）
+  - 节假日连续显示优化
+    - 添加节日假期定义（春节7天、国庆7天、劳动节3天等）
+    - 添加节日开始日期映射（2026年数据）
+    - 修改农历服务，支持节假日连续多天显示
+  - 编辑日记页渐变重设计
+    - 统一卡片渐变风格：三色渐变（cardColor → cardColor.withAlpha → lightColor低透明度）
+    - 日期卡片：添加渐变停止点(0.0, 0.6, 1.0)，柔和过渡
+    - 日期图标：优化渐变角度和阴影（blurRadius: 16, spreadRadius: -2）
+    - 心情/标题/内容/图片卡片：统一添加微妙边框（opacity 0.12）
+    - 添加图片按钮：降低渐变对比度（0.25 → 0.12）
+    - 图片滑动提示：三色渐变 + 优化阴影
+  - 导航栏修复
+    - 重构为 Stack 布局，中间按钮可超出边界
+    - 修复圆形按钮被裁剪问题
+    - 正确计算按钮位置（bottom: 12）
+  - 调试模式增强
+    - 新增"作弊功能"区域
+    - 解锁所有特殊主题（星空、樱花、海洋、极光、黄金）
+    - 获得99次扭蛋机会
+    - 解锁全部78个徽章
+    
 - v1.0.3   (2026-03-19) - 日历页UI优化:
   - 日历布局重构
     - 移除顶部LunarInfoCard，整合农历简写到日期标题

@@ -204,8 +204,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 onTap: () => _showCopyrightInfo(context),
               ),
             ], scheme),
-
-            const SizedBox(height: 40),
           ],
         ),
       ),
@@ -254,7 +252,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               GestureDetector(
                 onTap: () => _showAllBadges(context),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                   decoration: BoxDecoration(
                     color: _hasNewBadge
                         ? Colors.red.withValues(alpha: 0.1)
@@ -288,7 +287,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: _hasNewBadge ? Colors.red : scheme.primaryColor,
+                          color:
+                              _hasNewBadge ? Colors.red : scheme.primaryColor,
                         ),
                       ),
                     ],
@@ -357,7 +357,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: TextButton(
                   onPressed: () => _showAllBadges(context),
                   style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
                   ),
                   child: Text(
                     '查看全部 ${_unlockedBadges.length} 个',
@@ -495,7 +496,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildBadgeGridItem(badge_service.Badge badge, bool isUnlocked, ThemeScheme scheme) {
+  Widget _buildBadgeGridItem(
+      badge_service.Badge badge, bool isUnlocked, ThemeScheme scheme) {
     return GestureDetector(
       onTap: isUnlocked
           ? () {
@@ -519,7 +521,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ],
                     )
                   : null,
-              color: isUnlocked ? null : scheme.lightColor.withValues(alpha: 0.3),
+              color:
+                  isUnlocked ? null : scheme.lightColor.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(14),
               boxShadow: isUnlocked
                   ? [
@@ -667,13 +670,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    settings.userSignature != 'PD inc' ? settings.userSignature : '点击编辑个人信息',
+                    settings.userSignature != 'PD inc'
+                        ? settings.userSignature
+                        : '点击编辑个人信息',
                     style: TextStyle(
                       fontSize: 13,
                       color: Colors.white.withValues(alpha: 0.9),
@@ -793,7 +799,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     // 基础头像 + 扭蛋解锁的头像
     final baseEmojis = [
-      '👋', '😊', '🌟', '📝', '🌈', '🎯', '💪', '🌻', '🎨', '🌸'
+      '👋',
+      '😊',
+      '🌟',
+      '📝',
+      '🌈',
+      '🎯',
+      '💪',
+      '🌻',
+      '🎨',
+      '🌸'
     ];
 
     showModalBottomSheet(
@@ -808,7 +823,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             decoration: BoxDecoration(
               color: scheme.cardColor,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(20)),
             ),
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -886,16 +902,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 height: 48,
                                 decoration: BoxDecoration(
                                   color: isSelected
-                                      ? scheme.primaryColor.withValues(alpha: 0.2)
+                                      ? scheme.primaryColor
+                                          .withValues(alpha: 0.2)
                                       : isAvatar
                                           ? Colors.amber.withValues(alpha: 0.15)
-                                          : scheme.lightColor.withValues(alpha: 0.3),
+                                          : scheme.lightColor
+                                              .withValues(alpha: 0.3),
                                   borderRadius: BorderRadius.circular(24),
                                   border: isSelected
-                                      ? Border.all(color: scheme.primaryColor, width: 2)
+                                      ? Border.all(
+                                          color: scheme.primaryColor, width: 2)
                                       : isAvatar
                                           ? Border.all(
-                                              color: Colors.amber.withValues(alpha: 0.5),
+                                              color: Colors.amber
+                                                  .withValues(alpha: 0.5),
                                               width: 1)
                                           : null,
                                 ),
@@ -935,7 +955,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 color: scheme.lightColor.withValues(alpha: 0.3),
                                 borderRadius: BorderRadius.circular(24),
                                 border: Border.all(
-                                  color: scheme.primaryColor.withValues(alpha: 0.3),
+                                  color: scheme.primaryColor
+                                      .withValues(alpha: 0.3),
                                   width: 1,
                                   style: BorderStyle.solid,
                                 ),
@@ -987,7 +1008,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         settings.setUserInfo(
                           name: nameController.text.trim(),
                           emoji: selectedEmoji,
-                          signature: signature.isNotEmpty ? signature : 'PD inc',
+                          signature:
+                              signature.isNotEmpty ? signature : 'PD inc',
                         );
                         Navigator.pop(context);
                       },
@@ -1026,13 +1048,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         width: 48,
         height: 28,
         decoration: BoxDecoration(
-          color: _appLockEnabled ? Colors.black : Colors.grey.withValues(alpha: 0.3),
+          color: _appLockEnabled
+              ? Colors.black
+              : Colors.grey.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(14),
         ),
         padding: const EdgeInsets.all(2),
         child: AnimatedAlign(
           duration: const Duration(milliseconds: 200),
-          alignment: _appLockEnabled ? Alignment.centerRight : Alignment.centerLeft,
+          alignment:
+              _appLockEnabled ? Alignment.centerRight : Alignment.centerLeft,
           child: Container(
             width: 24,
             height: 24,
@@ -1154,7 +1179,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             // 跳转到日历页
                             Navigator.of(context).pushAndRemoveUntil(
                               MaterialPageRoute(
-                                builder: (context) => const MainScreen(initialIndex: 0),
+                                builder: (context) =>
+                                    const MainScreen(initialIndex: 0),
                               ),
                               (route) => false,
                             );
@@ -1171,7 +1197,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 : null,
                             boxShadow: [
                               BoxShadow(
-                                color: colorScheme.primaryColor.withValues(alpha: 0.4),
+                                color: colorScheme.primaryColor
+                                    .withValues(alpha: 0.4),
                                 blurRadius: 8,
                                 offset: const Offset(0, 4),
                               ),
@@ -1204,15 +1231,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       spacing: 16,
                       runSpacing: 16,
                       children: unlockedThemeIds.map((themeId) {
-                        final themeColors = GachaService.getThemeColors(themeId);
+                        final themeColors =
+                            GachaService.getThemeColors(themeId);
                         if (themeColors == null) return const SizedBox.shrink();
 
-                        final primaryColor = Color(themeColors['primary'] as int);
+                        final primaryColor =
+                            Color(themeColors['primary'] as int);
                         final isSelected =
                             themeProvider.currentScheme.primaryColor.value ==
                                 primaryColor.value;
-                        final themeName =
-                            GachaService.profileThemeShop[themeId]?['name'] ?? '特殊主题';
+                        final themeName = GachaService.profileThemeShop[themeId]
+                                ?['name'] ??
+                            '特殊主题';
 
                         return GestureDetector(
                           onTap: () async {
@@ -1223,10 +1253,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               cardColor: Colors.white,
                               lightColor: Color(themeColors['light'] as int),
                               darkColor: Color(themeColors['dark'] as int),
-                              textDarkColor: Color(themeColors['textDark'] as int),
+                              textDarkColor:
+                                  Color(themeColors['textDark'] as int),
                               textMediumColor:
                                   Color(themeColors['textMedium'] as int),
-                              textLightColor: Color(themeColors['textLight'] as int),
+                              textLightColor:
+                                  Color(themeColors['textLight'] as int),
                               name: themeName,
                             );
                             await themeProvider.setThemeScheme(newScheme);
@@ -1235,7 +1267,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               // 跳转到日历页
                               Navigator.of(context).pushAndRemoveUntil(
                                 MaterialPageRoute(
-                                  builder: (context) => const MainScreen(initialIndex: 0),
+                                  builder: (context) =>
+                                      const MainScreen(initialIndex: 0),
                                 ),
                                 (route) => false,
                               );
@@ -1250,18 +1283,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   color: primaryColor,
                                   borderRadius: BorderRadius.circular(28),
                                   border: isSelected
-                                      ? Border.all(color: Colors.amber, width: 3)
+                                      ? Border.all(
+                                          color: Colors.amber, width: 3)
                                       : null,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: primaryColor.withValues(alpha: 0.4),
+                                      color:
+                                          primaryColor.withValues(alpha: 0.4),
                                       blurRadius: 8,
                                       offset: const Offset(0, 4),
                                     ),
                                   ],
                                 ),
                                 child: isSelected
-                                    ? const Icon(Icons.check, color: Colors.white)
+                                    ? const Icon(Icons.check,
+                                        color: Colors.white)
                                     : Center(
                                         child: Text(
                                           GachaService.profileThemeShop[themeId]
@@ -1288,7 +1324,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 20),
                   // 自定义颜色
                   ListTile(
-                    leading: Icon(Icons.colorize, color: scheme.textMediumColor),
+                    leading:
+                        Icon(Icons.colorize, color: scheme.textMediumColor),
                     title: Text(
                       '自定义颜色',
                       style: TextStyle(color: scheme.textDarkColor),
@@ -1332,7 +1369,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 decoration: BoxDecoration(
                   color: Colors.orange.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                  border:
+                      Border.all(color: Colors.orange.withValues(alpha: 0.3)),
                 ),
                 child: const Row(
                   children: [
@@ -1383,9 +1421,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _showMoodManager(BuildContext context) async {
     await _loadMoods();
     if (!mounted) return;
-    
+
     final scheme = AppTheme.schemeOf(context);
-    
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -1396,7 +1434,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             height: MediaQuery.of(context).size.height * 0.6,
             decoration: BoxDecoration(
               color: scheme.cardColor,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(20)),
             ),
             child: Column(
               children: [
@@ -1432,7 +1471,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.add, color: scheme.primaryColor, size: 18),
+                            Icon(Icons.add,
+                                color: scheme.primaryColor, size: 18),
                             const SizedBox(width: 4),
                             Text(
                               '添加',
@@ -1491,7 +1531,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _showAddMoodDialog(BuildContext context, ThemeScheme scheme, VoidCallback onAdded) {
+  void _showAddMoodDialog(
+      BuildContext context, ThemeScheme scheme, VoidCallback onAdded) {
     final emojiController = TextEditingController();
     final nameController = TextEditingController();
 
@@ -1532,7 +1573,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 final mood = Mood(
                   name: name,
                   emoji: emoji,
-                  color: '#${scheme.primaryColor.value.toRadixString(16).substring(2)}',
+                  color:
+                      '#${scheme.primaryColor.value.toRadixString(16).substring(2)}',
                   sortOrder: _moods.length,
                 );
                 await DatabaseService.insertMood(mood);
@@ -1549,7 +1591,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _deleteMood(Mood mood, VoidCallback onDeleted) async {
     if (mood.id == null) return;
-    
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -1567,7 +1609,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
     );
-    
+
     if (confirmed == true) {
       await DatabaseService.deleteMood(mood.id!);
       onDeleted();
@@ -1686,7 +1728,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             decoration: BoxDecoration(
                               color: Colors.green.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
+                              border: Border.all(
+                                  color: Colors.green.withValues(alpha: 0.2)),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1707,7 +1750,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             decoration: BoxDecoration(
                               color: Colors.red.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
+                              border: Border.all(
+                                  color: Colors.red.withValues(alpha: 0.2)),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1729,7 +1773,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       decoration: BoxDecoration(
                         color: Colors.orange.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.orange.withValues(alpha: 0.2)),
+                        border: Border.all(
+                            color: Colors.orange.withValues(alpha: 0.2)),
                       ),
                       child: Text(
                         '本软件按"现状"提供，作者不对使用本软件造成的任何损失承担责任。',
@@ -1799,7 +1844,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   color: scheme.lightColor.withValues(alpha: 0.3),
                 ),
               ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                 leading: Container(
                   width: 44,
                   height: 44,
@@ -1877,11 +1923,11 @@ class _MenuItem {
 class _AboutEasterEgg {
   static int _titleTapCount = 0;
   static DateTime? _lastTitleTap;
-  
+
   static void show(BuildContext context) {
     final scheme = AppTheme.schemeOf(context);
     _titleTapCount = 0;
-    
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -1892,7 +1938,8 @@ class _AboutEasterEgg {
             height: MediaQuery.of(context).size.height * 0.75,
             decoration: BoxDecoration(
               color: scheme.cardColor,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(20)),
             ),
             child: Column(
               children: [
@@ -2142,15 +2189,15 @@ class _AboutEasterEgg {
           ),
           const SizedBox(height: 8),
           ...changes.map((change) => Padding(
-            padding: const EdgeInsets.symmetric(vertical: 2),
-            child: Text(
-              '• $change',
-              style: TextStyle(
-                fontSize: 13,
-                color: scheme.textMediumColor,
-              ),
-            ),
-          )),
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Text(
+                  '• $change',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: scheme.textMediumColor,
+                  ),
+                ),
+              )),
         ],
       ),
     );
@@ -2162,7 +2209,7 @@ class _AboutEasterEgg {
     final prefs = await SharedPreferences.getInstance();
     final today = DateTime.now().toIso8601String().substring(0, 10);
     final lastTrigger = prefs.getString('easter_egg_last_trigger');
-    
+
     bool isFirstTime = lastTrigger != today;
     if (isFirstTime) {
       await prefs.setString('easter_egg_last_trigger', today);
@@ -2206,7 +2253,8 @@ class _AboutEasterEgg {
                 decoration: BoxDecoration(
                   color: Colors.green.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+                  border:
+                      Border.all(color: Colors.green.withValues(alpha: 0.3)),
                 ),
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
@@ -2249,7 +2297,7 @@ class _AboutEasterEgg {
   // 调试模式对话框
   static void _showDebugDialog(BuildContext context) {
     final passwordController = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -2301,7 +2349,7 @@ class DebugScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = AppTheme.schemeOf(context);
-    
+
     return Scaffold(
       backgroundColor: scheme.backgroundColor,
       appBar: AppBar(
@@ -2319,33 +2367,80 @@ class DebugScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // 作弊功能
+          _buildSectionTitle('作弊功能', scheme),
+          const SizedBox(height: 12),
+          _buildCard([
+            ListTile(
+              leading: Icon(Icons.palette, color: Colors.purple),
+              title: Text('解锁所有特殊主题',
+                  style: TextStyle(color: scheme.textDarkColor)),
+              subtitle: Text('星空、樱花、海洋、极光、黄金主题',
+                  style: TextStyle(color: scheme.textLightColor, fontSize: 12)),
+              onTap: () => _unlockAllThemes(context),
+            ),
+            Divider(
+                height: 1,
+                indent: 56,
+                color: scheme.lightColor.withValues(alpha: 0.3)),
+            ListTile(
+              leading: Icon(Icons.casino, color: Colors.orange),
+              title: Text('获得99次扭蛋机会',
+                  style: TextStyle(color: scheme.textDarkColor)),
+              subtitle: Text('增加抽奖次数到99次',
+                  style: TextStyle(color: scheme.textLightColor, fontSize: 12)),
+              onTap: () => _addGachaDraws(context, 99),
+            ),
+            Divider(
+                height: 1,
+                indent: 56,
+                color: scheme.lightColor.withValues(alpha: 0.3)),
+            ListTile(
+              leading: Icon(Icons.emoji_events, color: Colors.amber),
+              title:
+                  Text('解锁所有徽章', style: TextStyle(color: scheme.textDarkColor)),
+              subtitle: Text('获得全部78个徽章',
+                  style: TextStyle(color: scheme.textLightColor, fontSize: 12)),
+              onTap: () => _unlockAllBadges(context),
+            ),
+          ], scheme),
+          const SizedBox(height: 24),
           // 开发者信息
           _buildSectionTitle('开发者选项', scheme),
           const SizedBox(height: 12),
           _buildCard([
             ListTile(
               leading: Icon(Icons.bug_report, color: scheme.primaryColor),
-              title: Text('查看日志', style: TextStyle(color: scheme.textDarkColor)),
+              title:
+                  Text('查看日志', style: TextStyle(color: scheme.textDarkColor)),
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('日志功能开发中')),
                 );
               },
             ),
-            Divider(height: 1, indent: 56, color: scheme.lightColor.withValues(alpha: 0.3)),
+            Divider(
+                height: 1,
+                indent: 56,
+                color: scheme.lightColor.withValues(alpha: 0.3)),
             ListTile(
               leading: Icon(Icons.storage, color: scheme.primaryColor),
-              title: Text('查看数据库', style: TextStyle(color: scheme.textDarkColor)),
+              title:
+                  Text('查看数据库', style: TextStyle(color: scheme.textDarkColor)),
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('数据库功能开发中')),
                 );
               },
             ),
-            Divider(height: 1, indent: 56, color: scheme.lightColor.withValues(alpha: 0.3)),
+            Divider(
+                height: 1,
+                indent: 56,
+                color: scheme.lightColor.withValues(alpha: 0.3)),
             ListTile(
               leading: Icon(Icons.reset_tv, color: scheme.primaryColor),
-              title: Text('重置引导页', style: TextStyle(color: scheme.textDarkColor)),
+              title:
+                  Text('重置引导页', style: TextStyle(color: scheme.textDarkColor)),
               onTap: () async {
                 final prefs = await SharedPreferences.getInstance();
                 await prefs.remove('has_seen_guide');
@@ -2356,7 +2451,10 @@ class DebugScreen extends StatelessWidget {
                 }
               },
             ),
-            Divider(height: 1, indent: 56, color: scheme.lightColor.withValues(alpha: 0.3)),
+            Divider(
+                height: 1,
+                indent: 56,
+                color: scheme.lightColor.withValues(alpha: 0.3)),
             ListTile(
               leading: Icon(Icons.delete_forever, color: Colors.red),
               title: Text('清除所有数据', style: TextStyle(color: Colors.red)),
@@ -2370,17 +2468,130 @@ class DebugScreen extends StatelessWidget {
           _buildCard([
             ListTile(
               title: Text('版本号', style: TextStyle(color: scheme.textDarkColor)),
-              trailing: Text('1.0.2', style: TextStyle(color: scheme.textLightColor)),
+              trailing:
+                  Text('1.0.4', style: TextStyle(color: scheme.textLightColor)),
             ),
-            Divider(height: 1, indent: 16, color: scheme.lightColor.withValues(alpha: 0.3)),
+            Divider(
+                height: 1,
+                indent: 16,
+                color: scheme.lightColor.withValues(alpha: 0.3)),
             ListTile(
-              title: Text('构建时间', style: TextStyle(color: scheme.textDarkColor)),
-              trailing: Text('2026-03-19', style: TextStyle(color: scheme.textLightColor)),
+              title:
+                  Text('构建时间', style: TextStyle(color: scheme.textDarkColor)),
+              trailing: Text('2026-03-19',
+                  style: TextStyle(color: scheme.textLightColor)),
             ),
           ], scheme),
         ],
       ),
     );
+  }
+
+  /// 解锁所有特殊主题
+  Future<void> _unlockAllThemes(BuildContext context) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      // 解锁所有特殊主题（使用正确的key）
+      final themes = [
+        'theme_starry',
+        'theme_sakura',
+        'theme_ocean',
+        'theme_aurora',
+        'theme_golden'
+      ];
+
+      // 获取已解锁主题列表
+      final unlockedThemes = prefs.getStringList('unlocked_themes') ?? [];
+      for (final themeId in themes) {
+        if (!unlockedThemes.contains(themeId)) {
+          unlockedThemes.add(themeId);
+        }
+      }
+      await prefs.setStringList('unlocked_themes', unlockedThemes);
+
+      // 同时解锁个人主页主题（使用相同的key）
+      final profileThemes = [
+        'theme_starry',
+        'theme_sakura',
+        'theme_ocean',
+        'theme_aurora',
+        'theme_golden'
+      ];
+      final unlockedProfileThemes =
+          prefs.getStringList('unlocked_profile_themes') ?? [];
+      for (final themeId in profileThemes) {
+        if (!unlockedProfileThemes.contains(themeId)) {
+          unlockedProfileThemes.add(themeId);
+        }
+      }
+      await prefs.setStringList(
+          'unlocked_profile_themes', unlockedProfileThemes);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ 已解锁所有特殊主题')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('解锁失败: $e')),
+        );
+      }
+    }
+  }
+
+  /// 添加扭蛋抽奖次数
+  Future<void> _addGachaDraws(BuildContext context, int count) async {
+    try {
+      // 使用 GachaService 提供的方法
+      final current = await GachaService.getRemainingDraws();
+      await GachaService.addDraws(count);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('✅ 已添加 $count 次扭蛋机会（当前: ${current + count}次）')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('添加失败: $e')),
+        );
+      }
+    }
+  }
+
+  /// 解锁所有徽章
+  Future<void> _unlockAllBadges(BuildContext context) async {
+    try {
+      // 使用 BadgeService 获取所有徽章并解锁
+      final allBadges = badge_service.BadgeService.allBadges;
+      int unlockedCount = 0;
+
+      for (final badge in allBadges) {
+        final newlyUnlocked =
+            await badge_service.BadgeService.unlockBadge(badge.id);
+        if (newlyUnlocked) {
+          unlockedCount++;
+        }
+      }
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(
+                  '✅ 已解锁全部 ${allBadges.length} 个徽章（新增: $unlockedCount 个）')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('解锁失败: $e')),
+        );
+      }
+    }
   }
 
   Widget _buildSectionTitle(String title, ThemeScheme scheme) {

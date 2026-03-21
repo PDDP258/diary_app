@@ -252,11 +252,14 @@ class _StatsScreenState extends State<StatsScreen>
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: RefreshIndicator(
-        onRefresh: _refreshStats,
-        color: scheme.primaryColor,
-        backgroundColor: scheme.cardColor,
-        child: SingleChildScrollView(
+      body: SafeArea(
+        // 底部不处理，让 MainScreen 的 SafeArea 统一处理
+        bottom: false,
+        child: RefreshIndicator(
+          onRefresh: _refreshStats,
+          color: scheme.primaryColor,
+          backgroundColor: scheme.cardColor,
+          child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: SlideTransition(
@@ -293,17 +296,16 @@ class _StatsScreenState extends State<StatsScreen>
 
                   // 心情分布
                   if (_moodDistribution.isNotEmpty) _buildMoodCard(),
-                  
-                  const SizedBox(height: 24),
                 ],
               ),
             ),
           ),
         ),
       ),
-    );
+    ),
+  );
   }
-  
+
   Widget _buildHeader() {
     final scheme = AppTheme.schemeOf(context);
     return Padding(
@@ -373,8 +375,7 @@ class _StatsScreenState extends State<StatsScreen>
     
     return AnimatedBuilder(
       animation: _numberAnimation,
-      builder: (context, child) {
-        return GestureDetector(
+      builder: (context, child) => GestureDetector(
           onTap: _showStatsDetail,
           child: Container(
             padding: const EdgeInsets.all(24),
@@ -453,9 +454,8 @@ class _StatsScreenState extends State<StatsScreen>
               ],
             ),
           ),
-        );
-      },
-    );
+        ),
+      );
   }
 
   String _animateNumber(int value) {

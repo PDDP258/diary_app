@@ -19,111 +19,97 @@ class CustomBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = AppTheme.schemeOf(context);
 
-    return Container(
-      height: 80,
-      margin: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppTheme.xlRadius),
-        boxShadow: [
-          BoxShadow(
-            color: scheme.textDarkColor.withOpacity(0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-            spreadRadius: -2,
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppTheme.xlRadius),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Container(
-            decoration: BoxDecoration(
-              color: scheme.cardColor.withOpacity(0.75),
-              borderRadius: BorderRadius.circular(AppTheme.xlRadius),
-              border: Border.all(
-                color: scheme.lightColor.withOpacity(0.3),
-                width: 0.5,
+    // 使用 Stack 让中间按钮可以超出父容器边界
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.bottomCenter,
+      children: [
+        // 底部导航栏背景
+        Container(
+          height: 80,
+          margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppTheme.xlRadius),
+            boxShadow: [
+              BoxShadow(
+                color: scheme.textDarkColor.withOpacity(0.04),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+                spreadRadius: -2,
               ),
-            ),
-            child: SafeArea(
-              top: false,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  // 底部导航项
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      _buildNavItem(Icons.auto_stories_rounded, '日记', 0, scheme),
-                      _buildNavItem(Icons.calendar_month_rounded, '日历', 1, scheme),
-                      const SizedBox(width: 72), // 中间留出空间给FAB
-                      _buildNavItem(Icons.insights_rounded, '统计', 2, scheme),
-                      _buildNavItem(Icons.person_rounded, '我的', 3, scheme),
-                    ],
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppTheme.xlRadius),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: scheme.cardColor.withOpacity(0.75),
+                  borderRadius: BorderRadius.circular(AppTheme.xlRadius),
+                  border: Border.all(
+                    color: scheme.lightColor.withOpacity(0.3),
+                    width: 0.5,
                   ),
-                  // 中间大加号按钮
-                  Positioned(
-                    top: -20,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: GestureDetector(
-                        onTap: onAddTap,
-                        child: TweenAnimationBuilder<double>(
-                          duration: const Duration(milliseconds: 300),
-                          tween: Tween(begin: 1.0, end: 1.0),
-                          builder: (context, value, child) {
-                            return Transform.scale(
-                              scale: value,
-                              child: Container(
-                                width: 72,
-                                height: 72,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      scheme.darkColor,
-                                      scheme.primaryColor,
-                                      scheme.lightColor,
-                                    ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    stops: const [0.0, 0.5, 1.0],
-                                  ),
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: scheme.primaryColor.withOpacity(0.4),
-                                      blurRadius: 20,
-                                      offset: const Offset(0, 10),
-                                      spreadRadius: 0,
-                                    ),
-                                    BoxShadow(
-                                      color: scheme.primaryColor.withOpacity(0.2),
-                                      blurRadius: 40,
-                                      offset: const Offset(0, 20),
-                                      spreadRadius: -5,
-                                    ),
-                                  ],
-                                ),
-                                child: const Icon(
-                                  Icons.add_rounded,
-                                  color: Colors.white,
-                                  size: 40,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    _buildNavItem(Icons.auto_stories_rounded, '日记', 0, scheme),
+                    _buildNavItem(Icons.calendar_month_rounded, '日历', 1, scheme),
+                    const SizedBox(width: 72), // 中间留出空间给FAB
+                    _buildNavItem(Icons.insights_rounded, '统计', 2, scheme),
+                    _buildNavItem(Icons.person_rounded, '我的', 3, scheme),
+                  ],
+                ),
               ),
             ),
           ),
         ),
-      ),
+        // 中间大加号按钮 - 放在 Stack 顶层，可以超出边界
+        Positioned(
+          bottom: 12, // 导航栏高度80/2 + margin 8 - 按钮高度72/2 = 40 + 8 - 36 = 12
+          child: GestureDetector(
+            onTap: onAddTap,
+            child: Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    scheme.darkColor,
+                    scheme.primaryColor,
+                    scheme.lightColor,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  stops: const [0.0, 0.5, 1.0],
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: scheme.primaryColor.withOpacity(0.4),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                    spreadRadius: 0,
+                  ),
+                  BoxShadow(
+                    color: scheme.primaryColor.withOpacity(0.2),
+                    blurRadius: 40,
+                    offset: const Offset(0, 20),
+                    spreadRadius: -5,
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.add_rounded,
+                color: Colors.white,
+                size: 40,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

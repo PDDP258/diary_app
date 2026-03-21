@@ -1940,7 +1940,7 @@ class GachaService {
     'theme_starry': {
       'name': '星空主题',
       'preview': '🌌',
-      'cost': 20,
+      'cost': 15,
       'description': '深邃梦幻的星空背景，闪烁星星粒子效果',
       'colors': {
         'primary': 0xFF7C4DFF,      // 梦幻紫
@@ -1959,13 +1959,15 @@ class GachaService {
       'cost': 40,
       'description': '浪漫樱花飘落，粉色花瓣飞舞效果',
       'colors': {
-        'primary': 0xFFF48FB1,
-        'background': 0xFFFCE4EC,
-        'light': 0xFFF8BBD0,
-        'dark': 0xFFF06292,
-        'textDark': 0xFF880E4F,
-        'textMedium': 0xFFC2185B,
-        'textLight': 0xFFF06292,
+        'primary': 0xFFF48FB1,      // 樱花粉
+        'background': 0xFFFFF5F7,   // 极浅粉背景
+        'card': 0xFFFFFFFF,         // 白色卡片
+        'light': 0xFFFCE4EC,        // 淡粉高光
+        'dark': 0xFFF8BBD0,         // 深粉
+        'textDark': 0xFF880E4F,     // 深玫红文字
+        'textMedium': 0xFFC2185B,   // 中玫红
+        'textLight': 0xFFF06292,    // 浅玫红
+        'iconColor': 0xFFF48FB1,    // 樱花粉图标
       },
     },
     'theme_ocean': {
@@ -1974,13 +1976,15 @@ class GachaService {
       'cost': 50,
       'description': '流动舒缓的蓝色波浪，宁静海洋氛围',
       'colors': {
-        'primary': 0xFF4FC3F7,
-        'background': 0xFFE1F5FE,
-        'light': 0xFFB3E5FC,
-        'dark': 0xFF039BE5,
-        'textDark': 0xFF01579B,
-        'textMedium': 0xFF0288D1,
-        'textLight': 0xFF29B6F6,
+        'primary': 0xFF42A5F5,      // 海洋蓝
+        'background': 0xFFE3F2FD,   // 浅天蓝背景
+        'card': 0xFFFFFFFF,         // 白色卡片
+        'light': 0xFFBBDEFB,        // 天蓝高光
+        'dark': 0xFF90CAF9,         // 深天蓝
+        'textDark': 0xFF0D47A1,     // 深蓝文字
+        'textMedium': 0xFF1565C0,   // 中蓝
+        'textLight': 0xFF42A5F5,    // 浅蓝
+        'iconColor': 0xFF42A5F5,    // 海洋蓝图标
       },
     },
     'theme_aurora': {
@@ -1991,11 +1995,13 @@ class GachaService {
       'colors': {
         'primary': 0xFF00C060,      // 青绿主色
         'background': 0xFF001810,   // 深绿黑背景
+        'card': 0xFF003328,         // 深青绿卡片
         'light': 0xFF009060,        // 深青绿
         'dark': 0xFF00FFC0,         // 亮青绿
         'textDark': 0xFFE0F7FA,     // 浅青白文字
         'textMedium': 0xFF80DEEA,   // 中青
         'textLight': 0xFF4DD0E1,    // 浅青
+        'iconColor': 0xFF00FFC0,    // 亮青绿图标
       },
     },
     'theme_golden': {

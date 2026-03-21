@@ -819,6 +819,20 @@ class DatabaseService {
         .toList();
   }
 
+  /// 根据标签ID获取日记列表（V3版本）
+  static Future<List<Diary>> getDiariesByTagIdV3(String tagId) async {
+    await _ensureInitialized();
+    final diaryIds = await getDiaryIdsByTagIdV3(tagId);
+    final diaries = <Diary>[];
+    for (final id in diaryIds) {
+      final diary = await getDiary(id);
+      if (diary != null) {
+        diaries.add(diary);
+      }
+    }
+    return diaries;
+  }
+
   /// 获取所有三级标签关联（用于云同步备份）
   static Future<List<Map<String, dynamic>>> getAllDiaryTagsV3() async {
     await _ensureInitialized();

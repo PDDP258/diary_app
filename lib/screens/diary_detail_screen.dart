@@ -149,8 +149,6 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
 
                 // 底部信息
                 _buildFooter(),
-
-                const SizedBox(height: 40),
               ],
             ),
           ),

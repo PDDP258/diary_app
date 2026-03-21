@@ -51,7 +51,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
   static const int _maxImageCount = 20;
 
   List<String> _images = [];
-  List<String> _selectedTagIds = [];  // 改为String类型，支持三级标签系统
+  List<String> _selectedTagIds = []; // 改为String类型，支持三级标签系统
   late DateTime _selectedDate;
   Mood? _selectedMood;
   Mood? _secondMood; // 第二心情（双心情功能）
@@ -969,16 +969,24 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
+          // 优化：使用更柔和的三色渐变，从卡片色到浅色调再到主色调微光
           gradient: LinearGradient(
             colors: [
               scheme.cardColor,
-              scheme.lightColor.withOpacity(0.2),
+              scheme.cardColor.withAlpha(245),
+              scheme.lightColor.withOpacity(0.12),
             ],
+            stops: const [0.0, 0.6, 1.0],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(AppTheme.xlRadius),
           boxShadow: AppTheme.cardShadow,
+          // 添加微妙的边框增强层次感
+          border: Border.all(
+            color: scheme.lightColor.withOpacity(0.15),
+            width: 1,
+          ),
         ),
         child: Row(
           children: [
@@ -986,18 +994,24 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
               width: 64,
               height: 64,
               decoration: BoxDecoration(
+                // 优化：使用更柔和的渐变角度和色彩过渡
                 gradient: LinearGradient(
                   colors: [
+                    scheme.primaryColor.withOpacity(0.9),
                     scheme.primaryColor,
-                    scheme.darkColor,
+                    scheme.darkColor.withOpacity(0.85),
                   ],
+                  stops: const [0.0, 0.5, 1.0],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                 boxShadow: [
                   BoxShadow(
-                    color: scheme.primaryColor.withOpacity(0.3),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
+                    color: scheme.primaryColor.withOpacity(0.25),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                    spreadRadius: -2,
                   ),
                 ],
               ),
@@ -1100,29 +1114,36 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          gradient: _selectedMood != null
-              ? LinearGradient(
-                  colors: [
+          // 优化：使用更柔和的三色渐变，统一卡片风格
+          gradient: LinearGradient(
+            colors: _selectedMood != null
+                ? [
+                    scheme.cardColor,
+                    scheme.cardColor.withAlpha(250),
                     Color(int.parse(
                             _selectedMood!.color.replaceFirst('#', '0xFF')))
-                        .withOpacity(0.15),
+                        .withOpacity(0.08),
+                  ]
+                : [
                     scheme.cardColor,
+                    scheme.cardColor.withAlpha(245),
+                    scheme.lightColor.withOpacity(0.1),
                   ],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                )
-              : null,
-          color: _selectedMood == null ? scheme.cardColor : null,
+            stops: const [0.0, 0.7, 1.0],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
           borderRadius: BorderRadius.circular(AppTheme.xlRadius),
           boxShadow: AppTheme.cardShadow,
-          border: _selectedMood != null
-              ? Border.all(
-                  color: Color(int.parse(
-                          _selectedMood!.color.replaceFirst('#', '0xFF')))
-                      .withOpacity(0.3),
-                  width: 1.5,
-                )
-              : null,
+          // 统一添加微妙边框
+          border: Border.all(
+            color: _selectedMood != null
+                ? Color(int.parse(
+                        _selectedMood!.color.replaceFirst('#', '0xFF')))
+                    .withOpacity(0.2)
+                : scheme.lightColor.withOpacity(0.12),
+            width: 1,
+          ),
         ),
         child: Row(
           children: [
@@ -1274,13 +1295,13 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
 
   Widget _buildTagSelector() {
     final scheme = AppTheme.schemeOf(context);
-    
+
     return FutureBuilder(
       future: TagSystemService.getTagSystem(),
       builder: (context, snapshot) {
         final tagSystem = snapshot.data;
         final selectedTags = <TagLevel3>[];
-        
+
         if (tagSystem != null) {
           for (final tagId in _selectedTagIds) {
             final tag = tagSystem.findTagById(tagId);
@@ -1319,12 +1340,15 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
                           spacing: 8,
                           children: selectedTags.map((tag) {
                             // 获取标签所属分类的颜色
-                            final category = tagSystem?.findCategoryByTagId(tag.id);
-                            final tagColor = category?.color ?? scheme.primaryColor;
-                            
+                            final category =
+                                tagSystem?.findCategoryByTagId(tag.id);
+                            final tagColor =
+                                category?.color ?? scheme.primaryColor;
+
                             return Chip(
                               avatar: tag.emoji != null
-                                  ? Text(tag.emoji!, style: const TextStyle(fontSize: 12))
+                                  ? Text(tag.emoji!,
+                                      style: const TextStyle(fontSize: 12))
                                   : null,
                               label: Text(tag.name),
                               backgroundColor: tagColor.withOpacity(0.15),
@@ -1332,8 +1356,10 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
                                 fontSize: 12,
                                 color: tagColor,
                               ),
-                              side: BorderSide(color: tagColor.withOpacity(0.3)),
-                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              side:
+                                  BorderSide(color: tagColor.withOpacity(0.3)),
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
                               padding: EdgeInsets.zero,
                               visualDensity: VisualDensity.compact,
                             );
@@ -1356,14 +1382,23 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
     final scheme = AppTheme.schemeOf(context);
     return Container(
       decoration: BoxDecoration(
+        // 优化：使用统一的三色渐变风格
         gradient: LinearGradient(
           colors: [
             scheme.cardColor,
-            scheme.lightColor.withOpacity(0.1),
+            scheme.cardColor.withAlpha(248),
+            scheme.lightColor.withOpacity(0.08),
           ],
+          stops: const [0.0, 0.7, 1.0],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(AppTheme.xlRadius),
         boxShadow: AppTheme.cardShadow,
+        border: Border.all(
+          color: scheme.lightColor.withOpacity(0.12),
+          width: 1,
+        ),
       ),
       child: TextField(
         controller: _titleController,
@@ -1404,14 +1439,23 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
     final scheme = AppTheme.schemeOf(context);
     return Container(
       decoration: BoxDecoration(
+        // 优化：使用统一的三色渐变风格
         gradient: LinearGradient(
           colors: [
             scheme.cardColor,
-            scheme.lightColor.withOpacity(0.1),
+            scheme.cardColor.withAlpha(248),
+            scheme.lightColor.withOpacity(0.08),
           ],
+          stops: const [0.0, 0.7, 1.0],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(AppTheme.xlRadius),
         boxShadow: AppTheme.cardShadow,
+        border: Border.all(
+          color: scheme.lightColor.withOpacity(0.12),
+          width: 1,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1480,14 +1524,23 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
     final scheme = AppTheme.schemeOf(context);
     return Container(
       decoration: BoxDecoration(
+        // 优化：使用统一的三色渐变风格
         gradient: LinearGradient(
           colors: [
             scheme.cardColor,
-            scheme.lightColor.withOpacity(0.1),
+            scheme.cardColor.withAlpha(248),
+            scheme.lightColor.withOpacity(0.08),
           ],
+          stops: const [0.0, 0.7, 1.0],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(AppTheme.xlRadius),
         boxShadow: AppTheme.cardShadow,
+        border: Border.all(
+          color: scheme.lightColor.withOpacity(0.12),
+          width: 1,
+        ),
       ),
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -1545,11 +1598,14 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
                   width: 100,
                   height: 100,
                   decoration: BoxDecoration(
+                    // 优化：更柔和的渐变，与整体风格统一
                     gradient: LinearGradient(
                       colors: [
-                        scheme.lightColor.withOpacity(0.4),
-                        scheme.lightColor.withOpacity(0.2),
+                        scheme.lightColor.withOpacity(0.25),
+                        scheme.lightColor.withOpacity(0.12),
                       ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(AppTheme.largeRadius),
                     border: Border.all(
@@ -1644,18 +1700,24 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
             curve: Curves.easeInOut,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
+              // 优化：更柔和的渐变，添加角度
               gradient: LinearGradient(
                 colors: [
-                  scheme.primaryColor.withValues(alpha: 0.9),
-                  scheme.darkColor.withValues(alpha: 0.9),
+                  scheme.primaryColor.withOpacity(0.85),
+                  scheme.primaryColor.withOpacity(0.75),
+                  scheme.darkColor.withOpacity(0.8),
                 ],
+                stops: const [0.0, 0.5, 1.0],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: scheme.primaryColor.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+                  color: scheme.primaryColor.withOpacity(0.2),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                  spreadRadius: -2,
                 ),
               ],
             ),

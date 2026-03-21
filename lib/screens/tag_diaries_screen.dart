@@ -5,18 +5,24 @@ import '../models/diary.dart';
 import '../models/tag.dart';
 import '../providers/theme_provider.dart';
 import '../services/database_service.dart';
+import '../services/tag_system_service.dart';
 import '../utils/platform_helpers.dart';
 import 'diary_detail_screen.dart';
 
 /// 标签日记列表页
 /// 显示某个标签下的所有日记
+/// 支持旧版Tag对象或新版三级标签系统的String tagId
 class TagDiariesScreen extends StatefulWidget {
-  final Tag tag;
+  final Tag? tag;
+  final String? tagId;
+  final String? tagName;
 
   const TagDiariesScreen({
     super.key,
-    required this.tag,
-  });
+    this.tag,
+    this.tagId,
+    this.tagName,
+  }) : assert(tag != null || tagId != null, '必须提供tag或tagId');
 
   @override
   State<TagDiariesScreen> createState() => _TagDiariesScreenState();
@@ -36,16 +42,21 @@ class _TagDiariesScreenState extends State<TagDiariesScreen> {
     setState(() => _isLoading = true);
 
     try {
-      if (widget.tag.id != null) {
-        final diaries = await DatabaseService.getDiariesByTagId(widget.tag.id!);
-        if (mounted) {
-          setState(() {
-            _diaries = diaries;
-            _isLoading = false;
-          });
-        }
-      } else {
-        setState(() => _isLoading = false);
+      List<Diary> diaries = [];
+      
+      if (widget.tagId != null) {
+        // 使用新版三级标签系统
+        diaries = await TagSystemService.getDiariesByTagId(widget.tagId!);
+      } else if (widget.tag?.id != null) {
+        // 使用旧版标签系统
+        diaries = await DatabaseService.getDiariesByTagId(widget.tag!.id!);
+      }
+      
+      if (mounted) {
+        setState(() {
+          _diaries = diaries;
+          _isLoading = false;
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -60,7 +71,12 @@ class _TagDiariesScreenState extends State<TagDiariesScreen> {
   @override
   Widget build(BuildContext context) {
     final scheme = AppTheme.schemeOf(context);
-    final tagColor = Color(int.parse(widget.tag.color.replaceFirst('#', '0xFF')));
+    
+    // 获取标签显示信息
+    final String tagName = widget.tagName ?? widget.tag?.name ?? '标签';
+    final Color tagColor = widget.tag != null 
+        ? Color(int.parse(widget.tag!.color.replaceFirst('#', '0xFF')))
+        : scheme.primaryColor;
 
     return Scaffold(
       backgroundColor: scheme.backgroundColor,
@@ -71,11 +87,11 @@ class _TagDiariesScreenState extends State<TagDiariesScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: tagColor.withValues(alpha: 0.15),
+                color: tagColor.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
-                widget.tag.name,
+                tagName,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
