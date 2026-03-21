@@ -2017,9 +2017,9 @@ class _AboutEasterEgg {
                           ),
                         ),
                         const SizedBox(height: 24),
-                        // 调试入口（长按版本号）
+                        // 调试入口（点击v字图标）
                         GestureDetector(
-                          onLongPress: () => _showDebugDialog(context),
+                          onTap: () => _showDebugDialog(context),
                           child: Container(
                             width: 40,
                             height: 40,
@@ -2231,12 +2231,16 @@ class _AboutEasterEgg {
           ),
           TextButton(
             onPressed: () {
-              // 简单密码验证（实际应用中应该更安全）
-              if (passwordController.text == 'pddp2024') {
+              // 调试模式密码验证（两个密码都可用）
+              final validPasswords = ['23258', '12345'];
+              if (validPasswords.contains(passwordController.text)) {
                 Navigator.pop(context);
-                // 这里可以导航到调试页面
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('调试模式已开启')),
+                // 导航到调试页面
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const DebugScreen(),
+                  ),
                 );
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -2245,6 +2249,153 @@ class _AboutEasterEgg {
               }
             },
             child: const Text('确定'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 调试页面
+class DebugScreen extends StatelessWidget {
+  const DebugScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = AppTheme.schemeOf(context);
+    
+    return Scaffold(
+      backgroundColor: scheme.backgroundColor,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(
+          '调试模式',
+          style: TextStyle(color: scheme.textDarkColor),
+        ),
+        leading: IconButton(
+          icon: Icon(Icons.close, color: scheme.textDarkColor),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // 开发者信息
+          _buildSectionTitle('开发者选项', scheme),
+          const SizedBox(height: 12),
+          _buildCard([
+            ListTile(
+              leading: Icon(Icons.bug_report, color: scheme.primaryColor),
+              title: Text('查看日志', style: TextStyle(color: scheme.textDarkColor)),
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('日志功能开发中')),
+                );
+              },
+            ),
+            Divider(height: 1, indent: 56, color: scheme.lightColor.withValues(alpha: 0.3)),
+            ListTile(
+              leading: Icon(Icons.storage, color: scheme.primaryColor),
+              title: Text('查看数据库', style: TextStyle(color: scheme.textDarkColor)),
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('数据库功能开发中')),
+                );
+              },
+            ),
+            Divider(height: 1, indent: 56, color: scheme.lightColor.withValues(alpha: 0.3)),
+            ListTile(
+              leading: Icon(Icons.reset_tv, color: scheme.primaryColor),
+              title: Text('重置引导页', style: TextStyle(color: scheme.textDarkColor)),
+              onTap: () async {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.remove('has_seen_guide');
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('引导页已重置')),
+                  );
+                }
+              },
+            ),
+            Divider(height: 1, indent: 56, color: scheme.lightColor.withValues(alpha: 0.3)),
+            ListTile(
+              leading: Icon(Icons.delete_forever, color: Colors.red),
+              title: Text('清除所有数据', style: TextStyle(color: Colors.red)),
+              onTap: () => _showClearDataDialog(context),
+            ),
+          ], scheme),
+          const SizedBox(height: 24),
+          // 版本信息
+          _buildSectionTitle('版本信息', scheme),
+          const SizedBox(height: 12),
+          _buildCard([
+            ListTile(
+              title: Text('版本号', style: TextStyle(color: scheme.textDarkColor)),
+              trailing: Text('1.0.2', style: TextStyle(color: scheme.textLightColor)),
+            ),
+            Divider(height: 1, indent: 16, color: scheme.lightColor.withValues(alpha: 0.3)),
+            ListTile(
+              title: Text('构建时间', style: TextStyle(color: scheme.textDarkColor)),
+              trailing: Text('2026-03-19', style: TextStyle(color: scheme.textLightColor)),
+            ),
+          ], scheme),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title, ThemeScheme scheme) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+        color: scheme.textDarkColor,
+      ),
+    );
+  }
+
+  Widget _buildCard(List<Widget> children, ThemeScheme scheme) {
+    return Container(
+      decoration: BoxDecoration(
+        color: scheme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: AppTheme.softShadow,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: children,
+      ),
+    );
+  }
+
+  void _showClearDataDialog(BuildContext context) {
+    final scheme = AppTheme.schemeOf(context);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('危险操作'),
+        content: const Text('确定要清除所有数据吗？此操作不可恢复！'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              // 清除所有SharedPreferences数据
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.clear();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('所有数据已清除')),
+                );
+              }
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('确定清除'),
           ),
         ],
       ),
