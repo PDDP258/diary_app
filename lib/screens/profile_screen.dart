@@ -869,43 +869,87 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       return Wrap(
                         spacing: 12,
                         runSpacing: 12,
-                        children: allEmojis.entries.map((entry) {
-                          final emoji = entry.key;
-                          final data = entry.value;
-                          final isSelected = emoji == selectedEmoji;
-                          final isAvatar = data['type'] == 'avatar';
+                        children: [
+                          // 表情头像
+                          ...allEmojis.entries.map((entry) {
+                            final emoji = entry.key;
+                            final data = entry.value;
+                            final isSelected = emoji == selectedEmoji;
+                            final isAvatar = data['type'] == 'avatar';
 
-                          return GestureDetector(
-                            onTap: () {
-                              setState(() => selectedEmoji = emoji);
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() => selectedEmoji = emoji);
+                              },
+                              child: Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? scheme.primaryColor.withValues(alpha: 0.2)
+                                      : isAvatar
+                                          ? Colors.amber.withValues(alpha: 0.15)
+                                          : scheme.lightColor.withValues(alpha: 0.3),
+                                  borderRadius: BorderRadius.circular(24),
+                                  border: isSelected
+                                      ? Border.all(color: scheme.primaryColor, width: 2)
+                                      : isAvatar
+                                          ? Border.all(
+                                              color: Colors.amber.withValues(alpha: 0.5),
+                                              width: 1)
+                                          : null,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    emoji,
+                                    style: const TextStyle(fontSize: 24),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
+                          // 从相册选择按钮
+                          GestureDetector(
+                            onTap: () async {
+                              Navigator.pop(context);
+                              final picker = ImagePicker();
+                              final pickedFile = await picker.pickImage(
+                                source: ImageSource.gallery,
+                                maxWidth: 300,
+                                maxHeight: 300,
+                                imageQuality: 85,
+                              );
+                              if (pickedFile != null) {
+                                await settings.setCustomAvatar(pickedFile.path);
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('头像已更新')),
+                                  );
+                                }
+                              }
                             },
                             child: Container(
                               width: 48,
                               height: 48,
                               decoration: BoxDecoration(
-                                color: isSelected
-                                    ? scheme.primaryColor.withValues(alpha: 0.2)
-                                    : isAvatar
-                                        ? Colors.amber.withValues(alpha: 0.15)
-                                        : scheme.lightColor.withValues(alpha: 0.3),
+                                color: scheme.lightColor.withValues(alpha: 0.3),
                                 borderRadius: BorderRadius.circular(24),
-                                border: isSelected
-                                    ? Border.all(color: scheme.primaryColor, width: 2)
-                                    : isAvatar
-                                        ? Border.all(
-                                            color: Colors.amber.withValues(alpha: 0.5),
-                                            width: 1)
-                                        : null,
+                                border: Border.all(
+                                  color: scheme.primaryColor.withValues(alpha: 0.3),
+                                  width: 1,
+                                  style: BorderStyle.solid,
+                                ),
                               ),
                               child: Center(
-                                child: Text(
-                                  emoji,
-                                  style: const TextStyle(fontSize: 24),
+                                child: Icon(
+                                  Icons.add_photo_alternate_outlined,
+                                  color: scheme.primaryColor,
+                                  size: 24,
                                 ),
                               ),
                             ),
-                          );
-                        }).toList(),
+                          ),
+                        ],
                       );
                     },
                   ),
