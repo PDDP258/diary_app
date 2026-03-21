@@ -509,10 +509,10 @@ class LunarDayLabel extends StatelessWidget {
     Color highlightColor = scheme.primary;
     
     if (lunarDate.festival != null) {
-      // 节日显示节日名（简化）
+      // 节日显示节日名（保留完整名称，最多3个字）
       displayText = lunarDate.festival!.split(' ')[0]; // 去掉emoji
-      if (displayText.length > 2) {
-        displayText = displayText.substring(0, 2);
+      if (displayText.length > 3) {
+        displayText = displayText.substring(0, 3);
       }
       isHighlight = true;
       highlightColor = scheme.error;
@@ -536,7 +536,7 @@ class LunarDayLabel extends StatelessWidget {
     return Text(
       displayText,
       style: TextStyle(
-        fontSize: 10,
+        fontSize: 11,
         fontWeight: isHighlight ? FontWeight.w600 : FontWeight.normal,
         color: effectiveColor,
       ),

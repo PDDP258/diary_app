@@ -631,6 +631,16 @@ with open('lib/screens/profile_screen.dart', 'w', encoding='utf-8') as f:
 
 ## 版本记录
 
+- v1.0.3   (2026-03-19) - 日历页UI优化:
+  - 日历布局重构
+    - 移除顶部LunarInfoCard，整合农历简写到日期标题
+    - 目标进度卡片改为可折叠迷你版
+    - 优化日历单元格农历/节日显示（字体11px，节日最多3字）
+    - 添加底部padding防止被导航栏遮挡
+  - 农历/节日显示优化
+    - 日期标题显示农历简写或节日/节气
+    - 节日红色高亮、节气主题色高亮
+
 - v1.0.2   (2026-03-19) - Profile修复与Git初始化:
   - 🔧 修复profile\_screen.dart中文乱码问题
     - 根因：PowerShell默认使用GBK编码导致UTF-8文件损坏

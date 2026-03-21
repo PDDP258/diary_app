@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
 import '../providers/theme_provider.dart';
@@ -17,108 +18,117 @@ class CustomBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = AppTheme.schemeOf(context);
-    
+
     // 获取底部安全区域高度（适配有虚拟导航栏的设备）
     final bottomPadding = MediaQuery.of(context).padding.bottom;
-    final isGestureNavigation = bottomPadding <= 16; // 手势导航底部padding较小
-    
-    // 基础高度 + 系统导航栏高度（如果不是手势导航）
+    final isGestureNavigation = bottomPadding <= 16;
+
+    // 基础高度 + 系统导航栏高度
     final navBarHeight = 80.0 + (isGestureNavigation ? 0.0 : bottomPadding);
 
     return Container(
       height: navBarHeight,
-      margin: EdgeInsets.fromLTRB(16, 8, 16, isGestureNavigation ? 8 : 0),
+      margin: EdgeInsets.fromLTRB(12, 8, 12, isGestureNavigation ? 8 : 4),
       decoration: BoxDecoration(
-        color: scheme.cardColor,
         borderRadius: BorderRadius.circular(AppTheme.xlRadius),
         boxShadow: [
           BoxShadow(
-            color: scheme.textDarkColor.withOpacity(0.06),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-            spreadRadius: -4,
-          ),
-          BoxShadow(
-            color: scheme.primaryColor.withOpacity(0.08),
-            blurRadius: 40,
-            offset: const Offset(0, 12),
-            spreadRadius: -8,
+            color: scheme.textDarkColor.withOpacity(0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+            spreadRadius: -2,
           ),
         ],
       ),
-      child: SafeArea(
-        top: false,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            // 底部导航项
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-              _buildNavItem(Icons.auto_stories_rounded, '日记', 0, scheme),
-              _buildNavItem(Icons.calendar_month_rounded, '日历', 1, scheme),
-              const SizedBox(width: 72), // 中间留出空间给FAB
-              _buildNavItem(Icons.insights_rounded, '统计', 2, scheme),
-              _buildNavItem(Icons.person_rounded, '我的', 3, scheme),
-            ],
-          ),
-          // 中间大加号按钮 - 带动画效果
-          Positioned(
-            top: -20,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: GestureDetector(
-                onTap: onAddTap,
-                child: TweenAnimationBuilder<double>(
-                  duration: const Duration(milliseconds: 300),
-                  tween: Tween(begin: 1.0, end: 1.0),
-                  builder: (context, value, child) {
-                    return Transform.scale(
-                      scale: value,
-                      child: Container(
-                        width: 72,
-                        height: 72,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              scheme.darkColor,
-                              scheme.primaryColor,
-                              scheme.lightColor,
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            stops: const [0.0, 0.5, 1.0],
-                          ),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: scheme.primaryColor.withOpacity(0.4),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                              spreadRadius: 0,
-                            ),
-                            BoxShadow(
-                              color: scheme.primaryColor.withOpacity(0.2),
-                              blurRadius: 40,
-                              offset: const Offset(0, 20),
-                              spreadRadius: -5,
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.add_rounded,
-                          color: Colors.white,
-                          size: 40,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppTheme.xlRadius),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            decoration: BoxDecoration(
+              color: scheme.cardColor.withOpacity(0.75),
+              borderRadius: BorderRadius.circular(AppTheme.xlRadius),
+              border: Border.all(
+                color: scheme.lightColor.withOpacity(0.3),
+                width: 0.5,
+              ),
+            ),
+            child: SafeArea(
+              top: false,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  // 底部导航项
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      _buildNavItem(Icons.auto_stories_rounded, '日记', 0, scheme),
+                      _buildNavItem(Icons.calendar_month_rounded, '日历', 1, scheme),
+                      const SizedBox(width: 72), // 中间留出空间给FAB
+                      _buildNavItem(Icons.insights_rounded, '统计', 2, scheme),
+                      _buildNavItem(Icons.person_rounded, '我的', 3, scheme),
+                    ],
+                  ),
+                  // 中间大加号按钮
+                  Positioned(
+                    top: -20,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: GestureDetector(
+                        onTap: onAddTap,
+                        child: TweenAnimationBuilder<double>(
+                          duration: const Duration(milliseconds: 300),
+                          tween: Tween(begin: 1.0, end: 1.0),
+                          builder: (context, value, child) {
+                            return Transform.scale(
+                              scale: value,
+                              child: Container(
+                                width: 72,
+                                height: 72,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      scheme.darkColor,
+                                      scheme.primaryColor,
+                                      scheme.lightColor,
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    stops: const [0.0, 0.5, 1.0],
+                                  ),
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: scheme.primaryColor.withOpacity(0.4),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 10),
+                                      spreadRadius: 0,
+                                    ),
+                                    BoxShadow(
+                                      color: scheme.primaryColor.withOpacity(0.2),
+                                      blurRadius: 40,
+                                      offset: const Offset(0, 20),
+                                      spreadRadius: -5,
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Icons.add_rounded,
+                                  color: Colors.white,
+                                  size: 40,
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-          ],
         ),
       ),
     );
@@ -127,7 +137,7 @@ class CustomBottomNav extends StatelessWidget {
   Widget _buildNavItem(
       IconData icon, String label, int index, ThemeScheme scheme) {
     final isSelected = currentIndex == index;
-    
+
     return Expanded(
       child: Center(
         child: Material(
@@ -142,7 +152,9 @@ class CustomBottomNav extends StatelessWidget {
               curve: AppTheme.spring,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: isSelected ? scheme.primaryColor.withOpacity(0.1) : Colors.transparent,
+                color: isSelected
+                    ? scheme.primaryColor.withOpacity(0.1)
+                    : Colors.transparent,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
@@ -155,7 +167,9 @@ class CustomBottomNav extends StatelessWidget {
                     curve: AppTheme.spring,
                     child: Icon(
                       icon,
-                      color: isSelected ? scheme.primaryColor : scheme.textLightColor,
+                      color: isSelected
+                          ? scheme.primaryColor
+                          : scheme.textLightColor,
                       size: 26,
                     ),
                   ),
@@ -163,9 +177,12 @@ class CustomBottomNav extends StatelessWidget {
                   AnimatedDefaultTextStyle(
                     duration: const Duration(milliseconds: 200),
                     style: TextStyle(
-                      color: isSelected ? scheme.primaryColor : scheme.textLightColor,
+                      color: isSelected
+                          ? scheme.primaryColor
+                          : scheme.textLightColor,
                       fontSize: 11,
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      fontWeight:
+                          isSelected ? FontWeight.w700 : FontWeight.w500,
                       letterSpacing: isSelected ? 0.5 : 0,
                       height: 1.0,
                     ),

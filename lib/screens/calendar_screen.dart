@@ -9,6 +9,7 @@ import '../providers/goal_provider.dart';
 import '../services/database_service.dart';
 import '../providers/settings_provider.dart';
 import '../providers/theme_provider.dart';
+import '../services/goal_service.dart';
 
 import '../services/image_cache_service.dart';
 import '../services/lunar_calendar_service.dart';
@@ -97,13 +98,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
             children: [
               Column(
                 children: [
-                  // 农历信息卡片
-                  LunarInfoCard(date: _selectedDate),
-                  // 目标进度卡片
-                  GoalProgressCard(
-                    onTapSettings: () => _showGoalSettings(context),
-                  ),
-                  // 顶部日期标题和导航 - 玻璃态设计（缩小版）
+                  // 目标进度卡片（迷你版，可点击展开）
+                  _buildMiniGoalProgressCard(scheme),
+                  
+                  // 顶部日期标题和导航 - 整合农历信息
                   Container(
                     margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                     padding: const EdgeInsets.symmetric(
@@ -177,9 +175,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
                               ],
                             ),
                             const SizedBox(height: 4),
-                            // 星期和本月统计
+                            // 农历简写 + 星期 + 本月统计
                             Row(
                               children: [
+                                // 农历简写（腊月廿三）
+                                _buildLunarDateLabel(_selectedDate, scheme),
+                                const SizedBox(width: 6),
                                 Text(
                                   DateFormat('EEEE', 'zh_CN')
                                       .format(_selectedDate),
@@ -438,7 +439,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   // 底部装饰区域 - 固定小高度
                   Expanded(
                     child: Container(
-                      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
                       decoration: BoxDecoration(
                         color: scheme.cardColor.withOpacity(0.5),
                         borderRadius:
@@ -2574,5 +2575,251 @@ class _CalendarScreenState extends State<CalendarScreen> {
       await _loadAnniversaries();
       setModalState(() {});
     }
+  }
+
+  // ==================== 农历和节日显示方法 ====================
+
+  /// 构建农历日期标签（简化版：腊月廿三）
+  Widget _buildLunarDateLabel(DateTime date, ThemeScheme scheme) {
+    final lunarService = LunarCalendarService();
+    final lunarDate = lunarService.getLunarDate(date);
+
+    // 获取节日或节气
+    final festivalOrTerm = lunarService.getFestival(date);
+    
+    String displayText;
+    Color textColor;
+    bool isHighlight = false;
+    
+    if (festivalOrTerm != null) {
+      // 节日或节气显示
+      displayText = festivalOrTerm;
+      isHighlight = true;
+      textColor = festivalOrTerm.contains('节') || festivalOrTerm.contains('元宵') || festivalOrTerm.contains('妇女')
+          ? Colors.red
+          : scheme.primaryColor;
+    } else {
+      // 普通农历日期（腊月廿三）
+      displayText = '${lunarDate.lunarMonthString}${lunarDate.lunarDayString}';
+      textColor = scheme.textMediumColor;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: isHighlight 
+            ? (textColor == Colors.red 
+                ? Colors.red.withOpacity(0.1)
+                : scheme.primaryColor.withOpacity(0.1))
+            : scheme.lightColor.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        displayText,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: isHighlight ? FontWeight.w600 : FontWeight.normal,
+          color: textColor,
+        ),
+      ),
+    );
+  }
+
+  // ==================== 迷你目标进度卡片 ====================
+
+  bool _isGoalExpanded = false;
+
+  Widget _buildMiniGoalProgressCard(ThemeScheme scheme) {
+    return Consumer<GoalProvider>(
+      builder: (context, goalProvider, child) {
+        final goal = goalProvider.currentGoal;
+        if (goal == null) return const SizedBox.shrink();
+
+        final progress = goal.completedCount;
+        final percentage = goal.progress * 100;
+        final remaining = goal.remaining;
+        
+        // 根据目标类型显示名称
+        String goalName;
+        switch (goal.type) {
+          case GoalType.diaryCount:
+            goalName = '日记目标';
+            break;
+          case GoalType.wordCount:
+            goalName = '字数目标';
+            break;
+          case GoalType.photoCount:
+            goalName = '照片目标';
+            break;
+          case GoalType.streakDays:
+            goalName = '连续记录';
+            break;
+          default:
+            goalName = '本月目标';
+        }
+
+        return GestureDetector(
+          onTap: () {
+            setState(() {
+              _isGoalExpanded = !_isGoalExpanded;
+            });
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  scheme.cardColor,
+                  scheme.cardColor.withOpacity(0.9),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(AppTheme.xlRadius),
+              boxShadow: AppTheme.cardShadow,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 迷你进度条（始终显示）
+                Row(
+                  children: [
+                    // 进度圆环（小）
+                    SizedBox(
+                      width: 36,
+                      height: 36,
+                      child: CircularProgressIndicator(
+                        value: goal.progress,
+                        strokeWidth: 3,
+                        backgroundColor: scheme.lightColor.withOpacity(0.3),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          goal.isCompleted ? Colors.green : scheme.primaryColor,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // 进度文字
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.flag_outlined,
+                                size: 14,
+                                color: scheme.primaryColor,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                goalName,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: scheme.textDarkColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${goal.completedCount} / ${goal.targetCount}篇 · 还剩${goal.remaining}篇',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: scheme.textMediumColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // 展开/收起图标
+                    AnimatedRotation(
+                      turns: _isGoalExpanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 300),
+                      child: Icon(
+                        Icons.keyboard_arrow_down,
+                        color: scheme.textLightColor,
+                      ),
+                    ),
+                    // 设置按钮
+                    GestureDetector(
+                      onTap: () => _showGoalSettings(context),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        margin: const EdgeInsets.only(left: 8),
+                        decoration: BoxDecoration(
+                          color: scheme.lightColor.withOpacity(0.3),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.settings_outlined,
+                          size: 16,
+                          color: scheme.textMediumColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                // 展开后的详细内容
+                if (_isGoalExpanded) ...[
+                  const SizedBox(height: 12),
+                  Divider(height: 1, color: scheme.lightColor.withOpacity(0.3)),
+                  const SizedBox(height: 12),
+                  // 详细进度条
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: goal.progress,
+                      minHeight: 8,
+                      backgroundColor: scheme.lightColor.withOpacity(0.3),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        goal.isCompleted ? Colors.green : scheme.primaryColor,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '完成度 ${(goal.progress * 100).toStringAsFixed(1)}%',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: scheme.textMediumColor,
+                        ),
+                      ),
+                      if (goal.isCompleted)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.check_circle, size: 12, color: Colors.green),
+                              const SizedBox(width: 4),
+                              Text(
+                                '已达成',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.green,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }

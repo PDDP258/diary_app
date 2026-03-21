@@ -1147,9 +1147,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           themeProvider.currentScheme.primaryColor.value ==
                               colorScheme.primaryColor.value;
                       return GestureDetector(
-                        onTap: () {
-                          themeProvider.setThemeScheme(colorScheme);
-                          Navigator.pop(context);
+                        onTap: () async {
+                          await themeProvider.setThemeScheme(colorScheme);
+                          if (context.mounted) {
+                            Navigator.pop(context);
+                            // 跳转到日历页
+                            Navigator.of(context).pushAndRemoveUntil(
+                              MaterialPageRoute(
+                                builder: (context) => const MainScreen(initialIndex: 1),
+                              ),
+                              (route) => false,
+                            );
+                          }
                         },
                         child: Container(
                           width: 56,
@@ -1206,7 +1215,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             GachaService.profileThemeShop[themeId]?['name'] ?? '特殊主题';
 
                         return GestureDetector(
-                          onTap: () {
+                          onTap: () async {
                             final newScheme = ThemeScheme(
                               primaryColor: primaryColor,
                               backgroundColor:
@@ -1220,8 +1229,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               textLightColor: Color(themeColors['textLight'] as int),
                               name: themeName,
                             );
-                            themeProvider.setThemeScheme(newScheme);
-                            Navigator.pop(context);
+                            await themeProvider.setThemeScheme(newScheme);
+                            if (context.mounted) {
+                              Navigator.pop(context);
+                              // 跳转到日历页
+                              Navigator.of(context).pushAndRemoveUntil(
+                                MaterialPageRoute(
+                                  builder: (context) => const MainScreen(initialIndex: 1),
+                                ),
+                                (route) => false,
+                              );
+                            }
                           },
                           child: Column(
                             children: [
@@ -1341,9 +1359,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: const Text('取消'),
           ),
           TextButton(
-            onPressed: () {
-              themeProvider.setPrimaryColor(pickerColor);
-              Navigator.pop(context);
+            onPressed: () async {
+              await themeProvider.setPrimaryColor(pickerColor);
+              if (context.mounted) {
+                Navigator.pop(context);
+                // 跳转到日历页
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(
+                    builder: (context) => const MainScreen(initialIndex: 1),
+                  ),
+                  (route) => false,
+                );
+              }
             },
             child: const Text('确定'),
           ),
