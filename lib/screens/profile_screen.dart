@@ -1649,40 +1649,51 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildLicenseItem('✓ 个人免费使用'),
-                          _buildLicenseItem('✓ 在任意设备上使用'),
-                          _buildLicenseItem('✓ 数据备份和导出'),
-                          _buildLicenseItem('✓ 分享给朋友'),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildLicenseItem('✗ 禁止修改软件'),
-                          _buildLicenseItem('✗ 禁止重新分发'),
-                          _buildLicenseItem('✗ 禁止商业使用'),
-                          _buildLicenseItem('✗ 禁止去除版权信息'),
-                        ],
-                      ),
+                    // 允许和禁止放在同一行
+                    Row(
+                      children: [
+                        // 允许使用
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildLicenseItem('✓ 个人免费使用'),
+                                _buildLicenseItem('✓ 任意设备使用'),
+                                _buildLicenseItem('✓ 数据备份导出'),
+                                _buildLicenseItem('✓ 分享给朋友'),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // 禁止使用
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildLicenseItem('✗ 禁止修改软件'),
+                                _buildLicenseItem('✗ 禁止重新分发'),
+                                _buildLicenseItem('✗ 禁止商业使用'),
+                                _buildLicenseItem('✗ 禁止去除版权'),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 16),
                     // 免责声明
