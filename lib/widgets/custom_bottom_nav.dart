@@ -17,10 +17,17 @@ class CustomBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = AppTheme.schemeOf(context);
+    
+    // 获取底部安全区域高度（适配有虚拟导航栏的设备）
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final isGestureNavigation = bottomPadding <= 16; // 手势导航底部padding较小
+    
+    // 基础高度 + 系统导航栏高度（如果不是手势导航）
+    final navBarHeight = 80.0 + (isGestureNavigation ? 0.0 : bottomPadding);
 
     return Container(
-      height: 80,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      height: navBarHeight,
+      margin: EdgeInsets.fromLTRB(16, 8, 16, isGestureNavigation ? 8 : 0),
       decoration: BoxDecoration(
         color: scheme.cardColor,
         borderRadius: BorderRadius.circular(AppTheme.xlRadius),
@@ -39,13 +46,15 @@ class CustomBottomNav extends StatelessWidget {
           ),
         ],
       ),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          // 底部导航项
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
+      child: SafeArea(
+        top: false,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // 底部导航项
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
               _buildNavItem(Icons.auto_stories_rounded, '日记', 0, scheme),
               _buildNavItem(Icons.calendar_month_rounded, '日历', 1, scheme),
               const SizedBox(width: 72), // 中间留出空间给FAB
@@ -109,7 +118,8 @@ class CustomBottomNav extends StatelessWidget {
               ),
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
