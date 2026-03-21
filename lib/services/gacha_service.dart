@@ -1987,15 +1987,15 @@ class GachaService {
       'name': '极光主题',
       'preview': '🌈',
       'cost': 50,
-      'description': '绚丽极光舞动，绿色紫色光带流动效果',
+      'description': '绚丽极光舞动，翠绿色光带流动效果',
       'colors': {
-        'primary': 0xFF7E57C2,
-        'background': 0xFFEDE7F6,
-        'light': 0xFFD1C4E9,
-        'dark': 0xFF5E35B1,
-        'textDark': 0xFF311B92,
-        'textMedium': 0xFF512DA8,
-        'textLight': 0xFF7E57C2,
+        'primary': 0xFF00C060,      // 青绿主色
+        'background': 0xFF001810,   // 深绿黑背景
+        'light': 0xFF009060,        // 深青绿
+        'dark': 0xFF00FFC0,         // 亮青绿
+        'textDark': 0xFFE0F7FA,     // 浅青白文字
+        'textMedium': 0xFF80DEEA,   // 中青
+        'textLight': 0xFF4DD0E1,    // 浅青
       },
     },
     'theme_golden': {

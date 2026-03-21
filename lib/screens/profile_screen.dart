@@ -1154,7 +1154,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             // 跳转到日历页
                             Navigator.of(context).pushAndRemoveUntil(
                               MaterialPageRoute(
-                                builder: (context) => const MainScreen(initialIndex: 1),
+                                builder: (context) => const MainScreen(initialIndex: 0),
                               ),
                               (route) => false,
                             );
@@ -1235,7 +1235,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               // 跳转到日历页
                               Navigator.of(context).pushAndRemoveUntil(
                                 MaterialPageRoute(
-                                  builder: (context) => const MainScreen(initialIndex: 1),
+                                  builder: (context) => const MainScreen(initialIndex: 0),
                                 ),
                                 (route) => false,
                               );
@@ -1366,7 +1366,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 // 跳转到日历页
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(
-                    builder: (context) => const MainScreen(initialIndex: 1),
+                    builder: (context) => const MainScreen(initialIndex: 0),
                   ),
                   (route) => false,
                 );
