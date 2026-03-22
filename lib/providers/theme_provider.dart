@@ -30,6 +30,37 @@ class ThemeScheme {
   /// 错误色 - 默认红色
   Color get errorColor => const Color(0xFFE53935);
 
+  /// 判断背景色是浅色还是深色
+  /// 基于 luminance（亮度值），范围 0-1，0.5 为中间值
+  bool get isBackgroundLight {
+    // 计算背景色的亮度值
+    final luminance = backgroundColor.computeLuminance();
+    return luminance > 0.5;
+  }
+
+  /// 获取箭头按钮的背景色
+  /// 根据背景色深浅动态调整，确保有足够对比度
+  Color getArrowButtonBackground({double opacity = 0.15}) {
+    if (isBackgroundLight) {
+      // 背景是浅色，使用深色版本的 lightColor，增加对比度
+      return lightColor.withOpacity(opacity + 0.25);
+    } else {
+      // 背景是深色，使用更浅的版本
+      return cardColor.withOpacity(opacity + 0.35);
+    }
+  }
+
+  /// 获取箭头按钮的图标色
+  Color getArrowButtonIconColor({double opacity = 0.8}) {
+    if (isBackgroundLight) {
+      // 背景是浅色，使用更深的颜色
+      return textMediumColor.withOpacity(opacity + 0.1);
+    } else {
+      // 背景是深色，使用更浅的颜色
+      return textLightColor.withOpacity(opacity);
+    }
+  }
+
   // 温馨米（默认）- 温暖舒适的米色调
   static const ThemeScheme warmBeige = ThemeScheme(
     primaryColor: Color(0xFFE8B4B8),      // 温暖玫瑰粉
@@ -165,7 +196,7 @@ class ThemeScheme {
   static const ThemeScheme sakura = ThemeScheme(
     primaryColor: Color(0xFFF48FB1),      // 樱花粉
     backgroundColor: Color(0xFFFFF5F7),   // 极浅粉背景
-    cardColor: Color(0xFFFFE4E8),         // 浅粉卡片
+    cardColor: Color(0xFFFFFFFF),         // 白色卡片（与gacha_service一致）
     lightColor: Color(0xFFFCE4EC),        // 淡粉高光
     darkColor: Color(0xFFF8BBD0),         // 深粉
     textDarkColor: Color(0xFF880E4F),     // 深玫红文字
@@ -178,9 +209,9 @@ class ThemeScheme {
   static const ThemeScheme ocean = ThemeScheme(
     primaryColor: Color(0xFF42A5F5),      // 海洋蓝
     backgroundColor: Color(0xFFE3F2FD),   // 浅天蓝背景
-    cardColor: Color(0xFFBBDEFB),         // 天蓝卡片
-    lightColor: Color(0xFF90CAF9),        // 中蓝高光
-    darkColor: Color(0xFF64B5F6),         // 深天蓝
+    cardColor: Color(0xFFFFFFFF),         // 白色卡片（与gacha_service一致）
+    lightColor: Color(0xFFBBDEFB),        // 天蓝高光（与gacha_service一致）
+    darkColor: Color(0xFF90CAF9),         // 深天蓝（与gacha_service一致）
     textDarkColor: Color(0xFF0D47A1),     // 深蓝文字
     textMediumColor: Color(0xFF1565C0),   // 中蓝
     textLightColor: Color(0xFF42A5F5),    // 浅蓝

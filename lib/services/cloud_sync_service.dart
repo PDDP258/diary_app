@@ -853,7 +853,7 @@ class WebDAVSyncService extends CloudSyncService {
       _debugPrint('  - 日记标签关联: ${diaryTags.length} 个');
 
       final backupData = {
-        'version': '1.0.0',
+        'version': '1.1.0',
         'syncTime': DateTime.now().toIso8601String(),
         'diaries': diaries.map((d) => d.toMap()).toList(),
         'moods': moods.map((m) => m.toMap()).toList(),

@@ -71,7 +71,7 @@ class BackupExportService {
     
     // 添加元数据
     final metaData = jsonEncode({
-      'version': '1.0.0',
+      'version': '1.1.0',
       'encrypted': true,
       'algorithm': 'AES-256',
     });

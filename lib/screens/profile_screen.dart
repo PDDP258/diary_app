@@ -194,7 +194,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _MenuItem(
                 icon: Icons.info_outline,
                 title: '关于日记',
-                subtitle: '版本 1.0.1',
+                subtitle: '版本 1.1.0',
                 onTap: () => _showAboutWithEasterEgg(context),
               ),
               _MenuItem(
@@ -1681,7 +1681,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '版本 1.0.1',
+                            '版本 1.1.0',
                             style: TextStyle(
                               fontSize: 14,
                               color: scheme.textLightColor,
@@ -1986,7 +1986,7 @@ class _AboutEasterEgg {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  '版本 1.0.1',
+                                  '版本 1.1.0',
                                   style: TextStyle(
                                     fontSize: 14,
                                     color: scheme.textLightColor,
@@ -2011,13 +2011,16 @@ class _AboutEasterEgg {
                         ),
                         const SizedBox(height: 12),
                         _buildVersionItem(
-                          'v1.0.1',
-                          '🎉 正式发布',
+                          'v1.1.0',
+                          '🎉 全新发布',
                           [
-                            '农历日历支持',
-                            '目标系统增强',
-                            '三级标签系统',
-                            '扭蛋池优化',
+                            '全新自定义目标系统',
+                            '日历页UI优化',
+                            '农历节日连续显示',
+                            '编辑日记页渐变重设计',
+                            '主题配色统一',
+                            '系统导航栏适配',
+                            '调试功能增强',
                           ],
                           scheme,
                         ),
@@ -2458,6 +2461,17 @@ class DebugScreen extends StatelessWidget {
                 indent: 56,
                 color: scheme.lightColor.withValues(alpha: 0.3)),
             ListTile(
+              leading: Icon(Icons.cleaning_services, color: Colors.orange),
+              title: Text('清除除日记外所有数据', style: TextStyle(color: scheme.textDarkColor)),
+              subtitle: Text('保留日记，清除徽章/扭蛋/主题/贴纸/头像等',
+                  style: TextStyle(color: scheme.textLightColor, fontSize: 12)),
+              onTap: () => _showClearNonDiaryDataDialog(context),
+            ),
+            Divider(
+                height: 1,
+                indent: 56,
+                color: scheme.lightColor.withValues(alpha: 0.3)),
+            ListTile(
               leading: Icon(Icons.delete_forever, color: Colors.red),
               title: Text('清除所有数据', style: TextStyle(color: Colors.red)),
               onTap: () => _showClearDataDialog(context),
@@ -2471,7 +2485,7 @@ class DebugScreen extends StatelessWidget {
             ListTile(
               title: Text('版本号', style: TextStyle(color: scheme.textDarkColor)),
               trailing:
-                  Text('1.0.4', style: TextStyle(color: scheme.textLightColor)),
+                  Text('1.1.0', style: TextStyle(color: scheme.textLightColor)),
             ),
             Divider(
                 height: 1,
@@ -2619,6 +2633,136 @@ class DebugScreen extends StatelessWidget {
         children: children,
       ),
     );
+  }
+
+  /// 显示清除除日记外所有数据的对话框
+  void _showClearNonDiaryDataDialog(BuildContext context) {
+    final scheme = AppTheme.schemeOf(context);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('清除除日记外所有数据'),
+        content: const Text(
+            '确定要清除以下数据吗？\n\n'
+            '• 所有徽章\n'
+            '• 扭蛋次数和记录\n'
+            '• 扭蛋藏品（头像、贴纸等）\n'
+            '• 已解锁的特殊主题\n'
+            '• 自定义贴纸\n'
+            '• 用户等级和经验值\n'
+            '• 资源点数（贴纸碎片、装饰点等）\n\n'
+            '⚠️ 日记数据将被保留'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _clearNonDiaryData(context);
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.orange),
+            child: const Text('确定清除'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 清除除日记外的所有数据
+  Future<void> _clearNonDiaryData(BuildContext context) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // 1. 清除徽章数据 - 遍历所有徽章并清除解锁状态
+      final allBadges = badge_service.BadgeService.allBadges;
+      for (final badge in allBadges) {
+        await prefs.remove('badge_${badge.id}');
+      }
+      
+      // 2. 清除扭蛋相关数据
+      await prefs.remove('gacha_draws'); // 扭蛋次数
+      await prefs.remove('gacha_last_draw_date'); // 最后抽奖日期
+      await prefs.remove('gacha_history'); // 抽奖历史
+      await prefs.remove('user_exp'); // 用户经验值
+      await prefs.remove('user_level'); // 用户等级
+      
+      // 3. 清除扭蛋藏品 - 遍历所有奖励类型
+      final collectionKeys = [
+        'gacha_collection_diary_template_',
+        'gacha_collection_writing_inspiration_',
+        'gacha_collection_badge_hint_',
+        'gacha_collection_lucky_phrase_',
+        'gacha_collection_extra_draw_',
+        'gacha_collection_milestone_blessing_',
+        'gacha_collection_memory_hint_',
+        'gacha_collection_mood_suggestion_',
+        'gacha_collection_tag_idea_',
+        'gacha_collection_sticker_pack_',
+        'gacha_collection_photo_challenge_',
+        'gacha_collection_emotion_analysis_',
+        'gacha_collection_anniversary_hint_',
+        'gacha_collection_achievement_bonus_',
+        'gacha_collection_avatar_',
+      ];
+      
+      // 获取所有可能的key并清除
+      final allKeys = prefs.getKeys().toList();
+      for (final key in allKeys) {
+        // 清除扭蛋收藏品
+        if (key.startsWith('gacha_collection_') ||
+            key.startsWith('reward_') ||
+            key.startsWith('unlocked_reward_')) {
+          await prefs.remove(key);
+        }
+        // 清除每日任务相关
+        else if (key.startsWith('daily_') || 
+                 key.startsWith('diary_count_') ||
+                 key.contains('Awarded')) {
+          await prefs.remove(key);
+        }
+      }
+      
+      // 4. 清除已解锁的主题
+      await prefs.remove('unlocked_themes');
+      await prefs.remove('unlocked_profile_themes');
+      await prefs.remove('current_profile_theme');
+      
+      // 5. 清除自定义贴纸
+      await prefs.remove('custom_stickers');
+      
+      // 6. 清除资源点数
+      await prefs.remove('sticker_points'); // 贴纸碎片
+      await prefs.remove('profile_decor_points'); // 装饰点
+      await prefs.remove('mood_energy'); // 心情能量
+      await prefs.remove('badge_progress_bonus'); // 徽章进度加成
+      await prefs.remove('word_count_bonus'); // 字数加成
+      
+      // 7. 清除用户设置（保留主题颜色和基本设置）
+      await prefs.remove('user_emoji'); // 用户头像emoji
+      await prefs.remove('user_nickname'); // 用户昵称
+      await prefs.remove('user_signature'); // 用户签名
+      
+      // 8. 清除引导状态（可选，如果需要重新显示引导）
+      // await prefs.remove('has_seen_guide');
+      
+      // 9. 清除扭蛋商店相关
+      await prefs.remove('sticker_shop_purchased');
+      await prefs.remove('theme_shop_purchased');
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ 除日记外的所有数据已清除')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('清除失败: $e')),
+        );
+      }
+    }
   }
 
   void _showClearDataDialog(BuildContext context) {

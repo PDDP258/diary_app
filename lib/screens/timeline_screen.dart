@@ -149,22 +149,22 @@ class _TimelineScreenState extends State<TimelineScreen>
     final userName = context.watch<SettingsProvider>().userName;
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       decoration: BoxDecoration(
-        // 半透明效果，让主题背景透过来
-        color: scheme.cardColor.withOpacity(0.75),
+        // 增强毛玻璃效果
+        color: scheme.cardColor.withOpacity(0.85),
         borderRadius: BorderRadius.circular(AppTheme.xlRadius),
         border: Border.all(
-          color: scheme.primaryColor.withOpacity(0.15),
+          color: scheme.lightColor.withOpacity(0.4),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-            spreadRadius: -2,
+            color: scheme.primaryColor.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+            spreadRadius: -4,
           ),
         ],
       ),
@@ -175,23 +175,46 @@ class _TimelineScreenState extends State<TimelineScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '$userName的日记',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: scheme.textDarkColor,
-                    letterSpacing: -0.5,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: scheme.primaryColor.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.auto_stories_rounded,
+                        color: scheme.primaryColor,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        '$userName的日记',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: scheme.textDarkColor,
+                          letterSpacing: -0.5,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  '记录生活的点滴',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: scheme.textMediumColor,
+                const SizedBox(height: 6),
+                Padding(
+                  padding: const EdgeInsets.only(left: 36),
+                  child: Text(
+                    '记录生活的点滴',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: scheme.textMediumColor,
+                      height: 1.3,
+                    ),
                   ),
                 ),
               ],

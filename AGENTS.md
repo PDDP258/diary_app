@@ -2,7 +2,9 @@
 
 版本
 
-: 1.0.3 (2026-03-19) 🎨 UI优化 + 🐛 调试功能 |   技术栈  : Flutter 3.x + Provider + SQLite
+: 1.1.1 (2026-03-22) 📦 软件版本同步 + 📝 文档更新 |   技术栈  : Flutter 3.x + Provider + SQLite
+
+> **注意**：本文档版本号仅用于 AI 协作记录，软件实际版本号以 `pubspec.yaml` 和软件内显示为准。
 
 ## 快速开始
 
@@ -25,7 +27,81 @@ flutter build ios --release
 
 ## 核心规范
 
-### 1. 主题使用（强制）
+### 1. 屏幕布局规范（重要）
+
+非全面屏设备必须正确处理系统导航栏，确保内容不被遮挡：
+
+```dart
+// ✅ 正确 - MainScreen 使用 Stack 精确定位
+return Scaffold(
+  extendBody: false,
+  body: Stack(
+    children: [
+      // 内容区域 - 避开系统导航栏和软件导航栏
+      Positioned.fill(
+        bottom: systemNavBarHeight + 96, // 系统导航栏 + 软件导航栏高度
+        child: PageView(...),
+      ),
+      // 软件导航栏 - 位于系统导航栏上方
+      Positioned(
+        left: 0,
+        right: 0,
+        bottom: systemNavBarHeight,
+        height: 96,
+        child: CustomBottomNav(...),
+      ),
+    ],
+  ),
+);
+
+// ❌ 错误 - 使用 SafeArea 底部或默认 bottomNavigationBar 会导致遮挡
+// SafeArea(bottom: true) // 不要这样做
+// Scaffold(bottomNavigationBar: ...) // 不要这样做
+```
+
+**关键要点：**
+1. `extendBody: false` - 禁止 body 延伸到系统导航栏下方
+2. 使用 `Stack` + `Positioned` 手动控制布局
+3. 内容区域底部留出 `systemNavBarHeight + 96` 空间
+4. 软件导航栏位于 `bottom: systemNavBarHeight` 处
+5. 系统导航栏颜色通过 `SystemChrome.setSystemUIOverlayStyle` 设置
+
+### 2. 导航栏行为（强制）
+
+```dart
+/// 处理滚动通知，控制导航栏显示/隐藏
+bool _onScrollNotification(ScrollNotification notification) {
+  if (notification is ScrollUpdateNotification) {
+    final maxScroll = notification.metrics.maxScrollExtent;
+    if (maxScroll > 0) {
+      final scrollDelta = notification.scrollDelta ?? 0;
+      
+      // 下滑（向下滚动）：立即隐藏导航栏
+      if (scrollDelta > 10) {
+        _hideNavBar();
+        _inactivityTimer?.cancel();
+      }
+      // 上滑（向上滚动）：显示导航栏，3秒后隐藏
+      else if (scrollDelta < -5) {
+        _showNavBar();
+        _resetInactivityTimer();
+      }
+    }
+  }
+  return false;
+}
+```
+
+**行为规则：**
+1. **下滑（向下滚动）**：**任何时候**都立即隐藏导航栏
+2. **上滑（向上滚动）**：立即显示导航栏，3秒后自动隐藏
+3. **点击无效区域**：立即显示导航栏，3秒后自动隐藏
+4. **页面跳转返回**：显示导航栏，**从零开始**3秒计时
+5. **应用后台返回**：显示导航栏，**从零开始**3秒计时
+
+**注意：** 下滑隐藏没有 `pixels > 0` 限制，在页面顶部下滑也会隐藏。
+
+### 3. 主题使用（强制）
 
 ```dart
 // ✅ 正确
@@ -630,6 +706,28 @@ with open('lib/screens/profile_screen.dart', 'w', encoding='utf-8') as f:
   4. 不要尝试手动修复乱码  （信息已丢失，不可逆）
 
 ## 版本记录
+
+- v1.0.5   (2026-03-22) - 底部导航栏优化 + 编辑页UI修复 + 调试功能增强:
+  - 底部导航栏页面状态保持
+    - 使用 IndexedStack 替代 PageView，切换页面时保持状态
+    - 修复页面状态丢失问题（滚动位置、展开状态等）
+    - 添加防快速点击保护
+  - 编辑日记页和日记详情页UI优化
+    - 移除标题和内容卡片的渐变背景，改为纯色
+    - 移除卡片边框，消除外圈杂线
+    - 修复 TextField 内框显示问题
+    - 统一所有卡片圆角风格
+  - 导航栏倒计时调整
+    - 自动隐藏倒计时从 3 秒改为 5 秒
+    - 优化从子页面返回时的导航栏显示逻辑
+  - 贴纸系统优化
+    - 扩大贴纸位置范围到全屏（避开核心内容区）
+    - 调整刷新频率、显示时长和最大数量
+    - 添加贴纸"性格"系统（闪现型/普通型/常驻型）
+  - 新增调试功能
+    - 添加"清除除日记外所有数据"功能
+    - 可清除徽章、扭蛋、主题、贴纸、头像等数据
+    - 保留日记数据不受影响
 
 - v1.0.4   (2026-03-19) - 主题配色统一 + 系统导航栏适配 + SafeArea 优化:
   - 主题配色统一（所有特殊主题统一成主动设置效果）

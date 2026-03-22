@@ -79,10 +79,10 @@ class _CustomStickerOverlayState extends State<CustomStickerOverlay> {
     final left = sticker.positionX * screenWidth;
     final top = sticker.positionY * screenHeight;
 
-    // 计算图片最大显示尺寸（最长边，考虑缩放）
-    final maxSize = 80 * sticker.scale;
-    // 扩大点击区域，至少120x120，方便拖动
-    final hitAreaSize = maxSize < 120 ? 120.0 : maxSize + 20;
+    // 减小图片显示尺寸（从80改为60），避免遮挡内容
+    final maxSize = 60 * sticker.scale;
+    // 扩大点击区域，确保拖拽体验流畅，最小100x100
+    final hitAreaSize = maxSize < 100 ? 100.0 : maxSize + 20;
 
     return Positioned(
       left: left - hitAreaSize / 2,
@@ -93,11 +93,13 @@ class _CustomStickerOverlayState extends State<CustomStickerOverlay> {
           setState(() => _draggingSticker = sticker);
         },
         onPanUpdate: (details) {
+          // 优化拖拽体验：使用更直接的坐标计算，减少阻力感
           setState(() {
-            final newX = (left + details.delta.dx) / screenWidth;
-            final newY = (top + details.delta.dy) / screenHeight;
-            sticker.positionX = newX.clamp(0.05, 0.95);
-            sticker.positionY = newY.clamp(0.05, 0.95);
+            // 直接根据delta更新位置，无需重新计算left/top
+            sticker.positionX = (sticker.positionX + details.delta.dx / screenWidth)
+                .clamp(0.03, 0.97);
+            sticker.positionY = (sticker.positionY + details.delta.dy / screenHeight)
+                .clamp(0.05, 0.92);
           });
         },
         onPanEnd: (_) {
@@ -324,10 +326,35 @@ class StickerPosition {
             : emoji != null);
 
   factory StickerPosition.fromSticker(CustomSticker sticker) {
-    // 添加随机抖动避免多个贴纸重叠
+    // 使用全局随机数生成器，避免多个实例产生相同的随机序列
     final random = Random();
-    final baseX = 0.7 + random.nextDouble() * 0.15; // 0.7-0.85
-    final baseY = 0.3 + random.nextDouble() * 0.4;  // 0.3-0.7
+    
+    // 改进随机位置生成策略：
+    // 1. 避开屏幕中央区域（0.3-0.7），避免遮挡内容
+    // 2. 在屏幕边缘四个象限随机分布
+    // 3. 增加随机性，确保每次都在不同位置
+    
+    final zone = random.nextInt(4); // 0:左上, 1:右上, 2:左下, 3:右下
+    double baseX, baseY;
+    
+    switch (zone) {
+      case 0: // 左上区域
+        baseX = 0.08 + random.nextDouble() * 0.22;  // 0.08-0.30
+        baseY = 0.10 + random.nextDouble() * 0.25;  // 0.10-0.35
+        break;
+      case 1: // 右上区域
+        baseX = 0.70 + random.nextDouble() * 0.22;  // 0.70-0.92
+        baseY = 0.10 + random.nextDouble() * 0.25;  // 0.10-0.35
+        break;
+      case 2: // 左下区域
+        baseX = 0.08 + random.nextDouble() * 0.22;  // 0.08-0.30
+        baseY = 0.70 + random.nextDouble() * 0.20;  // 0.70-0.90
+        break;
+      default: // 右下区域（zone 3）
+        baseX = 0.70 + random.nextDouble() * 0.22;  // 0.70-0.92
+        baseY = 0.70 + random.nextDouble() * 0.20;  // 0.70-0.90
+        break;
+    }
     
     return StickerPosition(
       id: sticker.id,
@@ -337,7 +364,8 @@ class StickerPosition {
       targetPage: sticker.targetPage,
       positionX: baseX,
       positionY: baseY,
-      scale: sticker.scale,
+      // 稍微减小默认缩放比例，避免太大遮挡内容
+      scale: sticker.scale * 0.85,
       rotation: sticker.rotation,
     );
   }

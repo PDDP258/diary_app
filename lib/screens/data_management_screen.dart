@@ -889,7 +889,7 @@ class _DataManagementScreenState extends State<DataManagementScreen> {
       final provider = context.read<DiaryProvider>();
 
       final backupData = {
-        'version': '1.0.0',
+        'version': '1.1.0',
         'exportTime': DateTime.now().toIso8601String(),
         'diaries': provider.diaries.map((d) => d.toMap()).toList(),
         'moods': provider.moods.map((m) => m.toMap()).toList(),

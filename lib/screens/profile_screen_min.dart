@@ -92,7 +92,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _MenuItem(
                 icon: Icons.info_outline,
                 title: '关于日记',
-                subtitle: '版本 1.0.1',
+                subtitle: '版本 1.1.0'
                 onTap: () => _showAbout(context),
               ),
             ], scheme),
@@ -264,7 +264,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    '版本 1.0.1',
+                    '版本 1.1.0'
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
