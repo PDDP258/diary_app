@@ -1,6 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../config/app_theme.dart';
+import '../providers/diary_provider.dart';
 import '../providers/theme_provider.dart';
 import '../services/auto_backup_service.dart';
 import '../services/cloud_sync_service.dart';
@@ -239,24 +242,70 @@ class _BackupManagerScreenState extends State<BackupManagerScreen> {
     try {
       final cloudService = CloudSyncFactory.instance;
       
-      // 1. 从云端下载备份
-      final backupData = await cloudService.downloadBackupFromFolder(
+      // 1. 从云端下载备份（不解密，先检查是否能下载）
+      final encryptedData = await cloudService.downloadBackupFromFolderRaw(
         backup.folderName,
-        decryptionKey: keyController.text.trim(),
       );
       
-      if (backupData == null) {
+      if (encryptedData == null) {
         setState(() => _isLoading = false);
-        _showError('下载或解密失败，请检查密钥是否正确');
+        _showError('下载备份失败，请检查网络连接和云存储路径');
+        return;
+      }
+      
+      // 显示原始内容供调试（如果数据很小）
+      final rawJson = jsonEncode(encryptedData);
+      if (rawJson.length < 500) {
+        print('原始备份内容: $rawJson');
+      }
+      
+      // 2. 解密备份（清理密钥中的换行符和空格）
+      final cleanKey = keyController.text.trim().replaceAll(RegExp(r'\s+'), '');
+      print('使用密钥: ${cleanKey.substring(0, cleanKey.length > 10 ? 10 : cleanKey.length)}...');
+      
+      // 直接使用 EncryptionService 解密
+      final encryptedContent = encryptedData['data'] as String?;
+      if (encryptedContent == null) {
+        setState(() => _isLoading = false);
+        _showError('备份数据格式错误：缺少加密内容');
+        return;
+      }
+      
+      final decryptedJson = await EncryptionService.decryptWithCloudKey(
+        encryptedContent,
+        cleanKey,
+      );
+      
+      if (decryptedJson == null) {
+        setState(() => _isLoading = false);
+        _showError('解密失败，请检查密钥是否正确');
+        _showDebugDialog(encryptedData, cleanKey);
+        return;
+      }
+      
+      Map<String, dynamic>? backupData;
+      try {
+        backupData = jsonDecode(decryptedJson) as Map<String, dynamic>;
+      } catch (e) {
+        setState(() => _isLoading = false);
+        _showError('解密后的数据格式错误: $e');
         return;
       }
 
-      // 2. 合并到本地（不覆盖）
-      final result = await cloudService.mergeBackupToLocal(backupData);
+      // 2. 合并到本地（不覆盖），同时恢复图片
+      final result = await cloudService.mergeBackupToLocal(
+        backupData,
+        folderName: backup.folderName,
+      );
       
       setState(() => _isLoading = false);
       
       if (result.success) {
+        // 刷新日记显示 - 等待加载完成
+        if (mounted) {
+          await context.read<DiaryProvider>().loadDiaries();
+        }
+        
         if (mounted) {
           showDialog(
             context: context,
@@ -265,7 +314,11 @@ class _BackupManagerScreenState extends State<BackupManagerScreen> {
               content: Text('成功导入 ${result.downloadedCount} 条数据'),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    // 关闭备份管理页面，返回到数据管理页面，并返回true表示数据有更改
+                    Navigator.pop(context, true);
+                  },
                   child: const Text('确定'),
                 ),
               ],
@@ -287,6 +340,144 @@ class _BackupManagerScreenState extends State<BackupManagerScreen> {
         SnackBar(content: Text(message), backgroundColor: Colors.red),
       );
     }
+  }
+
+  /// 显示调试对话框，帮助排查解密问题
+  void _showDebugDialog(Map<String, dynamic> encryptedData, String key) {
+    final scheme = AppTheme.schemeOf(context);
+    final dataContent = encryptedData['data']?.toString() ?? '无';
+    final hasCloudPrefix = dataContent.startsWith('__CLOUD__');
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('解密失败 - 调试信息'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('密钥前10位: ${key.substring(0, key.length > 10 ? 10 : key.length)}...', 
+                style: TextStyle(fontSize: 12, color: scheme.textMediumColor)),
+              const SizedBox(height: 8),
+              Text('密钥长度: ${key.length}', 
+                style: TextStyle(fontSize: 12, color: scheme.textMediumColor)),
+              const SizedBox(height: 8),
+              Text('是否加密格式: ${encryptedData['_encrypted'] == true ? "是" : "否"}', 
+                style: TextStyle(fontSize: 12, color: scheme.textMediumColor)),
+              const SizedBox(height: 8),
+              Text('数据版本: ${encryptedData['_version']?.toString() ?? "未知"}', 
+                style: TextStyle(fontSize: 12, color: scheme.textMediumColor)),
+              const SizedBox(height: 8),
+              Text('是否有__CLOUD__前缀: ${hasCloudPrefix ? "是" : "否"}', 
+                style: TextStyle(fontSize: 12, color: hasCloudPrefix ? Colors.green : Colors.red)),
+              const SizedBox(height: 16),
+              const Text('密文前50字符:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text(
+                dataContent.length > 50 ? dataContent.substring(0, 50) + '...' : dataContent,
+                style: TextStyle(fontSize: 10, color: scheme.textLightColor, fontFamily: 'monospace'),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '提示: 如果"是否有__CLOUD__前缀"为否，说明这不是加密备份，可能是旧版本格式。',
+                style: TextStyle(fontSize: 12, color: scheme.textMediumColor),
+              ),
+              const SizedBox(height: 16),
+              // 密钥自测
+              FutureBuilder<Map<String, dynamic>>(
+                future: EncryptionService.verifyKey(key),
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    final verifyResult = snapshot.data!;
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '密钥自测结果:',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: scheme.textDarkColor),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '密钥有效性: ${verifyResult['valid'] == true ? "✓ 有效" : "✗ 无效"}',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: verifyResult['valid'] == true ? Colors.green : Colors.red,
+                          ),
+                        ),
+                        Text(
+                          '能否加密: ${verifyResult['canEncrypt'] == true ? "✓" : "✗"}',
+                          style: TextStyle(fontSize: 12, color: scheme.textMediumColor),
+                        ),
+                        Text(
+                          '能否解密: ${verifyResult['canDecrypt'] == true ? "✓" : "✗"}',
+                          style: TextStyle(fontSize: 12, color: scheme.textMediumColor),
+                        ),
+                        if (verifyResult['error'] != null) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            '错误: ${verifyResult['error']}',
+                            style: TextStyle(fontSize: 12, color: Colors.red),
+                          ),
+                        ],
+                        const SizedBox(height: 16),
+                        // 尝试用这个密钥解密实际数据
+                        Text(
+                          '实际备份解密测试:',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: scheme.textDarkColor),
+                        ),
+                        const SizedBox(height: 8),
+                        FutureBuilder<String?>(
+                          future: EncryptionService.decryptWithCloudKey(dataContent, key),
+                          builder: (context, decryptSnapshot) {
+                            if (decryptSnapshot.connectionState == ConnectionState.waiting) {
+                              return const Text('测试中...', style: TextStyle(fontSize: 12));
+                            }
+                            if (decryptSnapshot.hasError) {
+                              return Text(
+                                '解密异常: ${decryptSnapshot.error}',
+                                style: const TextStyle(fontSize: 12, color: Colors.red),
+                              );
+                            }
+                            if (decryptSnapshot.data == null) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    '解密结果: ✗ 失败（返回null）',
+                                    style: TextStyle(fontSize: 13, color: Colors.red),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    '可能原因:\n1. 该备份不是用此密钥加密的\n2. 备份文件已损坏\n3. 加密/解密算法不匹配',
+                                    style: TextStyle(fontSize: 11, color: scheme.textMediumColor),
+                                  ),
+                                ],
+                              );
+                            }
+                            return Text(
+                              '解密结果: ✓ 成功（长度: ${decryptSnapshot.data!.length}）',
+                              style: const TextStyle(fontSize: 13, color: Colors.green),
+                            );
+                          },
+                        ),
+                      ],
+                    );
+                  }
+                  return const CircularProgressIndicator();
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('关闭'),
+          ),
+        ],
+      ),
+    );
   }
 
   String _formatDateTime(String isoString) {
@@ -711,7 +902,7 @@ class _BackupManagerScreenState extends State<BackupManagerScreen> {
           ),
         ),
         title: Text(
-          '设备备份 ${backup.folderName.substring(8)}', // 去掉 backup_ 前缀
+          '设备备份 ${backup.folderName.substring(7)}', // 去掉 backup_ 前缀
           style: TextStyle(
             fontWeight: FontWeight.w600,
             color: scheme.textDarkColor,

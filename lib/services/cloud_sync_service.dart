@@ -114,7 +114,7 @@ abstract class CloudSyncService {
     required List<Mood> moods,
     required List<Tag> tags,
     required List<Map<String, dynamic>> diaryTags,
-    bool syncImages = false,
+    bool syncImages = true, // 默认包含图片
   });
 
   /// 从云端恢复
@@ -132,8 +132,18 @@ abstract class CloudSyncService {
     required String decryptionKey,
   });
 
+  /// 从指定文件夹下载原始加密备份数据（不解密）
+  Future<Map<String, dynamic>?> downloadBackupFromFolderRaw(String folderName);
+
+  /// 解密备份数据
+  Future<Map<String, dynamic>?> decryptBackupData(
+    Map<String, dynamic> encryptedData,
+    String decryptionKey,
+  );
+
   /// 合并备份数据到本地（不覆盖，只添加）
-  Future<SyncResult> mergeBackupToLocal(Map<String, dynamic> backupData);
+  /// [folderName] 可选，指定云端备份文件夹名，用于恢复图片
+  Future<SyncResult> mergeBackupToLocal(Map<String, dynamic> backupData, {String? folderName});
 }
 
 /// 云端备份信息
@@ -656,6 +666,22 @@ class WebDAVSyncService extends CloudSyncService {
     required String decryptionKey,
   }) async {
     try {
+      // 1. 下载原始加密数据
+      final rawData = await downloadBackupFromFolderRaw(folderName);
+      if (rawData == null) return null;
+      
+      // 2. 解密
+      return await decryptBackupData(rawData, decryptionKey);
+    } catch (e) {
+      _debugPrint('从文件夹下载备份失败: $e', level: 'ERROR');
+      return null;
+    }
+  }
+
+  /// 从指定文件夹下载原始加密备份数据（不解密）
+  @override
+  Future<Map<String, dynamic>?> downloadBackupFromFolderRaw(String folderName) async {
+    try {
       final httpClient = HttpClient()
         ..badCertificateCallback = (cert, host, port) => true;
 
@@ -682,7 +708,7 @@ class WebDAVSyncService extends CloudSyncService {
           final data = jsonDecode(jsonStr) as Map<String, dynamic>;
 
           httpClient.close();
-          return await _decryptBackupData(data, decryptionKey);
+          return data;
         }
 
         await response.drain();
@@ -697,6 +723,15 @@ class WebDAVSyncService extends CloudSyncService {
       _debugPrint('从文件夹下载备份失败: $e', level: 'ERROR');
       return null;
     }
+  }
+
+  /// 解密备份数据（公开方法供UI使用）
+  @override
+  Future<Map<String, dynamic>?> decryptBackupData(
+    Map<String, dynamic> encryptedData,
+    String decryptionKey,
+  ) async {
+    return await _decryptBackupData(encryptedData, decryptionKey);
   }
 
   /// 解密备份数据
@@ -825,7 +860,7 @@ class WebDAVSyncService extends CloudSyncService {
   }
 
   @override
-  Future<SyncResult> mergeBackupToLocal(Map<String, dynamic> backupData) async {
+  Future<SyncResult> mergeBackupToLocal(Map<String, dynamic> backupData, {String? folderName}) async {
     _debugPrint('=== 开始合并备份到本地 ===');
     
     try {
@@ -908,6 +943,14 @@ class WebDAVSyncService extends CloudSyncService {
         await DatabaseService.mergeDiaryTags(
           diaryTagsList.cast<Map<String, dynamic>>()
         );
+      }
+
+      // 5. 恢复图片（如果提供了文件夹名）
+      int restoredImages = 0;
+      if (folderName != null && folderName.isNotEmpty) {
+        _debugPrint('开始从文件夹 $folderName 恢复图片...');
+        restoredImages = await _restoreImageArchives(folderName);
+        _debugPrint('图片恢复完成，共 $restoredImages 张');
       }
 
       return SyncResult.success(
@@ -1159,7 +1202,7 @@ class WebDAVSyncService extends CloudSyncService {
     required List<Mood> moods,
     required List<Tag> tags,
     required List<Map<String, dynamic>> diaryTags,
-    bool syncImages = false,
+    bool syncImages = true, // 默认包含图片
   }) async {
     _debugPrint('=== 开始同步到云端 ===');
     
@@ -1324,7 +1367,11 @@ class WebDAVSyncService extends CloudSyncService {
             'custom_stickers', backupData['custom_stickers'] as String);
       }
 
-      _debugPrint('从云端恢复完成，图片将在访问日记时按需加载');
+      // 6. 恢复图片
+      _debugPrint('开始恢复图片...');
+      final folderName = await _getCurrentBackupFolderName();
+      final restoredImages = await _restoreImageArchives(folderName);
+      _debugPrint('图片恢复完成，共 $restoredImages 张');
 
       final diariesCount = diariesList?.length ?? 0;
 
@@ -1337,6 +1384,138 @@ class WebDAVSyncService extends CloudSyncService {
     } catch (e) {
       return SyncResult.failure('恢复失败: $e');
     }
+  }
+
+  /// 扫描指定备份文件夹中的图片包
+  Future<List<String>> _scanImageArchives(String folderName) async {
+    final archives = <String>[];
+    
+    try {
+      var baseUrl = _serverUrl!;
+      if (!baseUrl.endsWith('/')) {
+        baseUrl = '$baseUrl/';
+      }
+
+      final httpClient = HttpClient()
+        ..badCertificateCallback = (cert, host, port) => true;
+
+      try {
+        final uri = Uri.parse('${baseUrl}diary_backups/$folderName/images/');
+        _debugPrint('扫描图片目录: $uri');
+
+        final request = await httpClient.openUrl('PROPFIND', uri);
+        final auth = base64Encode(utf8.encode('$_username:$_password'));
+        request.headers.set('Authorization', 'Basic $auth');
+        request.headers.set('Depth', '1');
+        request.headers.set('Content-Type', 'application/xml');
+        request.headers.set('Connection', 'close');
+        request.write(
+          '<?xml version="1.0"?>'
+          '<d:propfind xmlns:d="DAV:">'
+          '<d:prop><d:displayname/><d:getlastmodified/></d:prop>'
+          '</d:propfind>'
+        );
+
+        final response = await request.close().timeout(const Duration(seconds: 30));
+        final statusCode = response.statusCode;
+
+        if (statusCode == 207) {
+          final bytes = await response.fold<List<int>>([], (prev, chunk) => prev..addAll(chunk));
+          final xmlStr = utf8.decode(bytes);
+          
+          // 解析XML，提取.enc文件名
+          final regExp = RegExp(r'<d:displayname>([^<]+)</d:displayname>');
+          final matches = regExp.allMatches(xmlStr);
+          
+          for (final match in matches) {
+            final name = match.group(1);
+            if (name != null && name.endsWith('.enc')) {
+              archives.add(name);
+            }
+          }
+          
+          _debugPrint('发现 ${archives.length} 个图片包');
+        }
+
+        await response.drain();
+        httpClient.close();
+      } catch (e) {
+        httpClient.close();
+        _debugPrint('扫描图片目录失败: $e');
+      }
+    } catch (e) {
+      _debugPrint('扫描图片包失败: $e', level: 'ERROR');
+    }
+    
+    return archives;
+  }
+
+  /// 下载并恢复图片包
+  Future<int> _restoreImageArchives(String folderName) async {
+    int restoredCount = 0;
+    
+    try {
+      // 扫描图片包
+      final archives = await _scanImageArchives(folderName);
+      if (archives.isEmpty) {
+        _debugPrint('没有图片包需要恢复');
+        return 0;
+      }
+      
+      // 获取应用文档目录用于保存图片
+      final appDir = await getApplicationDocumentsDirectory();
+      final imagesDir = Directory('${appDir.path}/diary_images');
+      if (!await imagesDir.exists()) {
+        await imagesDir.create(recursive: true);
+      }
+      
+      // 下载并解压每个图片包
+      for (final archiveName in archives) {
+        try {
+          _debugPrint('下载图片包: $archiveName');
+          final encryptedBytes = await downloadImageArchive(archiveName);
+          if (encryptedBytes == null) {
+            _debugPrint('下载图片包失败: $archiveName', level: 'ERROR');
+            continue;
+          }
+          
+          // 解密（转换为Uint8List）
+          final decryptedBytes = await EncryptionService.decryptData(Uint8List.fromList(encryptedBytes));
+          if (decryptedBytes == null) {
+            _debugPrint('解密图片包失败: $archiveName', level: 'ERROR');
+            continue;
+          }
+          
+          // 解压ZIP
+          final archive = ZipDecoder().decodeBytes(decryptedBytes);
+          if (archive == null) {
+            _debugPrint('解压图片包失败: $archiveName', level: 'ERROR');
+            continue;
+          }
+          
+          // 保存图片
+          for (final file in archive) {
+            if (file.isFile) {
+              final fileName = file.name;
+              final filePath = '${imagesDir.path}/$fileName';
+              final outputFile = File(filePath);
+              await outputFile.writeAsBytes(file.content as List<int>);
+              restoredCount++;
+            }
+          }
+          
+          _debugPrint('图片包 $archiveName 恢复完成，共 ${archive.length} 张图片');
+        } catch (e) {
+          _debugPrint('恢复图片包 $archiveName 失败: $e', level: 'ERROR');
+        }
+      }
+      
+      _debugPrint('图片恢复完成，共 $restoredCount 张');
+    } catch (e) {
+      _debugPrint('恢复图片包失败: $e', level: 'ERROR');
+    }
+    
+    return restoredCount;
   }
 
   void _debugPrint(String message, {String level = 'INFO'}) {

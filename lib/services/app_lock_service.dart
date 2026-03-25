@@ -356,12 +356,13 @@ class AppLockService {
     }
   }
 
-  /// 保存图片到公共目录（相册）
+  /// 保存图片到公共目录（Download/diary_backup）
+  /// 和txt导出保持一致的路径
   static Future<String?> _saveToPublicDirectory(
       Uint8List imageBytes, String fileName) async {
     try {
       if (Platform.isAndroid) {
-        // Android: 尝试保存到外部存储的 Pictures 目录
+        // Android: 保存到外部存储的 Download/diary_backup 目录
         // 注意：Android 11+ 需要 MANAGE_EXTERNAL_STORAGE 权限或 MediaStore API
 
         // 首先尝试获取外部存储根目录
@@ -370,13 +371,13 @@ class AppLockService {
           final externalDir = await getExternalStorageDirectory();
           if (externalDir != null) {
             // 尝试找到实际的SD卡路径
-            final path = externalDir.path;
+            final dirPath = externalDir.path;
             // 通常是 /storage/emulated/0/Android/data/... 或 /sdcard/Android/data/...
             // 我们需要找到根目录
-            if (path.contains('/Android/data/')) {
-              externalPath = path.split('/Android/data/').first;
+            if (dirPath.contains('/Android/data/')) {
+              externalPath = dirPath.split('/Android/data/').first;
             } else {
-              externalPath = path;
+              externalPath = dirPath;
             }
           }
         } catch (e) {
@@ -385,19 +386,19 @@ class AppLockService {
 
         externalPath ??= '/storage/emulated/0';
 
-        // 创建 Pictures/小记日记 目录
-        final picturesDir = Directory('$externalPath/Pictures/小记日记');
+        // 创建 Download/diary_backup 目录（和txt导出保持一致）
+        final downloadDir = Directory('$externalPath/Download/diary_backup');
         try {
-          if (!await picturesDir.exists()) {
-            await picturesDir.create(recursive: true);
-            debugPrint('创建公共图片目录: ${picturesDir.path}');
+          if (!await downloadDir.exists()) {
+            await downloadDir.create(recursive: true);
+            debugPrint('创建备份目录: ${downloadDir.path}');
           }
         } catch (e) {
           debugPrint('创建目录失败，可能没有权限: $e');
           return null;
         }
 
-        final publicFilePath = path.join(picturesDir.path, fileName);
+        final publicFilePath = path.join(downloadDir.path, fileName);
         final publicFile = File(publicFilePath);
 
         try {

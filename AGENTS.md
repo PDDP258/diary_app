@@ -275,7 +275,9 @@ SkeletonLoading(
 | PDF导出   | `pdf_export_service.dart`           | 中文字体支持，图片嵌入，封面+页眉页脚                          |
 | WebDAV  | `cloud_sync_service.dart`           | 坚果云预设，自动错误提示                                 |
 | 自动备份    | `auto_backup_service.dart`          | 每天自动备份，保存7次历史                                |
-| 备份管理    | `backup_manager_screen.dart`        | 查看、恢复、删除备份                                   |
+| 备份管理    | `backup_manager_screen.dart`        | 查看、恢复、删除备份，支持多设备导入                          |
+| 云端图片备份 | `cloud_sync_service.dart`           | ZIP打包加密，自动上传/下载图片包                           |
+| 应用锁备份  | `app_lock_service.dart`             | 手势密码备份图片保存到Download目录                          |
 | 增量同步    | `incremental_sync_service.dart`     | 只同步变更数据，减少流量                                 |
 | 图片缓存    | `image_cache_service.dart`          | 内存缓存，预加载，提升显示速度                              |
 | 懒加载     | `lazy_image.dart`                   | 图片进入视口才加载，渐进式显示                              |
@@ -294,7 +296,7 @@ SkeletonLoading(
 | 日记影院    | `diary_cinema_screen.dart`          | 电影风格预览，动态文字，图片显示                             |
 | 启动页     | splash\_screen.dart                 | 3D翻书动画（每两天一次）+ 快速淡入动画（日常）                    |
 | 音效      | `sound_service.dart`                | 点击音效，触感反馈                                    |
-| 应用锁     | `app_lock_service.dart`             | 九宫格手势密码，启动保护，备份保存到私有目录                       |
+| 应用锁     | `app_lock_service.dart`             | 九宫格手势密码，启动保护，备份保存到Download目录                  |
 | 纪念日     | `anniversary.dart`                  | 日历页定制纪念日/倒数日，写日记自动添加纪念文字                     |
 | 标签分类    | `tags_classification_screen.dart`   | 按标签浏览日记，标签8格预览                               |
 | 照片回忆    | `stats_detail_screen.dart`          | 统计页照片展览，点击可查看所有照片                            |
@@ -706,6 +708,33 @@ with open('lib/screens/profile_screen.dart', 'w', encoding='utf-8') as f:
   4. 不要尝试手动修复乱码  （信息已丢失，不可逆）
 
 ## 版本记录
+
+- v1.1.5   (2026-03-24) - 云备份架构重构 + UI优化:
+  - 云备份架构全面升级
+    - 备份按密钥分文件夹存储（diary_backups/backup_<hash>/）
+    - 支持多设备备份共存，不再相互覆盖
+    - 新增云端备份扫描功能，可发现其他设备备份
+    - 支持从其他设备备份导入（需要密钥解密）
+    - 导入采用合并模式，不覆盖现有数据
+    - 备份管理页面新增"云端其他备份"区域
+  - 云端备份图片支持
+    - 备份时自动打包并加密图片（ZIP + AES-256）
+    - 图片存储路径：diary_backups/<folder>/images/
+    - 恢复时自动下载并解压图片到本地
+    - 支持从其他设备备份恢复图片
+  - 云端备份导入UI自动刷新
+    - 导入成功后自动调用 loadDiaries() 刷新日记列表
+    - 页面返回链传递数据更改标记
+    - 个人资料页面检测并刷新数据
+  - 应用锁备份图片路径优化
+    - 备份图片保存到 Download/diary_backup/（与txt导出一致）
+    - 方便用户查找和管理备份图片
+  - 时间轴页面顶部卡片优化
+    - 图标替换为用户头像（优先自定义头像，否则emoji）
+    - 昵称字号放大（20→22），更加醒目
+    - 新增用户签名显示（替换固定文案）
+    - 扭蛋入口缩小至80%
+    - 整体Y轴居中对齐
 
 - v1.1.0   (2026-03-24) - 目标系统完善 + 指纹解锁功能:
   - 目标系统全面升级

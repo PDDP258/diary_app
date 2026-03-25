@@ -439,19 +439,42 @@ class EncryptionService {
 
   /// 使用云端备份密钥解密数据
   static Future<String?> decryptWithCloudKey(String? cipherText, String keyBase64) async {
-    if (cipherText == null || cipherText.isEmpty) return cipherText;
+    if (cipherText == null || cipherText.isEmpty) return null;
+
+    // 清理密钥
+    final cleanKey = keyBase64.trim().replaceAll(RegExp(r'\s+'), '');
+    if (cleanKey.isEmpty) {
+      print('解密失败: 密钥为空');
+      return null;
+    }
 
     if (!cipherText.startsWith('__CLOUD__')) {
+      print('解密: 非加密格式');
       return cipherText;
     }
 
     try {
-      final key = encrypt.Key.fromBase64(keyBase64);
+      print('解密开始: 密文长度=${cipherText.length}');
+      
+      final key = encrypt.Key.fromBase64(cleanKey);
 
-      final inner = utf8.decode(base64Decode(cipherText.substring(8)));
+      // __CLOUD__ 是9个字符，不是8个！
+      final payload = cipherText.substring(9);
+      print('去掉前缀后: 长度=${payload.length}');
+      
+      final decoded = base64Decode(payload);
+      print('Base64解码后: 长度=${decoded.length}');
+      
+      final inner = utf8.decode(decoded);
+      print('UTF8解码后: 长度=${inner.length}');
+      
       final parts = inner.split(':');
+      print('分割后部分数: ${parts.length}');
 
-      if (parts.length != 2) return null;
+      if (parts.length != 2) {
+        print('解密失败: 格式不正确');
+        return null;
+      }
 
       final iv = encrypt.IV.fromBase64(parts[0]);
       final encrypted = encrypt.Encrypted.fromBase64(parts[1]);
@@ -460,10 +483,13 @@ class EncryptionService {
         encrypt.AES(key, mode: encrypt.AESMode.cbc),
       );
 
-      return encrypter.decrypt(encrypted, iv: iv);
-    } catch (e) {
+      final result = encrypter.decrypt(encrypted, iv: iv);
+      print('解密成功: 原文长度=${result.length}');
+      return result;
+    } catch (e, stackTrace) {
       print('云端解密失败: $e');
-      return cipherText;
+      print('堆栈: $stackTrace');
+      return null;
     }
   }
 
@@ -518,6 +544,58 @@ class EncryptionService {
     } catch (e) {
       print('云端数据解密失败: $e');
       return null;
+    }
+  }
+
+  /// 验证密钥是否有效（可以成功加密解密）
+  static Future<Map<String, dynamic>> verifyKey(String keyBase64) async {
+    final result = <String, dynamic>{
+      'valid': false,
+      'error': null,
+      'canEncrypt': false,
+      'canDecrypt': false,
+    };
+
+    try {
+      // 清理密钥
+      final cleanKey = keyBase64.trim().replaceAll(RegExp(r'\s+'), '');
+      
+      if (cleanKey.isEmpty) {
+        result['error'] = '密钥为空';
+        return result;
+      }
+
+      // 尝试解析密钥
+      final key = encrypt.Key.fromBase64(cleanKey);
+      result['keyLength'] = key.bytes.length;
+
+      // 测试加密
+      final testData = '{"test": "hello world 中文测试", "timestamp": ${DateTime.now().millisecondsSinceEpoch}}';
+      final iv = encrypt.IV.fromSecureRandom(16);
+      final encrypter = encrypt.Encrypter(
+        encrypt.AES(key, mode: encrypt.AESMode.cbc),
+      );
+      
+      final encrypted = encrypter.encrypt(testData, iv: iv);
+      result['canEncrypt'] = true;
+      result['encryptedLength'] = encrypted.bytes.length;
+
+      // 测试解密
+      final decrypted = encrypter.decrypt(encrypted, iv: iv);
+      result['canDecrypt'] = true;
+      result['decryptedMatch'] = decrypted == testData;
+
+      if (decrypted == testData) {
+        result['valid'] = true;
+      } else {
+        result['error'] = '解密后的数据与原始数据不匹配';
+      }
+
+      return result;
+    } catch (e, stackTrace) {
+      result['error'] = '验证失败: $e';
+      result['stackTrace'] = stackTrace.toString();
+      return result;
     }
   }
 }

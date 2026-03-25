@@ -35,6 +35,7 @@ class _DataManagementScreenState extends State<DataManagementScreen> {
   bool _isExporting = false;
   bool _isImporting = false;
   bool _isSyncing = false;
+  bool _dataChanged = false; // 标记数据是否有更改
 
   @override
   void initState() {
@@ -58,7 +59,7 @@ class _DataManagementScreenState extends State<DataManagementScreen> {
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.close, color: scheme.textDarkColor),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(context, _dataChanged),
         ),
         title: Text(
           '数据管理',
@@ -1232,13 +1233,17 @@ class _DataManagementScreenState extends State<DataManagementScreen> {
     );
   }
 
-  void _showBackupManager(BuildContext context) {
-    Navigator.push(
+  Future<void> _showBackupManager(BuildContext context) async {
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => const BackupManagerScreen(),
       ),
     );
+    // 如果导入了数据则标记更改
+    if (mounted && result == true) {
+      setState(() => _dataChanged = true);
+    }
   }
 
   // 显示备份密钥对话框（需要手势密码验证）

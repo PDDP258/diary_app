@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_theme.dart';
 import '../models/mood.dart';
+import '../providers/diary_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/theme_provider.dart';
 import '../services/app_lock_service.dart';
@@ -617,11 +618,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           GestureDetector(
             onTap: () => _showAvatarOptions(context, settings),
             child: Container(
-              width: 72,
-              height: 72,
+              width: 80,
+              height: 80,
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(26),
                 border: Border.all(
                   color: Colors.white.withValues(alpha: 0.3),
                   width: 2,
@@ -634,12 +635,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(24),
                 child: settings.customAvatarPath != null
                     ? Image.file(
                         File(settings.customAvatarPath!),
-                        width: 72,
-                        height: 72,
+                        width: 80,
+                        height: 80,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
                           return Center(
@@ -1057,11 +1058,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _navigateTo(Widget screen) {
-    Navigator.push(
+  Future<void> _navigateTo(Widget screen) async {
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => screen),
     );
+    // 如果从数据管理页面返回且数据有更改，刷新日记数据
+    if (result == true && screen is DataManagementScreen) {
+      if (mounted) {
+        context.read<DiaryProvider>().loadDiaries();
+      }
+    }
   }
 
   // 应用锁开关
@@ -2102,15 +2109,13 @@ class _AboutEasterEgg {
                         const SizedBox(height: 12),
                         _buildVersionItem(
                           'v1.1.5',
-                          '🎉 全新发布',
+                          '☁️ 云备份重构 + 🎨 UI优化',
                           [
-                            '全新自定义目标系统',
-                            '日历页UI优化',
-                            '农历节日连续显示',
-                            '编辑日记页渐变重设计',
-                            '主题配色统一',
-                            '系统导航栏适配',
-                            '调试功能增强',
+                            '云备份按密钥分文件夹存储，支持多设备共存',
+                            '新增云端备份扫描，可发现其他设备备份',
+                            '支持从其他设备备份导入（合并不覆盖）',
+                            '时间轴顶部卡片显示用户头像和签名',
+                            '扭蛋入口缩小至80%，整体布局优化',
                           ],
                           scheme,
                         ),
