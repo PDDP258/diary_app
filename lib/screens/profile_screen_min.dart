@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_theme.dart';
 import '../providers/settings_provider.dart';
 import '../providers/theme_provider.dart';
@@ -10,7 +9,6 @@ import '../services/badge_service.dart' as badge_service;
 import '../services/sound_service.dart';
 import 'icon_theme_screen.dart';
 import 'tag_management_screen_v3.dart';
-import 'main_screen.dart' deferred as main;
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -92,7 +90,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _MenuItem(
                 icon: Icons.info_outline,
                 title: '关于日记',
-                subtitle: '版本 1.1.0'
+                subtitle: '版本 1.1.5'',
                 onTap: () => _showAbout(context),
               ),
             ], scheme),
@@ -264,7 +262,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    '版本 1.1.0'
+                    '版本 1.1.5''
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -322,7 +320,6 @@ class _MenuItem extends StatelessWidget {
     required this.icon,
     required this.title,
     this.subtitle,
-    this.trailing,
     required this.onTap,
   });
 

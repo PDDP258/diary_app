@@ -76,14 +76,6 @@ class _LazyImageState extends State<LazyImage> {
     if (renderObject == null) return;
 
     final viewport = RenderAbstractViewport.of(renderObject);
-    if (viewport == null) {
-      // 不在滚动容器中，直接加载
-      if (!_isVisible) {
-        setState(() => _isVisible = true);
-        _loadImage();
-      }
-      return;
-    }
 
     // 检查是否在可视区域内
     final offset = viewport.getOffsetToReveal(renderObject, 0.0).offset;

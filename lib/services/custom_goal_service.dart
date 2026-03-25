@@ -6,6 +6,7 @@ import '../models/custom_goal.dart';
 class CustomGoalService {
   static const String _goalsKey = 'custom_goals_v2';
   static const String _activeGoalIdKey = 'active_custom_goal_id';
+  static const int _maxGoals = 5; // 最多5个目标
   
   /// 获取所有目标
   static Future<List<CustomGoal>> getAllGoals() async {
@@ -56,6 +57,12 @@ class CustomGoalService {
   /// 添加新目标
   static Future<CustomGoal> addGoal(CustomGoal goal) async {
     final goals = await getAllGoals();
+    
+    // 检查是否超过最大限制
+    if (goals.length >= _maxGoals) {
+      throw Exception('最多只能设置$_maxGoals个目标，请先删除其他目标');
+    }
+    
     goals.add(goal);
     await saveGoals(goals);
     
@@ -66,6 +73,15 @@ class CustomGoalService {
     
     return goal;
   }
+  
+  /// 检查是否还可以添加目标
+  static Future<bool> canAddMoreGoals() async {
+    final goals = await getAllGoals();
+    return goals.length < _maxGoals;
+  }
+  
+  /// 获取最大目标数
+  static int get maxGoals => _maxGoals;
   
   /// 更新目标
   static Future<void> updateGoal(CustomGoal updatedGoal) async {

@@ -860,4 +860,31 @@ class DatabaseService {
     
     await _saveDiaryTagsV3();
   }
+
+  // ==================== 云同步合并方法（v1.1.5新增）====================
+
+  /// 合并日记标签关联（去重插入）
+  static Future<void> mergeDiaryTags(List<Map<String, dynamic>> diaryTags) async {
+    await _ensureInitialized();
+    
+    for (final entry in diaryTags) {
+      final diaryId = entry['diary_id'];
+      final tagId = entry['tag_id'];
+      
+      if (diaryId == null || tagId == null) continue;
+      
+      // 检查关联是否已存在
+      final exists = _diaryTags.any((existing) => 
+          existing['diary_id'] == diaryId && existing['tag_id'] == tagId);
+      
+      if (!exists) {
+        _diaryTags.add({
+          'diary_id': diaryId,
+          'tag_id': tagId,
+        });
+      }
+    }
+    
+    await _saveDiaryTags();
+  }
 }

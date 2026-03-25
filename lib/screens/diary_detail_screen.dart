@@ -168,12 +168,19 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        // ✅ 修复：使用纯色背景，不再使用渐变
-        color: scheme.cardColor,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            scheme.cardColor,
+            scheme.cardColor,
+            scheme.lightColor.withValues(alpha: 0.15),
+          ],
+        ),
         borderRadius: BorderRadius.circular(AppTheme.xlRadius),
         boxShadow: AppTheme.cardShadow,
         border: Border.all(
-          color: scheme.lightColor.withValues(alpha: 0.2),
+          color: scheme.lightColor.withValues(alpha: 0.3),
           width: 1,
         ),
       ),

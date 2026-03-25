@@ -1,7 +1,7 @@
 name: diary_app
 description: "一个支持日历视图的日记软件"
 publish_to: 'none'
-version: 1.1.0+1
+version: 1.1.5+1
 
 environment:
   sdk: ^3.5.0
@@ -36,6 +36,7 @@ dependencies:
   motion_photos: ^0.0.2  # Android Motion Photo 实况图片支持
   video_player: ^2.9.2  # 视频播放
   url_launcher: ^6.3.0  # URL启动器
+  local_auth: ^3.0.1
 
 dev_dependencies:
   flutter_test:

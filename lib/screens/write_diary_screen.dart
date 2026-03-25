@@ -969,15 +969,14 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          // 重新设计：更优雅的渐变，从白色到主题色系的柔和过渡
-          // 使用对角线渐变，营造温润的光泽感
+          // 优化：使用更柔和的三色渐变，从卡片色到浅色调再到主色调微光
           gradient: LinearGradient(
             colors: [
-              scheme.cardColor,                           // 纯白起始
-              Color.lerp(scheme.cardColor, scheme.lightColor, 0.3)!,  // 轻微混入主题浅色
-              Color.lerp(scheme.cardColor, scheme.primaryColor, 0.08)!, // 微妙主题色光晕
+              scheme.cardColor,
+              scheme.cardColor.withAlpha(245),
+              scheme.lightColor.withOpacity(0.12),
             ],
-            stops: const [0.0, 0.7, 1.0],
+            stops: const [0.0, 0.6, 1.0],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -985,7 +984,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
           boxShadow: AppTheme.cardShadow,
           // 添加微妙的边框增强层次感
           border: Border.all(
-            color: scheme.lightColor.withOpacity(0.2),
+            color: scheme.lightColor.withOpacity(0.15),
             width: 1,
           ),
         ),
@@ -1093,12 +1092,12 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: scheme.getArrowButtonBackground(),
+                color: scheme.lightColor.withOpacity(0.3),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.chevron_right_rounded,
-                color: scheme.getArrowButtonIconColor(),
+                color: scheme.textMediumColor,
                 size: 24,
               ),
             ),
@@ -1115,17 +1114,34 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          // 使用纯色背景，不再使用渐变
-          color: scheme.cardColor,
+          // 优化：使用更柔和的三色渐变，统一卡片风格
+          gradient: LinearGradient(
+            colors: _selectedMood != null
+                ? [
+                    scheme.cardColor,
+                    scheme.cardColor.withAlpha(250),
+                    Color(int.parse(
+                            _selectedMood!.color.replaceFirst('#', '0xFF')))
+                        .withOpacity(0.08),
+                  ]
+                : [
+                    scheme.cardColor,
+                    scheme.cardColor.withAlpha(245),
+                    scheme.lightColor.withOpacity(0.1),
+                  ],
+            stops: const [0.0, 0.7, 1.0],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
           borderRadius: BorderRadius.circular(AppTheme.xlRadius),
           boxShadow: AppTheme.cardShadow,
-          // 根据是否选择心情调整边框颜色
+          // 统一添加微妙边框
           border: Border.all(
             color: _selectedMood != null
                 ? Color(int.parse(
                         _selectedMood!.color.replaceFirst('#', '0xFF')))
-                    .withOpacity(0.25)
-                : scheme.lightColor.withOpacity(0.2),
+                    .withOpacity(0.2)
+                : scheme.lightColor.withOpacity(0.12),
             width: 1,
           ),
         ),
@@ -1208,12 +1224,12 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: scheme.getArrowButtonBackground(),
+                color: scheme.lightColor.withOpacity(0.3),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.chevron_right_rounded,
-                color: scheme.getArrowButtonIconColor(),
+                color: scheme.textMediumColor,
                 size: 24,
               ),
             ),
@@ -1350,17 +1366,9 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
                           }).toList(),
                         ),
                 ),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: scheme.getArrowButtonBackground(),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.chevron_right_rounded,
-                    color: scheme.getArrowButtonIconColor(),
-                    size: 20,
-                  ),
+                Icon(
+                  Icons.chevron_right,
+                  color: scheme.textLightColor.withValues(alpha: 0.5),
                 ),
               ],
             ),
@@ -1372,55 +1380,56 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
 
   Widget _buildTitleInput() {
     final scheme = AppTheme.schemeOf(context);
-    // ✅ 修复：使用 ClipRRect 包裹整个 Container 确保圆角生效
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AppTheme.xlRadius),
-      child: Container(
-        decoration: BoxDecoration(
-          // 使用纯色背景，保持简洁
-          color: scheme.cardColor,
-          // 注意：ClipRRect 已经处理了圆角，这里不需要再设置
-          boxShadow: AppTheme.cardShadow,
+    return Container(
+      decoration: BoxDecoration(
+        // 优化：使用统一的三色渐变风格
+        gradient: LinearGradient(
+          colors: [
+            scheme.cardColor,
+            scheme.cardColor.withAlpha(248),
+            scheme.lightColor.withOpacity(0.08),
+          ],
+          stops: const [0.0, 0.7, 1.0],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        child: TextField(
-          controller: _titleController,
-          decoration: InputDecoration(
-            hintText: '给今天起个标题（可选）',
-            hintStyle: TextStyle(
-              color: scheme.textLightColor.withOpacity(0.5),
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
+        borderRadius: BorderRadius.circular(AppTheme.xlRadius),
+        boxShadow: AppTheme.cardShadow,
+        border: Border.all(
+          color: scheme.lightColor.withOpacity(0.12),
+          width: 1,
+        ),
+      ),
+      child: TextField(
+        controller: _titleController,
+        decoration: InputDecoration(
+          hintText: '给今天起个标题（可选）',
+          hintStyle: TextStyle(
+            color: scheme.textLightColor.withOpacity(0.5),
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.all(20),
+          prefixIcon: Container(
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: scheme.lightColor.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(10),
             ),
-            // ✅ 修复：完全移除边框
-            border: InputBorder.none,
-            enabledBorder: InputBorder.none,
-            focusedBorder: InputBorder.none,
-            errorBorder: InputBorder.none,
-            disabledBorder: InputBorder.none,
-            // ✅ 修复：设置透明填充色
-            filled: true,
-            fillColor: Colors.transparent,
-            contentPadding: const EdgeInsets.all(20),
-            prefixIcon: Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: scheme.lightColor.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                Icons.title_rounded,
-                color: scheme.primaryColor,
-                size: 20,
-              ),
+            child: Icon(
+              Icons.title_rounded,
+              color: scheme.primaryColor,
+              size: 20,
             ),
           ),
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: scheme.textDarkColor,
-            letterSpacing: -0.3,
-          ),
+        ),
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: scheme.textDarkColor,
+          letterSpacing: -0.3,
         ),
       ),
     );
@@ -1428,84 +1437,85 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
 
   Widget _buildContentInput() {
     final scheme = AppTheme.schemeOf(context);
-    // ✅ 修复：使用 ClipRRect 包裹整个 Container 确保圆角生效
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AppTheme.xlRadius),
-      child: Container(
-        decoration: BoxDecoration(
-          // 使用纯色背景，保持简洁
-          color: scheme.cardColor,
-          // 注意：ClipRRect 已经处理了圆角，这里不需要再设置
-          boxShadow: AppTheme.cardShadow,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: scheme.lightColor.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      Icons.edit_note_rounded,
-                      color: scheme.primaryColor,
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    '日记内容',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: scheme.textDarkColor,
-                    ),
-                  ),
-                  const Spacer(),
-                  // 灵感按钮
-                  _buildInspirationButton(scheme),
-                  const SizedBox(width: 8),
-                  // 模板按钮
-                  _buildTemplateButton(scheme),
-                ],
-              ),
-            ),
-            TextField(
-              controller: _contentController,
-              decoration: InputDecoration(
-                hintText: '今天发生了什么有趣的事情？\n记录下美好的瞬间，留住珍贵的回忆...',
-                hintStyle: TextStyle(
-                  color: scheme.textLightColor.withOpacity(0.5),
-                  height: 1.6,
-                  fontSize: 15,
-                ),
-                // ✅ 修复：完全移除所有边框，消除内框
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                errorBorder: InputBorder.none,
-                disabledBorder: InputBorder.none,
-                // ✅ 修复：设置透明填充色
-                filled: true,
-                fillColor: Colors.transparent,
-                contentPadding: const EdgeInsets.all(20),
-              ),
-              style: TextStyle(
-                fontSize: 16,
-                color: scheme.textDarkColor,
-                height: 1.8,
-                letterSpacing: 0.2,
-              ),
-              maxLines: 12,
-              keyboardType: TextInputType.multiline,
-            ),
+    return Container(
+      decoration: BoxDecoration(
+        // 优化：使用统一的三色渐变风格
+        gradient: LinearGradient(
+          colors: [
+            scheme.cardColor,
+            scheme.cardColor.withAlpha(248),
+            scheme.lightColor.withOpacity(0.08),
           ],
+          stops: const [0.0, 0.7, 1.0],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
+        borderRadius: BorderRadius.circular(AppTheme.xlRadius),
+        boxShadow: AppTheme.cardShadow,
+        border: Border.all(
+          color: scheme.lightColor.withOpacity(0.12),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: scheme.lightColor.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.edit_note_rounded,
+                    color: scheme.primaryColor,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  '日记内容',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: scheme.textDarkColor,
+                  ),
+                ),
+                const Spacer(),
+                // 灵感按钮
+                _buildInspirationButton(scheme),
+                const SizedBox(width: 8),
+                // 模板按钮
+                _buildTemplateButton(scheme),
+              ],
+            ),
+          ),
+          TextField(
+            controller: _contentController,
+            decoration: InputDecoration(
+              hintText: '今天发生了什么有趣的事情？\n记录下美好的瞬间，留住珍贵的回忆...',
+              hintStyle: TextStyle(
+                color: scheme.textLightColor.withOpacity(0.5),
+                height: 1.6,
+                fontSize: 15,
+              ),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.all(20),
+            ),
+            style: TextStyle(
+              fontSize: 16,
+              color: scheme.textDarkColor,
+              height: 1.8,
+              letterSpacing: 0.2,
+            ),
+            maxLines: 12,
+            keyboardType: TextInputType.multiline,
+          ),
+        ],
       ),
     );
   }
@@ -1514,12 +1524,21 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
     final scheme = AppTheme.schemeOf(context);
     return Container(
       decoration: BoxDecoration(
-        // 使用纯色背景，保持简洁
-        color: scheme.cardColor,
+        // 优化：使用统一的三色渐变风格
+        gradient: LinearGradient(
+          colors: [
+            scheme.cardColor,
+            scheme.cardColor.withAlpha(248),
+            scheme.lightColor.withOpacity(0.08),
+          ],
+          stops: const [0.0, 0.7, 1.0],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(AppTheme.xlRadius),
         boxShadow: AppTheme.cardShadow,
         border: Border.all(
-          color: scheme.lightColor.withOpacity(0.2),
+          color: scheme.lightColor.withOpacity(0.12),
           width: 1,
         ),
       ),

@@ -32,10 +32,6 @@ class _RandomStickerOverlayState extends State<RandomStickerOverlay> {
   // 动画配置
   static const Duration _fadeInDuration = Duration(milliseconds: 400);
   static const Duration _fadeOutDuration = Duration(milliseconds: 300);
-  
-  // 动态数量管理参数
-  static const int _softMaxStickers = 5; // 软上限，超过后旧贴纸更容易消失
-  static const int _hardMaxStickers = 8; // 硬上限，绝对不超过这个数量
 
   @override
   void initState() {
@@ -72,12 +68,12 @@ class _RandomStickerOverlayState extends State<RandomStickerOverlay> {
   }
 
   /// 安排下一个贴图出现
-  /// 增加出现模式的随机性：有时单个，有时连续2-3个
+  /// 每个贴图有独立的随机延迟，避免同时刷新
   void _scheduleNextSticker({bool initial = false}) {
-    // 随机延迟：初始2-4秒，后续6-18秒（更大的随机范围）
+    // 随机延迟：初始3-6秒（增加延迟避免重叠），后续5-12秒（降低刷新频率）
     final delaySeconds = initial
-        ? 2.0 + _globalRandom.nextDouble() * 2.0 // 2-4秒初始延迟
-        : 6 + _globalRandom.nextInt(13); // 6-18秒后续间隔（更灵活）
+        ? 3.0 + _globalRandom.nextDouble() * 3.0 // 3-6秒
+        : 5 + _globalRandom.nextInt(8); // 5-12秒
 
     Future.delayed(Duration(milliseconds: (delaySeconds * 1000).round()), () {
       if (!mounted) return;
@@ -85,20 +81,6 @@ class _RandomStickerOverlayState extends State<RandomStickerOverlay> {
       // 根据概率决定是否显示
       if (_globalRandom.nextDouble() < widget.appearProbability) {
         _addRandomSticker();
-        
-        // 15%概率：连续出现第二张（营造"贴纸潮"效果）
-        if (_globalRandom.nextDouble() < 0.15 && _stickers.length < _hardMaxStickers - 1) {
-          Future.delayed(const Duration(milliseconds: 800), () {
-            if (mounted) _addRandomSticker();
-          });
-          
-          // 5%概率：连续出现第三张（罕见的三连发）
-          if (_globalRandom.nextDouble() < 0.33) {
-            Future.delayed(const Duration(milliseconds: 1600), () {
-              if (mounted) _addRandomSticker();
-            });
-          }
-        }
       }
 
       // 继续安排下一个
@@ -106,58 +88,27 @@ class _RandomStickerOverlayState extends State<RandomStickerOverlay> {
     });
   }
 
-  /// 添加一个随机贴图，带有丰富的随机属性
+  /// 添加一个随机贴图
   void _addRandomSticker() {
     if (_allAvailableStickers.isEmpty) return;
-    
-    // 动态数量管理：超过软上限后，随机移除旧贴纸
-    if (_stickers.length >= _softMaxStickers) {
-      // 计算移除概率：贴纸越多，移除概率越高
-      final removalChance = (_stickers.length - _softMaxStickers + 1) * 0.3;
-      if (_globalRandom.nextDouble() < removalChance && _stickers.isNotEmpty) {
-        // 随机选择一个旧贴纸移除（不是总是最旧的）
-        final indexToRemove = _globalRandom.nextInt(_stickers.length ~/ 2);
-        _removeStickerWithFade(_stickers[indexToRemove].id);
-      }
-    }
-    
-    // 硬上限检查
-    if (_stickers.length >= _hardMaxStickers) {
-      return; // 达到硬上限，不再添加
-    }
 
     // 随机选择一个贴图
     final sticker = _allAvailableStickers[
         _globalRandom.nextInt(_allAvailableStickers.length)];
 
-    // 生成随机位置
+    // 生成随机位置（避开中央和已有贴图）
     final position = _generateRandomPosition();
-    if (position == null) return;
+    if (position == null) return; // 找不到合适位置
 
-    // 随机角度 (-45° 到 45°，更大的变化范围)
-    final rotation = (_globalRandom.nextDouble() - 0.5) * 0.8;
+    // 随机角度 (-30° 到 30°)
+    final rotation = (_globalRandom.nextDouble() - 0.5) * 0.5;
 
-    // 随机缩放 (0.5 到 1.4，更大的变化范围)
-    final scale = 0.5 + _globalRandom.nextDouble() * 0.9;
+    // 随机缩放 (0.6 到 1.2)
+    final scale = 0.6 + _globalRandom.nextDouble() * 0.6;
 
     // 生成唯一ID
     final id =
         '${sticker.id}_${DateTime.now().millisecondsSinceEpoch}_${_globalRandom.nextInt(1000)}';
-
-    // 为每个贴纸随机分配一个"性格"（生命周期）
-    // 0: 闪现型(短暂), 1: 普通型, 2: 常驻型(长久)
-    final personality = _globalRandom.nextInt(10);
-    final int lifespanSeconds;
-    if (personality < 2) {
-      // 20% 概率：闪现型，5-8秒
-      lifespanSeconds = 5 + _globalRandom.nextInt(4);
-    } else if (personality < 7) {
-      // 50% 概率：普通型，12-18秒
-      lifespanSeconds = 12 + _globalRandom.nextInt(7);
-    } else {
-      // 30% 概率：常驻型，20-30秒
-      lifespanSeconds = 20 + _globalRandom.nextInt(11);
-    }
 
     final newSticker = RandomStickerDisplay(
       id: id,
@@ -169,7 +120,7 @@ class _RandomStickerOverlayState extends State<RandomStickerOverlay> {
       positionY: position.dy,
       rotation: rotation,
       scale: scale,
-      opacity: 0.0,
+      opacity: 0.0, // 初始透明度为0
       isVisible: false,
     );
 
@@ -192,88 +143,97 @@ class _RandomStickerOverlayState extends State<RandomStickerOverlay> {
       });
     });
 
-    // 根据"性格"安排消失时间
-    _scheduleStickerRemoval(id, lifespanSeconds);
+    // 安排这个贴图消失（5-15秒后）
+    _scheduleStickerRemoval(id);
   }
 
-  /// 生成随机位置，只避开核心输入区
-  /// 使用完全随机策略，让贴纸可以出现在屏幕的任何角落
+  /// 生成随机位置，避开中央和已有贴图
   Offset? _generateRandomPosition() {
     double x, y;
     int attempts = 0;
     const maxAttempts = 30;
 
     do {
-      // 完全随机生成位置，只避开屏幕边缘一小部分和核心输入区
-      x = 0.05 + _globalRandom.nextDouble() * 0.90;  // 0.05-0.95
-      y = 0.08 + _globalRandom.nextDouble() * 0.86;  // 0.08-0.94
-      
+      // 使用更分散的随机策略
+      // 将屏幕分成8个区域，随机选择区域后再随机位置
+      final zone = _globalRandom.nextInt(8);
+      switch (zone) {
+        case 0: // 左上
+          x = 0.05 + _globalRandom.nextDouble() * 0.35;
+          y = 0.08 + _globalRandom.nextDouble() * 0.3;
+          break;
+        case 1: // 中上
+          x = 0.4 + _globalRandom.nextDouble() * 0.2;
+          y = 0.05 + _globalRandom.nextDouble() * 0.25;
+          break;
+        case 2: // 右上
+          x = 0.6 + _globalRandom.nextDouble() * 0.35;
+          y = 0.08 + _globalRandom.nextDouble() * 0.3;
+          break;
+        case 3: // 左中
+          x = 0.03 + _globalRandom.nextDouble() * 0.25;
+          y = 0.35 + _globalRandom.nextDouble() * 0.3;
+          break;
+        case 4: // 右中
+          x = 0.72 + _globalRandom.nextDouble() * 0.25;
+          y = 0.35 + _globalRandom.nextDouble() * 0.3;
+          break;
+        case 5: // 左下
+          x = 0.05 + _globalRandom.nextDouble() * 0.35;
+          y = 0.65 + _globalRandom.nextDouble() * 0.3;
+          break;
+        case 6: // 中下
+          x = 0.4 + _globalRandom.nextDouble() * 0.2;
+          y = 0.7 + _globalRandom.nextDouble() * 0.25;
+          break;
+        default: // 右下
+          x = 0.6 + _globalRandom.nextDouble() * 0.35;
+          y = 0.65 + _globalRandom.nextDouble() * 0.3;
+          break;
+      }
       attempts++;
     } while (attempts < maxAttempts &&
-        (_isInCoreContentArea(x, y) || _isTooCloseToExistingStickers(x, y)));
+        (_isTooCloseToCenter(x, y) || _isTooCloseToExistingStickers(x, y)));
 
     if (attempts >= maxAttempts) return null;
     return Offset(x, y);
   }
 
   /// 安排贴图消失（带淡出动画）
-  /// [lifespanSeconds] 自定义生命周期（秒）
-  void _scheduleStickerRemoval(String id, int lifespanSeconds) {
-    Future.delayed(Duration(seconds: lifespanSeconds), () {
+  void _scheduleStickerRemoval(String id) {
+    // 随机显示时长：3-8秒（更短的显示时间，提高刷新频率）
+    final displayDuration = 3 + _globalRandom.nextInt(6);
+
+    Future.delayed(Duration(seconds: displayDuration), () {
       if (!mounted) return;
 
-      _removeStickerWithFade(id);
-    });
-  }
-  
-  /// 立即移除贴图（带淡出动画）
-  void _removeStickerWithFade(String id) {
-    if (!mounted) return;
-
-    // 先触发淡出动画
-    setState(() {
-      final index = _stickers.indexWhere((s) => s.id == id);
-      if (index != -1) {
-        _stickers[index] = _stickers[index].copyWith(
-          opacity: 0.0,
-          isVisible: false,
-        );
-      }
-    });
-
-    // 等待淡出动画完成后移除
-    Future.delayed(_fadeOutDuration, () {
-      if (!mounted) return;
+      // 先触发淡出动画
       setState(() {
-        _stickers.removeWhere((s) => s.id == id);
+        final index = _stickers.indexWhere((s) => s.id == id);
+        if (index != -1) {
+          _stickers[index] = _stickers[index].copyWith(
+            opacity: 0.0,
+            isVisible: false,
+          );
+        }
+      });
+
+      // 等待淡出动画完成后移除
+      Future.delayed(_fadeOutDuration, () {
+        if (!mounted) return;
+        setState(() {
+          _stickers.removeWhere((s) => s.id == id);
+        });
       });
     });
   }
 
-  /// 检查位置是否在核心输入区（日期、心情、输入框）
-  /// 这是用户主要交互区域，贴纸不能遮挡这里
-  bool _isInCoreContentArea(double x, double y) {
-    // 核心输入区：日期卡片(0.08-0.22)、心情选择器(0.24-0.38)、标题输入(0.40-0.52)
-    // 简化为一个连续区域
-    const coreLeft = 0.08;
-    const coreRight = 0.92;
-    const coreTop = 0.10;
-    const coreBottom = 0.55;
-    
-    // 检查是否在这个矩形区域内
-    if (x >= coreLeft && x <= coreRight && y >= coreTop && y <= coreBottom) {
-      // 在核心区内，计算到中心的距离
-      final centerX = (coreLeft + coreRight) / 2; // 0.50
-      final centerY = (coreTop + coreBottom) / 2; // 0.325
-      final distance = sqrt(pow(x - centerX, 2) + pow(y - centerY, 2));
-      
-      // 只避开最核心的30%区域（日期和心情卡片）
-      // 边缘区域（如x接近0.08或0.92）允许出现
-      return distance < 0.25;
-    }
-    
-    // 不在核心区内，允许出现
-    return false;
+  /// 检查位置是否太靠近屏幕中央
+  bool _isTooCloseToCenter(double x, double y) {
+    const centerX = 0.5;
+    const centerY = 0.5;
+    final distance = sqrt(pow(x - centerX, 2) + pow(y - centerY, 2));
+    return distance < 0.3; // 增加中央避开区域到30%
   }
 
   /// 检查位置是否太靠近现有贴图
@@ -307,9 +267,8 @@ class _RandomStickerOverlayState extends State<RandomStickerOverlay> {
     final left = sticker.positionX * screenWidth;
     final top = sticker.positionY * screenHeight;
 
-    // 计算贴图最大显示尺寸（最长边）
-    // 基础大小40px，根据scale变化范围 20px - 56px
-    final maxSize = 40 * sticker.scale;
+    // 计算贴图最大显示尺寸（最长边）- 缩小到70%
+    final maxSize = 56 * sticker.scale;
 
     return Positioned(
       left: left - maxSize / 2,

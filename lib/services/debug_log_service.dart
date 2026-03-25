@@ -8,7 +8,7 @@ class DebugLogService extends ChangeNotifier {
 
   final List<String> _logs = [];
   bool _isEnabled = false;
-  int _maxLogs = 50;
+  final int _maxLogs = 50;
   Timer? _throttleTimer;
   bool _pendingNotify = false;
 

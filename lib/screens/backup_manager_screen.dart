@@ -3,14 +3,18 @@ import 'package:intl/intl.dart';
 import '../config/app_theme.dart';
 import '../providers/theme_provider.dart';
 import '../services/auto_backup_service.dart';
+import '../services/cloud_sync_service.dart';
+import '../services/encryption_service.dart';
 
 /// 备份管理页面
 /// 
 /// 功能：
-/// 1. 显示备份列表
-/// 2. 手动触发备份
-/// 3. 从备份恢复
-/// 4. 删除备份
+/// 1. 显示本地备份列表
+/// 2. 显示云端其他备份（v1.1.5新增）
+/// 3. 手动触发备份
+/// 4. 从备份恢复
+/// 5. 从其他备份导入（合并不覆盖）
+/// 6. 删除备份
 class BackupManagerScreen extends StatefulWidget {
   const BackupManagerScreen({super.key});
 
@@ -20,14 +24,18 @@ class BackupManagerScreen extends StatefulWidget {
 
 class _BackupManagerScreenState extends State<BackupManagerScreen> {
   List<Map<String, dynamic>> _backups = [];
+  List<CloudBackupInfo> _cloudBackups = [];
   bool _isLoading = true;
   bool _isBackingUp = false;
+  bool _isScanningCloud = false;
   String? _totalSize;
+  bool _isCloudLoggedIn = false;
 
   @override
   void initState() {
     super.initState();
     _loadBackups();
+    _checkCloudStatus();
   }
 
   Future<void> _loadBackups() async {
@@ -45,6 +53,35 @@ class _BackupManagerScreenState extends State<BackupManagerScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       _showError('加载备份列表失败: $e');
+    }
+  }
+
+  Future<void> _checkCloudStatus() async {
+    final cloudService = CloudSyncFactory.instance;
+    await cloudService.initialize();
+    setState(() {
+      _isCloudLoggedIn = cloudService.isLoggedIn;
+    });
+    
+    if (_isCloudLoggedIn) {
+      await _scanCloudBackups();
+    }
+  }
+
+  Future<void> _scanCloudBackups() async {
+    setState(() => _isScanningCloud = true);
+    
+    try {
+      final cloudService = CloudSyncFactory.instance;
+      final backups = await cloudService.scanAllBackups();
+      
+      setState(() {
+        _cloudBackups = backups;
+        _isScanningCloud = false;
+      });
+    } catch (e) {
+      setState(() => _isScanningCloud = false);
+      debugPrint('扫描云端备份失败: $e');
     }
   }
 
@@ -142,6 +179,108 @@ class _BackupManagerScreenState extends State<BackupManagerScreen> {
     }
   }
 
+  /// 导入其他云端备份（合并不覆盖）
+  Future<void> _importCloudBackup(CloudBackupInfo backup) async {
+    // 如果是当前设备的备份，提示使用恢复功能
+    if (backup.isCurrentDevice) {
+      _showError('这是当前设备的备份，请使用"恢复"功能');
+      return;
+    }
+
+    // 显示输入密钥对话框
+    final keyController = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('导入云端备份'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('请输入该备份的密钥以解密数据：'),
+            const SizedBox(height: 8),
+            const Text(
+              '提示：密钥可在原设备的"数据管理 → 云端备份密钥"中查看',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: keyController,
+              decoration: const InputDecoration(
+                labelText: '备份密钥',
+                border: OutlineInputBorder(),
+                hintText: '粘贴密钥 here',
+              ),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('导入'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+    if (keyController.text.isEmpty) {
+      _showError('请输入密钥');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    
+    try {
+      final cloudService = CloudSyncFactory.instance;
+      
+      // 1. 从云端下载备份
+      final backupData = await cloudService.downloadBackupFromFolder(
+        backup.folderName,
+        decryptionKey: keyController.text.trim(),
+      );
+      
+      if (backupData == null) {
+        setState(() => _isLoading = false);
+        _showError('下载或解密失败，请检查密钥是否正确');
+        return;
+      }
+
+      // 2. 合并到本地（不覆盖）
+      final result = await cloudService.mergeBackupToLocal(backupData);
+      
+      setState(() => _isLoading = false);
+      
+      if (result.success) {
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('导入成功'),
+              content: Text('成功导入 ${result.downloadedCount} 条数据'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('确定'),
+                ),
+              ],
+            ),
+          );
+        }
+      } else {
+        _showError('导入失败: ${result.message}');
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      _showError('导入失败: $e');
+    }
+  }
+
   void _showError(String message) {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -191,102 +330,184 @@ class _BackupManagerScreenState extends State<BackupManagerScreen> {
           ? Center(
               child: CircularProgressIndicator(color: scheme.primaryColor),
             )
-          : Column(
-              children: [
-                // 统计信息
-                Container(
-                  margin: const EdgeInsets.all(16),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: scheme.cardColor,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: AppTheme.cardShadow,
+          : RefreshIndicator(
+              onRefresh: () async {
+                await _loadBackups();
+                if (_isCloudLoggedIn) {
+                  await _scanCloudBackups();
+                }
+              },
+              child: CustomScrollView(
+                slivers: [
+                  // 本地备份区域
+                  SliverToBoxAdapter(
+                    child: _buildSectionHeader('本地备份', scheme),
                   ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.storage_outlined,
-                        color: scheme.primaryColor,
-                        size: 32,
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '备份存储',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: scheme.textMediumColor,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${_backups.length} 个备份',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: scheme.textDarkColor,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (_totalSize != null)
-                        Text(
-                          _totalSize!,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: scheme.textMediumColor,
+                  
+                  // 本地备份统计
+                  SliverToBoxAdapter(
+                    child: _buildLocalBackupStats(scheme),
+                  ),
+                  
+                  // 本地备份列表
+                  _backups.isEmpty
+                      ? SliverToBoxAdapter(
+                          child: _buildEmptyState(scheme, '暂无本地备份'),
+                        )
+                      : SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              final backup = _backups[index];
+                              return _buildBackupItem(backup, scheme, index == 0);
+                            },
+                            childCount: _backups.length,
                           ),
                         ),
-                    ],
-                  ),
-                ),
 
-                // 备份列表
-                Expanded(
-                  child: _backups.isEmpty
-                      ? _buildEmptyState(scheme)
-                      : ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: _backups.length,
-                          itemBuilder: (context, index) {
-                            final backup = _backups[index];
-                            return _buildBackupItem(backup, scheme, index == 0);
-                          },
-                        ),
-                ),
-              ],
+                  // 云端其他备份区域
+                  SliverToBoxAdapter(
+                    child: _buildSectionHeader('云端其他备份', scheme),
+                  ),
+                  
+                  // 云端备份说明
+                  SliverToBoxAdapter(
+                    child: _buildCloudBackupInfo(scheme),
+                  ),
+                  
+                  // 云端备份列表
+                  _buildCloudBackupList(scheme),
+                ],
+              ),
             ),
     );
   }
 
-  Widget _buildEmptyState(ThemeScheme scheme) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+  Widget _buildSectionHeader(String title, ThemeScheme scheme) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: scheme.textMediumColor,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLocalBackupStats(ThemeScheme scheme) {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: scheme.cardColor,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: AppTheme.cardShadow,
+      ),
+      child: Row(
         children: [
           Icon(
-            Icons.cloud_off_outlined,
-            size: 64,
-            color: scheme.lightColor,
+            Icons.storage_outlined,
+            color: scheme.primaryColor,
+            size: 32,
           ),
-          const SizedBox(height: 16),
-          Text(
-            '暂无备份',
-            style: TextStyle(
-              fontSize: 18,
-              color: scheme.textMediumColor,
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '备份存储',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: scheme.textMediumColor,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${_backups.length} 个备份',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: scheme.textDarkColor,
+                  ),
+                ),
+              ],
             ),
+          ),
+          if (_totalSize != null)
+            Text(
+              _totalSize!,
+              style: TextStyle(
+                fontSize: 14,
+                color: scheme.textMediumColor,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCloudBackupInfo(ThemeScheme scheme) {
+    if (!_isCloudLoggedIn) {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: scheme.cardColor,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.cloud_off, color: scheme.textLightColor),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                '未登录云服务，请先登录以查看云端备份',
+                style: TextStyle(color: scheme.textMediumColor),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: scheme.cardColor.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: scheme.lightColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.info_outline, 
+                color: scheme.primaryColor, 
+                size: 20
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '关于其他备份',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: scheme.textDarkColor,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           Text(
-            '点击右上角按钮创建第一个备份',
+            '这里显示其他设备上传到云端的备份。导入时会合并到当前数据，不会覆盖已有内容。',
             style: TextStyle(
-              fontSize: 14,
-              color: scheme.textLightColor,
+              fontSize: 13,
+              color: scheme.textMediumColor,
             ),
           ),
         ],
@@ -294,9 +515,77 @@ class _BackupManagerScreenState extends State<BackupManagerScreen> {
     );
   }
 
+  Widget _buildCloudBackupList(ThemeScheme scheme) {
+    if (_isScanningCloud) {
+      return SliverToBoxAdapter(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: CircularProgressIndicator(color: scheme.primaryColor),
+          ),
+        ),
+      );
+    }
+
+    if (!_isCloudLoggedIn) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
+    if (_cloudBackups.isEmpty) {
+      return SliverToBoxAdapter(
+        child: _buildEmptyState(scheme, '暂无其他云端备份'),
+      );
+    }
+
+    // 过滤掉当前设备的备份（通常在其他列表中显示）
+    final otherBackups = _cloudBackups.where((b) => !b.isCurrentDevice).toList();
+    
+    if (otherBackups.isEmpty) {
+      return SliverToBoxAdapter(
+        child: _buildEmptyState(scheme, '暂无其他设备的云端备份'),
+      );
+    }
+
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          final backup = otherBackups[index];
+          return _buildCloudBackupItem(backup, scheme);
+        },
+        childCount: otherBackups.length,
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(ThemeScheme scheme, String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.cloud_off_outlined,
+              size: 48,
+              color: scheme.lightColor,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              style: TextStyle(
+                fontSize: 14,
+                color: scheme.textLightColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildBackupItem(Map<String, dynamic> backup, ThemeScheme scheme, bool isLatest) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
         color: scheme.cardColor,
         borderRadius: BorderRadius.circular(12),
@@ -394,6 +683,60 @@ class _BackupManagerScreenState extends State<BackupManagerScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCloudBackupItem(CloudBackupInfo backup, ThemeScheme scheme) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: scheme.cardColor,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: AppTheme.cardShadow,
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: scheme.primaryColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            Icons.cloud_download,
+            color: scheme.primaryColor,
+          ),
+        ),
+        title: Text(
+          '设备备份 ${backup.folderName.substring(8)}', // 去掉 backup_ 前缀
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: scheme.textDarkColor,
+          ),
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(
+            backup.isCurrentDevice ? '当前设备' : '其他设备',
+            style: TextStyle(
+              fontSize: 13,
+              color: backup.isCurrentDevice 
+                ? scheme.primaryColor 
+                : scheme.textMediumColor,
+            ),
+          ),
+        ),
+        trailing: ElevatedButton.icon(
+          onPressed: () => _importCloudBackup(backup),
+          icon: const Icon(Icons.download, size: 18),
+          label: const Text('导入'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: scheme.primaryColor,
+            foregroundColor: Colors.white,
+          ),
         ),
       ),
     );

@@ -215,7 +215,7 @@ class ProtectionViolationScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     const Text(
-                      '小记日记 v1.1.0',
+                      '小记日记 v1.1.5',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,

@@ -157,8 +157,8 @@ class AppLockService {
       // 绘制九宫格
       const gridSize = 240.0;
       final gridOffset = Offset((size.width - gridSize) / 2, 100);
-      final cellSize = gridSize / 3;
-      final dotRadius = cellSize * 0.25;
+      const cellSize = gridSize / 3;
+      const dotRadius = cellSize * 0.25;
       const lineWidth = 4.0;
 
       // 绘制连接线
@@ -309,14 +309,14 @@ class AppLockService {
       debugPrint('图片数据大小: ${imageBytes.length} bytes');
 
       final privateFile = File(privateFilePath);
-      
+
       // 确保目录存在
       final privateDir = privateFile.parent;
       if (!await privateDir.exists()) {
         await privateDir.create(recursive: true);
         debugPrint('创建私有目录: ${privateDir.path}');
       }
-      
+
       // 写入私有目录
       await privateFile.writeAsBytes(imageBytes, flush: true);
       debugPrint('私有目录文件写入完成');
@@ -334,9 +334,10 @@ class AppLockService {
       }
 
       debugPrint('私有目录备份图片保存成功，文件大小: $privateFileSize bytes');
-      
+
       // 尝试保存到公共目录（相册/图片文件夹）
-      String? publicFilePath = await _saveToPublicDirectory(imageBytes, fileName);
+      String? publicFilePath =
+          await _saveToPublicDirectory(imageBytes, fileName);
       if (publicFilePath != null) {
         debugPrint('公共目录备份图片保存成功: $publicFilePath');
         // 优先返回公共目录路径，方便用户查找
@@ -356,12 +357,13 @@ class AppLockService {
   }
 
   /// 保存图片到公共目录（相册）
-  static Future<String?> _saveToPublicDirectory(Uint8List imageBytes, String fileName) async {
+  static Future<String?> _saveToPublicDirectory(
+      Uint8List imageBytes, String fileName) async {
     try {
       if (Platform.isAndroid) {
         // Android: 尝试保存到外部存储的 Pictures 目录
         // 注意：Android 11+ 需要 MANAGE_EXTERNAL_STORAGE 权限或 MediaStore API
-        
+
         // 首先尝试获取外部存储根目录
         String? externalPath;
         try {
@@ -381,10 +383,7 @@ class AppLockService {
           debugPrint('获取外部存储目录失败: $e');
         }
 
-        if (externalPath == null) {
-          // 使用备用路径
-          externalPath = '/storage/emulated/0';
-        }
+        externalPath ??= '/storage/emulated/0';
 
         // 创建 Pictures/小记日记 目录
         final picturesDir = Directory('$externalPath/Pictures/小记日记');
@@ -400,7 +399,7 @@ class AppLockService {
 
         final publicFilePath = path.join(picturesDir.path, fileName);
         final publicFile = File(publicFilePath);
-        
+
         try {
           await publicFile.writeAsBytes(imageBytes, flush: true);
           debugPrint('公共目录文件写入完成: $publicFilePath');
@@ -418,9 +417,9 @@ class AppLockService {
         final documentsDir = await getApplicationDocumentsDirectory();
         final publicFilePath = path.join(documentsDir.path, fileName);
         final publicFile = File(publicFilePath);
-        
+
         await publicFile.writeAsBytes(imageBytes, flush: true);
-        
+
         if (await publicFile.exists() && await publicFile.length() > 0) {
           return publicFilePath;
         }

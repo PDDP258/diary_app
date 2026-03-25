@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -145,12 +146,16 @@ class _TimelineScreenState extends State<TimelineScreen>
   }
 
   Widget _buildHeader(ThemeScheme scheme, int diaryCount) {
-    // 获取用户名
-    final userName = context.watch<SettingsProvider>().userName;
+    // 获取用户设置
+    final settings = context.watch<SettingsProvider>();
+    final userName = settings.userName;
+    final userSignature = settings.userSignature;
+    final customAvatarPath = settings.customAvatarPath;
+    final userEmoji = settings.userEmoji;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
         // 增强毛玻璃效果
         color: scheme.cardColor.withOpacity(0.85),
@@ -170,106 +175,142 @@ class _TimelineScreenState extends State<TimelineScreen>
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          // 左侧：头像 + 昵称/签名
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: scheme.primaryColor.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        Icons.auto_stories_rounded,
-                        color: scheme.primaryColor,
-                        size: 18,
-                      ),
+                // 头像（优先使用自定义头像，否则使用emoji）
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: scheme.primaryColor.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: scheme.primaryColor.withOpacity(0.3),
+                      width: 2,
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
+                  ),
+                  child: customAvatarPath != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.file(
+                          File(customAvatarPath),
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Center(
+                              child: Text(
+                                userEmoji,
+                                style: const TextStyle(fontSize: 28),
+                              ),
+                            );
+                          },
+                        ),
+                      )
+                    : Center(
+                        child: Text(
+                          userEmoji,
+                          style: const TextStyle(fontSize: 28),
+                        ),
+                      ),
+                ),
+                const SizedBox(width: 14),
+                // 昵称和签名（上下关系）
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // 昵称
+                      Text(
                         '$userName的日记',
                         style: TextStyle(
-                          fontSize: 20,
+                          fontSize: 22,
                           fontWeight: FontWeight.bold,
                           color: scheme.textDarkColor,
                           letterSpacing: -0.5,
+                          height: 1.2,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Padding(
-                  padding: const EdgeInsets.only(left: 36),
-                  child: Text(
-                    '记录生活的点滴',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: scheme.textMediumColor,
-                      height: 1.3,
-                    ),
+                      const SizedBox(height: 4),
+                      // 签名
+                      Text(
+                        userSignature,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: scheme.textMediumColor,
+                          height: 1.3,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
+          // 右侧：扭蛋 + 篇数
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const GachaScreen()),
-                  );
-                },
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        scheme.primaryColor.withOpacity(0.8),
-                        scheme.primaryColor.withOpacity(0.6),
+              // 扭蛋按钮（缩小到80%）
+              Transform.scale(
+                scale: 0.8,
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const GachaScreen()),
+                    );
+                  },
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          scheme.primaryColor.withOpacity(0.8),
+                          scheme.primaryColor.withOpacity(0.6),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: scheme.primaryColor.withOpacity(0.2),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
                       ],
                     ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: scheme.primaryColor.withOpacity(0.2),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        '🎰',
-                        style: TextStyle(fontSize: 20),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        '扭蛋',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: scheme.textDarkColor,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          '🎰',
+                          style: TextStyle(fontSize: 20),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 6),
+                        Text(
+                          '扭蛋',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: scheme.textDarkColor,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               if (diaryCount > 0)
                 Container(
                   padding:

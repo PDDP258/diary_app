@@ -3,7 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 /// 星空背景组件
-/// 
+///
 /// 营造深邃梦幻的星空氛围：
 /// - 深蓝紫渐变背景
 /// - 闪烁星星粒子效果
@@ -30,7 +30,7 @@ class _StarryBackgroundState extends State<StarryBackground>
   late List<Star> stars;
   late List<Meteor> meteors;
   late AnimationController _twinkleController;
-  
+
   // 每个流星有独立的控制器，错开出现
   late List<AnimationController> _meteorControllers;
   late List<Timer?> _meteorTimers;
@@ -41,13 +41,13 @@ class _StarryBackgroundState extends State<StarryBackground>
     super.initState();
     _initStars();
     _initMeteors();
-    
+
     // 星星闪烁动画
     _twinkleController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2000),
     )..repeat();
-    
+
     if (widget.showMeteor) {
       _startMeteorLoops();
     }
@@ -103,7 +103,7 @@ class _StarryBackgroundState extends State<StarryBackground>
         direction: MeteorDirection.bottomRight,
       ),
     ];
-    
+
     // 为每个流星创建独立的控制器
     _meteorControllers = List.generate(4, (index) {
       return AnimationController(
@@ -111,7 +111,7 @@ class _StarryBackgroundState extends State<StarryBackground>
         duration: Duration(milliseconds: 2000 + random.nextInt(1000)), // 2-3秒
       );
     });
-    
+
     _meteorTimers = List.generate(4, (_) => null);
   }
 
@@ -121,7 +121,7 @@ class _StarryBackgroundState extends State<StarryBackground>
       _scheduleMeteor(i);
     }
   }
-  
+
   void _scheduleMeteor(int index) {
     // 基础间隔 6-12 秒，保持总体频率与原来相当
     // 但通过错开初始延迟和随机间隔，降低同时出现的概率
@@ -129,21 +129,21 @@ class _StarryBackgroundState extends State<StarryBackground>
     // 根据索引添加偏移，让四个流星更分散
     final offsetDelay = index * 2; // 每个流星间隔2秒的偏移
     final totalDelay = baseDelay + offsetDelay;
-    
+
     _meteorTimers[index] = Timer(Duration(seconds: totalDelay), () {
       if (!mounted) return;
-      
+
       // 检查是否有其他流星正在显示，避免同时出现
       final othersActive = _meteorControllers.asMap().entries.any(
-        (e) => e.key != index && e.value.isAnimating,
-      );
-      
+            (e) => e.key != index && e.value.isAnimating,
+          );
+
       // 如果其他流星正在显示，有70%概率延迟到下次
       if (othersActive && random.nextDouble() < 0.7) {
         _scheduleMeteor(index); // 重新调度
         return;
       }
-      
+
       _meteorControllers[index].forward(from: 0).then((_) {
         if (mounted) {
           _scheduleMeteor(index);
@@ -173,17 +173,17 @@ class _StarryBackgroundState extends State<StarryBackground>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFF0D0D1F),  // 深蓝黑
-            Color(0xFF1A1A3E),  // 深紫蓝
-            Color(0xFF2D1B4E),  // 紫罗兰
-            Color(0xFF1A1A3E),  // 深紫蓝
+            Color(0xFF0D0D1F), // 深蓝黑
+            Color(0xFF1A1A3E), // 深紫蓝
+            Color(0xFF2D1B4E), // 紫罗兰
+            Color(0xFF1A1A3E), // 深紫蓝
           ],
           stops: [0.0, 0.3, 0.7, 1.0],
         ),
       ),
       child: AnimatedBuilder(
         animation: Listenable.merge([
-          _twinkleController, 
+          _twinkleController,
           ..._meteorControllers,
         ]),
         builder: (context, child) {
@@ -223,8 +223,8 @@ class Star {
 
 /// 流星方向枚举
 enum MeteorDirection {
-  topLeft,    // 从左上往右下
-  topRight,   // 从右上往左下
+  topLeft, // 从左上往右下
+  topRight, // 从右上往左下
   bottomLeft, // 从左下往右上
   bottomRight // 从右下往左上
 }
@@ -266,41 +266,42 @@ class StarryPainter extends CustomPainter {
     for (var star in stars) {
       _drawStar(canvas, size, star);
     }
-    
+
     // 绘制流星（每个流星有自己的进度）
     for (int i = 0; i < meteors.length; i++) {
       _drawMeteor(canvas, size, meteors[i], meteorProgresses[i]);
     }
-    
+
     // 绘制星云效果
     _drawNebula(canvas, size);
   }
 
   void _drawStar(Canvas canvas, Size size, Star star) {
     // 计算闪烁效果
-    final twinkle = sin(twinkleProgress * pi * 2 * star.twinkleSpeed + star.twinkleOffset);
+    final twinkle =
+        sin(twinkleProgress * pi * 2 * star.twinkleSpeed + star.twinkleOffset);
     final currentOpacity = star.opacity * (0.6 + 0.4 * twinkle);
-    
+
     final paint = Paint()
       ..color = Colors.white.withOpacity(currentOpacity.clamp(0.1, 1.0))
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 0.5);
-    
+
     final center = Offset(star.x * size.width, star.y * size.height);
-    
+
     // 绘制星星光晕
-    canvas.drawCircle(center, star.size * 2, 
-      Paint()..color = Colors.white.withOpacity(currentOpacity * 0.3));
-    
+    canvas.drawCircle(center, star.size * 2,
+        Paint()..color = Colors.white.withOpacity(currentOpacity * 0.3));
+
     // 绘制星星核心
     canvas.drawCircle(center, star.size, paint);
   }
 
   void _drawMeteor(Canvas canvas, Size size, Meteor meteor, double progress) {
     if (progress <= 0 || progress >= 1) return;
-    
+
     double startX, startY, endX, endY;
     final moveDistance = progress * size.width * 0.8; // 移动距离
-    
+
     // 根据方向计算起始和结束位置
     switch (meteor.direction) {
       case MeteorDirection.topLeft:
@@ -332,11 +333,15 @@ class StarryPainter extends CustomPainter {
         endY = startY + meteor.length * sin(pi / 4);
         break;
     }
-    
+
     // 检查是否超出屏幕
-    if (startX < -100 || startX > size.width + 100 || 
-        startY < -100 || startY > size.height + 100) return;
-    
+    if (startX < -100 ||
+        startX > size.width + 100 ||
+        startY < -100 ||
+        startY > size.height + 100) {
+      return;
+    }
+
     // 流星渐变 - 头部亮，尾部渐隐
     final gradient = LinearGradient(
       begin: Alignment.centerLeft,
@@ -347,16 +352,16 @@ class StarryPainter extends CustomPainter {
         Colors.white.withOpacity(1 - progress * 0.3),
       ],
     );
-    
+
     final paint = Paint()
       ..shader = gradient.createShader(
         Rect.fromPoints(Offset(endX, endY), Offset(startX, startY)),
       )
       ..strokeWidth = 2
       ..strokeCap = StrokeCap.round;
-    
+
     canvas.drawLine(Offset(startX, startY), Offset(endX, endY), paint);
-    
+
     // 流星头部光点
     canvas.drawCircle(
       Offset(startX, startY),
@@ -372,15 +377,15 @@ class StarryPainter extends CustomPainter {
         center: const Alignment(0.3, 0.3),
         radius: 0.8,
         colors: [
-          const Color(0xFF4A148C).withOpacity(0.15),  // 紫色星云
-          const Color(0xFF1A237E).withOpacity(0.1),   // 蓝色星云
+          const Color(0xFF4A148C).withOpacity(0.15), // 紫色星云
+          const Color(0xFF1A237E).withOpacity(0.1), // 蓝色星云
           Colors.transparent,
         ],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 50);
-    
+
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), nebulaPaint);
-    
+
     // 右下角另一团星云
     final nebulaPaint2 = Paint()
       ..shader = RadialGradient(
@@ -393,7 +398,7 @@ class StarryPainter extends CustomPainter {
         ],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 60);
-    
+
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), nebulaPaint2);
   }
 
@@ -402,7 +407,7 @@ class StarryPainter extends CustomPainter {
 }
 
 /// 星空主题包装器
-/// 
+///
 /// 当用户使用星空主题时，自动应用星空背景
 class StarryThemeWrapper extends StatelessWidget {
   final Widget child;
@@ -419,7 +424,7 @@ class StarryThemeWrapper extends StatelessWidget {
     if (!isStarryTheme) {
       return child;
     }
-    
+
     return StarryBackground(
       child: child,
     );

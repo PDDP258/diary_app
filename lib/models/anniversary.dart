@@ -250,8 +250,9 @@ class Anniversary {
       // 关键节点：100天、50天、30天、10天、5天、3天、1天、当天、7天内
       if (daysLeft < 0) return false; // 已过期不算
       if (daysLeft == 0) return true; // 当天
-      if (daysLeft == 1 || daysLeft == 3 || daysLeft == 5 || daysLeft == 10)
+      if (daysLeft == 1 || daysLeft == 3 || daysLeft == 5 || daysLeft == 10) {
         return true;
+      }
       if (daysLeft == 30 || daysLeft == 50 || daysLeft == 100) return true;
       if (daysLeft <= 7) return true; // 7天内
       return false;

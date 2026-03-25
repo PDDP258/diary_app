@@ -25,46 +25,40 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> 
-    with WidgetsBindingObserver, RouteAware {
+class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   late int _currentIndex;
   bool _isLoading = true;
 
-  // ✅ 移除：IndexedStack 不需要 PageController
+  // 使用 PageController 来管理页面切换，提高性能
+  late PageController _pageController;
 
   // 导航栏显示/隐藏控制
   bool _isNavVisible = true;
   double _lastScrollPixels = 0;
 
-  // 5秒无操作计时器
+  // 3秒无操作计时器
   Timer? _inactivityTimer;
-  static const _inactivityDuration = Duration(seconds: 5);
+  static const _inactivityDuration = Duration(seconds: 3);
 
   // 标记是否刚处理过点击，防止点击触发的微滚动干扰
   bool _justTapped = false;
 
   // 标记是否强制显示导航栏（用于页面切换时立即显示，无动画）
   bool _forceShowNav = false;
-  
-  // ✅ 添加：防止快速点击导航栏导致异常
-  bool _isNavigating = false;
-  
-  // ✅ 添加：用于检测从子页面返回
-  bool _wasInBackground = false;
 
-  // ✅ 修复：使用 final 字段，只创建一次页面实例
-  // 避免每次 build 都创建新实例导致页面状态丢失
-  final List<Widget> _screens = const [
-    TimelineScreen(),
-    CalendarScreen(),
-    StatsScreen(),
-    ProfileScreen(),
+  // 页面列表，动态创建以避免循环依赖
+  List<Widget> get _screens => [
+    const TimelineScreen(),
+    const CalendarScreen(),
+    const StatsScreen(),
+    const ProfileScreen(),
   ];
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+    _pageController = PageController(initialPage: widget.initialIndex);
     // 注册生命周期监听
     WidgetsBinding.instance.addObserver(this);
     // 延迟加载数据，避免在构建过程中调用 setState
@@ -78,6 +72,7 @@ class _MainScreenState extends State<MainScreen>
   @override
   void dispose() {
     _inactivityTimer?.cancel();
+    _pageController.dispose();
     // 移除生命周期监听
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -250,29 +245,44 @@ class _MainScreenState extends State<MainScreen>
     }
   }
 
-  // ✅ 简化：IndexedStack 不需要 onPageChanged 回调
-  // 页面切换逻辑已在 _onNavTap 中处理
+  void _onPageChanged(int index) {
+    // 只在索引真正改变时才更新状态
+    if (_currentIndex != index) {
+      setState(() {
+        _currentIndex = index;
+      });
+      // 页面跳转完成后，重新开始3秒倒计时
+      _resetInactivityTimer();
+    } else {
+      // 即使索引相同，也确保导航栏显示并重置计时器
+      // 这处理快速点击同一页面的情况
+      _showNavBarImmediately();
+      _resetInactivityTimer();
+    }
+  }
 
-  void _onNavTap(int index) async {
-    // ✅ 修复：防止快速点击导致异常
-    if (_isNavigating || _currentIndex == index) return;
-    
-    _isNavigating = true;
-    
+  void _onNavTap(int index) {
     // 播放点击音效
     SoundService.playClick();
 
-    // 点击导航栏时：立即显示导航栏（无动画）并重置3秒计时器
+    // 点击导航栏时：立即显示导航栏（无动画）并重置3秒计时器（最高优先级）
     _showNavBarImmediately();
     _resetInactivityTimer();
 
-    // ✅ 修复：使用 IndexedStack 直接切换索引，无需动画
-    setState(() => _currentIndex = index);
-    
-    // 300ms 后允许再次点击
-    await Future.delayed(const Duration(milliseconds: 300));
-    if (mounted) {
-      _isNavigating = false;
+    // 使用 PageController 跳转页面，提高性能
+    if (_currentIndex != index) {
+      _pageController.animateToPage(
+        index,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+      // 页面切换动画结束后（300ms），再次强制显示导航栏
+      Future.delayed(const Duration(milliseconds: 350), () {
+        if (mounted) {
+          _showNavBarImmediately();
+          _resetInactivityTimer();
+        }
+      });
     }
   }
 
@@ -280,9 +290,8 @@ class _MainScreenState extends State<MainScreen>
   /// 下滑（向下滚动）：立即隐藏导航栏
   /// 上滑（向上滚动）：立即显示导航栏，3秒后隐藏
   bool _onScrollNotification(ScrollNotification notification) {
-    // 如果刚点击过，只忽略小的滚动事件（防止点击触发的微滚动干扰）
-    // 但用户主动的大幅度滑动应该正常处理
-    // 注意：这里不再完全阻止滚动处理，只在滚动幅度小的时候可能忽略
+    // 如果刚点击过，忽略滚动事件（防止点击触发的微滚动干扰）
+    if (_justTapped) return false;
     
     if (notification is ScrollUpdateNotification) {
       final pixels = notification.metrics.pixels;
@@ -324,23 +333,17 @@ class _MainScreenState extends State<MainScreen>
     SoundService.playClick();
     // 导航到其他页面前取消计时器
     _inactivityTimer?.cancel();
-    
-    // ✅ 修复：导航前确保导航栏显示（避免跳转时导航栏隐藏）
-    _showNavBarImmediately();
-    
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => const WriteDiaryScreen(),
       ),
     );
-    
-    // ✅ 修复：从子页面返回后，确保导航栏显示并重新开始3秒计时
+    // 返回后显示导航栏并重新开始3秒计时
     if (mounted) {
-      _showNavBarImmediately();
+      _showNavBar();
       _resetInactivityTimer();
     }
-    
     if (result == true && mounted) {
       // 刷新数据
       context.read<DiaryProvider>().loadDiaries();
@@ -376,24 +379,6 @@ class _MainScreenState extends State<MainScreen>
 
     // 获取系统导航栏高度
     final systemNavBarHeight = MediaQuery.of(context).viewPadding.bottom;
-    
-    // ✅ 修复：检测从子页面返回（在 build 中检测最可靠）
-    // 当 ModalRoute 变为当前路由时，说明从子页面返回了
-    final modalRoute = ModalRoute.of(context);
-    if (modalRoute != null && modalRoute.isCurrent && _wasInBackground) {
-      // 从子页面返回，显示导航栏并重置计时器
-      _wasInBackground = false;
-      // 使用 addPostFrameCallback 避免在 build 中调用 setState
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _showNavBarImmediately();
-          _resetInactivityTimer();
-        }
-      });
-    } else if (modalRoute != null && !modalRoute.isCurrent) {
-      // 当前不是顶层路由（在子页面中），标记为后台状态
-      _wasInBackground = true;
-    }
 
     return Scaffold(
       backgroundColor: isSpecialTheme ? themeProvider.currentScheme.backgroundColor : null,
@@ -405,16 +390,15 @@ class _MainScreenState extends State<MainScreen>
           // 页面内容 - 在系统导航栏上方，延伸到软件导航栏下方
           Positioned.fill(
             bottom: systemNavBarHeight, // 留出系统导航栏高度，确保内容不被系统导航栏挡住
-            child: Listener(
-              // ✅ 修复：使用 onPointerDown 捕获所有指针按下事件
-              // 无论子页面是否消费点击事件，都能捕获到
-              onPointerDown: (_) {
+            child: GestureDetector(
+              // 点击页面内容时显示导航栏并重置计时器
+              onTapDown: (_) {
                 // 标记刚点击过，防止点击触发的微滚动干扰
                 _justTapped = true;
                 _showNavBar();
                 _resetInactivityTimer();
-                // ✅ 修复：减少延迟到100ms，避免影响用户主动滑动
-                Future.delayed(const Duration(milliseconds: 100), () {
+                // 300ms后清除标记
+                Future.delayed(const Duration(milliseconds: 300), () {
                   if (mounted) _justTapped = false;
                 });
               },
@@ -425,10 +409,10 @@ class _MainScreenState extends State<MainScreen>
                   bottom: false, // 让内容延伸到屏幕底部
                   child: ThemeBackgroundFactory.wrap(
                     themeName: currentTheme,
-                    // ✅ 修复：使用 IndexedStack 替代 PageView
-                    // IndexedStack 保持所有页面的状态，切换时不重建
-                    child: IndexedStack(
-                      index: _currentIndex,
+                    child: PageView(
+                      controller: _pageController,
+                      onPageChanged: _onPageChanged,
+                      physics: const NeverScrollableScrollPhysics(),
                       children: _screens,
                     ),
                   ),

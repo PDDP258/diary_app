@@ -1191,7 +1191,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       } else {
         // 按字符截断到约2行（每行约25个中文字符）
         const charsPerLine = 25;
-        final maxChars = charsPerLine * 2;
+        const maxChars = charsPerLine * 2;
         previewText = diary.content!.length > maxChars
             ? diary.content!.substring(0, maxChars)
             : diary.content!;

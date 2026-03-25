@@ -139,6 +139,33 @@ class CustomGoalProvider extends ChangeNotifier {
     await addGoal(goal);
   }
   
+  /// 检查是否还可以添加更多目标
+  Future<bool> canAddMoreGoals() async {
+    return await CustomGoalService.canAddMoreGoals();
+  }
+  
+  /// 获取当前目标数量
+  int get goalCount => _goals.length;
+  
+  /// 获取最大允许目标数
+  int get maxGoals => CustomGoalService.maxGoals;
+  
+  /// 获取未完成的任务数量
+  int get incompleteGoalsCount {
+    return _goals.where((g) => g.isActive && !g.isCompleted).length;
+  }
+  
+  /// 获取所有活跃目标
+  List<CustomGoal> get activeGoals {
+    return _goals.where((g) => g.isActive).toList();
+  }
+  
+  /// 获取除激活目标外的其他目标
+  List<CustomGoal> get otherGoals {
+    if (_activeGoal == null) return activeGoals;
+    return _goals.where((g) => g.isActive && g.id != _activeGoal!.id).toList();
+  }
+  
   /// 重置每日进度
   Future<void> resetDailyProgress() async {
     await CustomGoalService.resetDailyProgress();

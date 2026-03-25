@@ -79,7 +79,7 @@ class AutoBackupService {
 
       // 4. 构建备份数据
       final backupData = {
-        'version': '1.1.0',
+        'version': '1.1.5',
         'backupTime': DateTime.now().toIso8601String(),
         'diaries': diaries.map((d) => d.toMap()).toList(),
         'moods': moods.map((m) => m.toMap()).toList(),

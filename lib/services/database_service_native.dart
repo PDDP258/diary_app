@@ -620,4 +620,72 @@ class DatabaseService {
     ''', [tagId]);
     return maps.map((map) => Diary.fromMap(map)).toList();
   }
+
+  // ==================== 云同步合并方法（v1.1.5新增）====================
+
+  /// 合并日记标签关联（去重插入）
+  static Future<void> mergeDiaryTags(List<Map<String, dynamic>> diaryTags) async {
+    final db = await database;
+    
+    for (final entry in diaryTags) {
+      final diaryId = entry['diary_id'];
+      final tagId = entry['tag_id'];
+      
+      if (diaryId == null || tagId == null) continue;
+      
+      // 检查关联是否已存在
+      final existing = await db.query(
+        tableDiaryTags,
+        where: 'diary_id = ? AND tag_id = ?',
+        whereArgs: [diaryId, tagId],
+      );
+      
+      if (existing.isEmpty) {
+        // 不存在，插入新关联
+        await db.insert(tableDiaryTags, {
+          'diary_id': diaryId,
+          'tag_id': tagId,
+        });
+      }
+    }
+  }
+
+  /// 导入日记列表（合并模式：根据ID去重）
+  static Future<int> importDiaries(List<Diary> diaries) async {
+    int count = 0;
+    for (final diary in diaries) {
+      final existing = await getDiary(diary.id);
+      if (existing == null) {
+        await insertDiary(diary);
+        count++;
+      }
+    }
+    return count;
+  }
+
+  /// 导入心情列表（合并模式：根据ID去重）
+  static Future<int> importMoods(List<Mood> moods) async {
+    int count = 0;
+    for (final mood in moods) {
+      final existing = await getMood(mood.id);
+      if (existing == null) {
+        await insertMood(mood);
+        count++;
+      }
+    }
+    return count;
+  }
+
+  /// 导入标签列表（合并模式：根据ID去重）
+  static Future<int> importTags(List<Tag> tags) async {
+    int count = 0;
+    for (final tag in tags) {
+      final existing = await getTag(tag.id);
+      if (existing == null) {
+        await insertTag(tag);
+        count++;
+      }
+    }
+    return count;
+  }
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// 页面过渡动画集合
-/// 
+///
 /// 基于 Interaction Design Skill：
 /// - 300-500ms 中等过渡时长
 /// - Ease-out 进入，Ease-in 退出
@@ -107,7 +107,7 @@ class CardExpandTransition extends StatelessWidget {
       animation: animation,
       builder: (context, child) {
         final easeOut = const Cubic(0.16, 1, 0.3, 1).transform(animation.value);
-        
+
         return ClipRect(
           child: Opacity(
             opacity: animation.value,
@@ -186,7 +186,7 @@ class BottomSheetTransition extends StatelessWidget {
       builder: (context, child) {
         // Ease-out 进入
         final easeOut = const Cubic(0.16, 1, 0.3, 1).transform(animation.value);
-        
+
         return Transform.translate(
           offset: Offset(0, (1 - easeOut) * 100),
           child: Opacity(
@@ -219,9 +219,9 @@ class ScaleFadeTransition extends StatelessWidget {
       animation: animation,
       builder: (context, child) {
         // Spring 弹性效果
-        final springCurve = const Cubic(0.34, 1.56, 0.64, 1);
+        const springCurve = Cubic(0.34, 1.56, 0.64, 1);
         final springValue = springCurve.transform(animation.value);
-        
+
         return Opacity(
           opacity: animation.value,
           child: Transform.scale(
@@ -294,7 +294,7 @@ class _ShakeTransitionState extends State<ShakeTransition>
       duration: const Duration(milliseconds: 400),
       vsync: this,
     );
-    
+
     _animation = TweenSequence<double>([
       TweenSequenceItem(tween: Tween(begin: 0, end: -8), weight: 1),
       TweenSequenceItem(tween: Tween(begin: -8, end: 8), weight: 2),

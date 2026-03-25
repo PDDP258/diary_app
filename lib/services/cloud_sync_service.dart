@@ -119,6 +119,36 @@ abstract class CloudSyncService {
 
   /// 从云端恢复
   Future<SyncResult> syncFromCloud({String? cloudKey});
+
+  // ==================== 多备份管理（v1.1.5新增）====================
+
+  /// 扫描所有备份文件夹
+  /// 返回备份列表，每个备份包含文件夹名和时间戳
+  Future<List<CloudBackupInfo>> scanAllBackups();
+
+  /// 从指定备份文件夹下载备份
+  Future<Map<String, dynamic>?> downloadBackupFromFolder(
+    String folderName, {
+    required String decryptionKey,
+  });
+
+  /// 合并备份数据到本地（不覆盖，只添加）
+  Future<SyncResult> mergeBackupToLocal(Map<String, dynamic> backupData);
+}
+
+/// 云端备份信息
+class CloudBackupInfo {
+  final String folderName;
+  final String? timestamp;
+  final int? diaryCount;
+  final bool isCurrentDevice;
+
+  CloudBackupInfo({
+    required this.folderName,
+    this.timestamp,
+    this.diaryCount,
+    this.isCurrentDevice = false,
+  });
 }
 
 /// 同步结果
@@ -372,25 +402,39 @@ class WebDAVSyncService extends CloudSyncService {
     };
   }
 
+  /// 获取当前设备的备份文件夹名
+  Future<String> _getCurrentBackupFolderName() async {
+    final key = await EncryptionService.getCloudBackupKey();
+    if (key == null || key.isEmpty) {
+      return 'backup_unknown';
+    }
+    final keyHash = sha256.convert(utf8.encode(key)).toString();
+    return 'backup_${keyHash.substring(0, 8)}';
+  }
+
   @override
   Future<bool> uploadBackup(Map<String, dynamic> backupData) async {
     try {
-      // 1. 先确保目录存在
-      final dirCreated = await _ensureDirectoryExists('diary');
+      // 1. 获取当前设备的备份文件夹名
+      final folderName = await _getCurrentBackupFolderName();
+      _debugPrint('备份到文件夹: $folderName');
+
+      // 2. 确保备份目录存在
+      final dirCreated = await _ensureDirectoryExists('diary_backups/$folderName');
       if (!dirCreated) {
-        _debugPrint('创建目录失败，尝试直接上传...', level: 'WARN');
+        _debugPrint('创建备份目录失败', level: 'ERROR');
+        return false;
       }
 
-      // 2. 添加数据哈希用于完整性校验
+      // 3. 添加数据哈希用于完整性校验
       final dataWithHash = Map<String, dynamic>.from(backupData);
       dataWithHash['_hash'] = _generateDataHash(backupData);
       dataWithHash['_encrypted'] = true;
 
       final jsonStr = jsonEncode(dataWithHash);
 
-      // 3. 使用云端备份专用密钥加密数据
-      final encryptedJson =
-          await EncryptionService.encryptWithCloudKey(jsonStr);
+      // 4. 使用云端备份专用密钥加密数据
+      final encryptedJson = await EncryptionService.encryptWithCloudKey(jsonStr);
       if (encryptedJson == null) {
         _debugPrint('加密备份数据失败', level: 'ERROR');
         return false;
@@ -399,55 +443,70 @@ class WebDAVSyncService extends CloudSyncService {
       // 添加加密标识
       final encryptedData = {
         '_encrypted': true,
-        '_version': 1,
+        '_version': 2,
         'data': encryptedJson,
       };
 
       final encryptedJsonStr = jsonEncode(encryptedData);
       final bytes = utf8.encode(encryptedJsonStr);
 
-      // 3. 使用HttpClient进行PUT请求（更好的WebDAV支持）
+      // 5. 上传到新架构的备份路径（按密钥分文件夹）
       final httpClient = HttpClient()
         ..badCertificateCallback = (cert, host, port) => true;
 
       try {
-        // 规范化服务器URL
         var baseUrl = _serverUrl!;
         if (!baseUrl.endsWith('/')) {
           baseUrl = '$baseUrl/';
         }
 
-        final uri = Uri.parse('${baseUrl}diary/backup_latest.mbk');
-        _debugPrint('上传备份到: $uri');
+        // 新路径：diary_backups/<folder>/backup.mbk
+        final newPathUri = Uri.parse('${baseUrl}diary_backups/$folderName/backup.mbk');
+        _debugPrint('上传备份到新路径: $newPathUri');
 
-        final request = await httpClient.putUrl(uri);
-
-        // 添加认证头
+        final newPathRequest = await httpClient.putUrl(newPathUri);
         final auth = base64Encode(utf8.encode('$_username:$_password'));
-        request.headers.set('Authorization', 'Basic $auth');
-        request.headers.set('Content-Type', 'application/octet-stream');
-        request.headers.set('Content-Length', '${bytes.length}');
-        request.headers.set('Connection', 'close');
+        newPathRequest.headers.set('Authorization', 'Basic $auth');
+        newPathRequest.headers.set('Content-Type', 'application/octet-stream');
+        newPathRequest.headers.set('Content-Length', '${bytes.length}');
+        newPathRequest.headers.set('Connection', 'close');
+        newPathRequest.add(bytes);
 
-        request.add(bytes);
+        final newPathResponse = await newPathRequest.close().timeout(const Duration(seconds: 30));
+        final newPathStatus = newPathResponse.statusCode;
+        await newPathResponse.drain();
 
-        final response =
-            await request.close().timeout(const Duration(seconds: 30));
-        final statusCode = response.statusCode;
-        await response.drain();
+        _debugPrint('新路径上传响应码: $newPathStatus');
 
-        httpClient.close();
+        // 同时上传到旧路径保持兼容性（如果新路径成功）
+        if (newPathStatus == 200 || newPathStatus == 201 || newPathStatus == 204) {
+          // 尝试上传到旧路径，失败不影响整体成功
+          try {
+            final oldPathUri = Uri.parse('${baseUrl}diary/backup_latest.mbk');
+            _debugPrint('同时上传到旧路径（兼容）: $oldPathUri');
+            
+            final oldPathRequest = await httpClient.putUrl(oldPathUri);
+            oldPathRequest.headers.set('Authorization', 'Basic $auth');
+            oldPathRequest.headers.set('Content-Type', 'application/octet-stream');
+            oldPathRequest.headers.set('Content-Length', '${bytes.length}');
+            oldPathRequest.headers.set('Connection', 'close');
+            oldPathRequest.add(bytes);
 
-        _debugPrint('上传响应码: $statusCode');
+            final oldPathResponse = await oldPathRequest.close().timeout(const Duration(seconds: 30));
+            await oldPathResponse.drain();
+            _debugPrint('旧路径上传响应码: ${oldPathResponse.statusCode}');
+          } catch (e) {
+            _debugPrint('旧路径上传失败（不影响）: $e');
+          }
 
-        // WebDAV PUT 成功状态码: 200 OK, 201 Created, 204 No Content
-        if (statusCode == 200 || statusCode == 201 || statusCode == 204) {
+          httpClient.close();
           await _saveSyncTime();
-          _debugPrint('上传成功');
+          _debugPrint('备份上传成功');
           return true;
         }
 
-        _debugPrint('上传失败，状态码: $statusCode', level: 'ERROR');
+        httpClient.close();
+        _debugPrint('备份上传失败，状态码: $newPathStatus', level: 'ERROR');
         return false;
       } catch (e) {
         httpClient.close();
@@ -460,9 +519,8 @@ class WebDAVSyncService extends CloudSyncService {
   }
 
   /// 确保目录存在，不存在则创建
-  Future<bool> _ensureDirectoryExists(String dirName) async {
+  Future<bool> _ensureDirectoryExists(String dirPath) async {
     try {
-      // 规范化服务器URL
       var baseUrl = _serverUrl!;
       if (!baseUrl.endsWith('/')) {
         baseUrl = '$baseUrl/';
@@ -472,55 +530,53 @@ class WebDAVSyncService extends CloudSyncService {
         ..badCertificateCallback = (cert, host, port) => true;
 
       try {
-        // 1. 先检查目录是否存在（PROPFIND）
-        final uri = Uri.parse('$baseUrl$dirName/');
-        _debugPrint('检查目录: $uri');
+        // 逐级创建目录
+        final parts = dirPath.split('/');
+        String currentPath = '';
+        
+        for (final part in parts) {
+          if (part.isEmpty) continue;
+          currentPath += '$part/';
+          
+          final uri = Uri.parse('$baseUrl$currentPath');
+          _debugPrint('检查/创建目录: $uri');
 
-        final propfindRequest = await httpClient.openUrl('PROPFIND', uri);
-        final auth = base64Encode(utf8.encode('$_username:$_password'));
-        propfindRequest.headers.set('Authorization', 'Basic $auth');
-        propfindRequest.headers.set('Depth', '0');
-        propfindRequest.headers.set('Connection', 'close');
+          // 检查目录是否存在
+          final propfindRequest = await httpClient.openUrl('PROPFIND', uri);
+          final auth = base64Encode(utf8.encode('$_username:$_password'));
+          propfindRequest.headers.set('Authorization', 'Basic $auth');
+          propfindRequest.headers.set('Depth', '0');
+          propfindRequest.headers.set('Connection', 'close');
 
-        final propfindResponse =
-            await propfindRequest.close().timeout(const Duration(seconds: 10));
-        final propfindStatus = propfindResponse.statusCode;
-        await propfindResponse.drain();
+          final propfindResponse = await propfindRequest.close().timeout(const Duration(seconds: 10));
+          final propfindStatus = propfindResponse.statusCode;
+          await propfindResponse.drain();
 
-        // 207 = 目录存在
-        if (propfindStatus == 207) {
-          _debugPrint('目录已存在');
-          httpClient.close();
-          return true;
-        }
+          if (propfindStatus == 207) {
+            // 目录已存在
+            continue;
+          }
 
-        // 404 = 目录不存在，需要创建
-        if (propfindStatus == 404) {
-          _debugPrint('目录不存在，创建中...');
+          if (propfindStatus == 404) {
+            // 目录不存在，创建
+            final mkcolRequest = await httpClient.openUrl('MKCOL', uri);
+            mkcolRequest.headers.set('Authorization', 'Basic $auth');
+            mkcolRequest.headers.set('Connection', 'close');
 
-          final mkcolRequest = await httpClient.openUrl('MKCOL', uri);
-          mkcolRequest.headers.set('Authorization', 'Basic $auth');
-          mkcolRequest.headers.set('Connection', 'close');
+            final mkcolResponse = await mkcolRequest.close().timeout(const Duration(seconds: 10));
+            final mkcolStatus = mkcolResponse.statusCode;
+            await mkcolResponse.drain();
 
-          final mkcolResponse =
-              await mkcolRequest.close().timeout(const Duration(seconds: 10));
-          final mkcolStatus = mkcolResponse.statusCode;
-          await mkcolResponse.drain();
-
-          httpClient.close();
-
-          // 201 = 创建成功
-          if (mkcolStatus == 201) {
-            _debugPrint('目录创建成功');
-            return true;
-          } else {
-            _debugPrint('目录创建失败，状态码: $mkcolStatus', level: 'ERROR');
-            return false;
+            if (mkcolStatus != 201) {
+              _debugPrint('创建目录失败: $currentPath, 状态码: $mkcolStatus', level: 'ERROR');
+              httpClient.close();
+              return false;
+            }
           }
         }
 
         httpClient.close();
-        return false;
+        return true;
       } catch (e) {
         httpClient.close();
         _debugPrint('确保目录存在时出错: $e');
@@ -534,82 +590,333 @@ class WebDAVSyncService extends CloudSyncService {
 
   @override
   Future<Map<String, dynamic>?> downloadBackup({String? cloudKey}) async {
+    // 优先尝试新路径（按密钥分文件夹）
+    try {
+      final folderName = await _getCurrentBackupFolderName();
+      final result = await downloadBackupFromFolder(folderName, decryptionKey: cloudKey ?? '');
+      if (result != null) {
+        return result;
+      }
+    } catch (e) {
+      _debugPrint('从新路径下载失败，尝试旧路径: $e');
+    }
+
+    // 回退到旧路径
+    return await _downloadBackupFromOldPath(cloudKey: cloudKey);
+  }
+
+  /// 从旧路径下载备份（兼容模式）
+  Future<Map<String, dynamic>?> _downloadBackupFromOldPath({String? cloudKey}) async {
     try {
       final httpClient = HttpClient()
         ..badCertificateCallback = (cert, host, port) => true;
 
       try {
-        // 规范化服务器URL
         var baseUrl = _serverUrl!;
         if (!baseUrl.endsWith('/')) {
           baseUrl = '$baseUrl/';
         }
 
         final uri = Uri.parse('${baseUrl}diary/backup_latest.mbk');
-        _debugPrint('下载备份: $uri');
+        _debugPrint('从旧路径下载备份: $uri');
 
         final request = await httpClient.getUrl(uri);
-
-        // 添加认证头
         final auth = base64Encode(utf8.encode('$_username:$_password'));
         request.headers.set('Authorization', 'Basic $auth');
         request.headers.set('Connection', 'close');
 
-        final response =
-            await request.close().timeout(const Duration(seconds: 30));
+        final response = await request.close().timeout(const Duration(seconds: 30));
         final statusCode = response.statusCode;
 
         if (statusCode == 200) {
-          final bytes = await response
-              .fold<List<int>>([], (prev, chunk) => prev..addAll(chunk));
+          final bytes = await response.fold<List<int>>([], (prev, chunk) => prev..addAll(chunk));
           final jsonStr = utf8.decode(bytes);
           final data = jsonDecode(jsonStr) as Map<String, dynamic>;
 
           httpClient.close();
-
-          Map<String, dynamic>? decryptedData;
-
-          if (data['_encrypted'] == true && data['data'] != null) {
-            if (cloudKey == null || cloudKey.isEmpty) {
-              _debugPrint('需要云端备份密钥才能解密');
-              return null;
-            }
-            final encryptedContent = data['data'] as String;
-            final decryptedJson = await EncryptionService.decryptWithCloudKey(
-                encryptedContent, cloudKey);
-            if (decryptedJson == null) {
-              _debugPrint('云端密钥解密失败', level: 'ERROR');
-              return null;
-            }
-            decryptedData = jsonDecode(decryptedJson) as Map<String, dynamic>;
-          } else if (data.containsKey('diaries')) {
-            decryptedData = data;
-          } else {
-            _debugPrint('未知的备份格式');
-            return null;
-          }
-
-          if (!_verifyDataIntegrity(decryptedData)) {
-            _debugPrint('警告：下载的备份数据可能已被篡改');
-            return null;
-          }
-
-          _debugPrint('下载成功');
-          return decryptedData;
+          return await _decryptBackupData(data, cloudKey);
         }
 
         await response.drain();
         httpClient.close();
-
-        _debugPrint('下载失败，状态码: $statusCode', level: 'ERROR');
         return null;
       } catch (e) {
         httpClient.close();
         rethrow;
       }
     } catch (e) {
-      _debugPrint('下载备份失败: $e', level: 'ERROR');
+      _debugPrint('从旧路径下载备份失败: $e', level: 'ERROR');
       return null;
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>?> downloadBackupFromFolder(
+    String folderName, {
+    required String decryptionKey,
+  }) async {
+    try {
+      final httpClient = HttpClient()
+        ..badCertificateCallback = (cert, host, port) => true;
+
+      try {
+        var baseUrl = _serverUrl!;
+        if (!baseUrl.endsWith('/')) {
+          baseUrl = '$baseUrl/';
+        }
+
+        final uri = Uri.parse('${baseUrl}diary_backups/$folderName/backup.mbk');
+        _debugPrint('从文件夹下载备份: $uri');
+
+        final request = await httpClient.getUrl(uri);
+        final auth = base64Encode(utf8.encode('$_username:$_password'));
+        request.headers.set('Authorization', 'Basic $auth');
+        request.headers.set('Connection', 'close');
+
+        final response = await request.close().timeout(const Duration(seconds: 30));
+        final statusCode = response.statusCode;
+
+        if (statusCode == 200) {
+          final bytes = await response.fold<List<int>>([], (prev, chunk) => prev..addAll(chunk));
+          final jsonStr = utf8.decode(bytes);
+          final data = jsonDecode(jsonStr) as Map<String, dynamic>;
+
+          httpClient.close();
+          return await _decryptBackupData(data, decryptionKey);
+        }
+
+        await response.drain();
+        httpClient.close();
+        _debugPrint('备份不存在或无法访问，状态码: $statusCode');
+        return null;
+      } catch (e) {
+        httpClient.close();
+        rethrow;
+      }
+    } catch (e) {
+      _debugPrint('从文件夹下载备份失败: $e', level: 'ERROR');
+      return null;
+    }
+  }
+
+  /// 解密备份数据
+  Future<Map<String, dynamic>?> _decryptBackupData(
+    Map<String, dynamic> data,
+    String? cloudKey,
+  ) async {
+    try {
+      if (data['_encrypted'] == true && data['data'] != null) {
+        if (cloudKey == null || cloudKey.isEmpty) {
+          _debugPrint('需要密钥才能解密备份');
+          return null;
+        }
+        final encryptedContent = data['data'] as String;
+        final decryptedJson = await EncryptionService.decryptWithCloudKey(
+          encryptedContent,
+          cloudKey,
+        );
+        if (decryptedJson == null) {
+          _debugPrint('密钥解密失败', level: 'ERROR');
+          return null;
+        }
+        final decryptedData = jsonDecode(decryptedJson) as Map<String, dynamic>;
+        
+        if (!_verifyDataIntegrity(decryptedData)) {
+          _debugPrint('警告：备份数据可能已被篡改');
+          return null;
+        }
+        return decryptedData;
+      } else if (data.containsKey('diaries')) {
+        // 旧格式，未加密
+        return data;
+      }
+      _debugPrint('未知的备份格式');
+      return null;
+    } catch (e) {
+      _debugPrint('解密备份数据失败: $e');
+      return null;
+    }
+  }
+
+  @override
+  Future<List<CloudBackupInfo>> scanAllBackups() async {
+    final backups = <CloudBackupInfo>[];
+    
+    try {
+      var baseUrl = _serverUrl!;
+      if (!baseUrl.endsWith('/')) {
+        baseUrl = '$baseUrl/';
+      }
+
+      final httpClient = HttpClient()
+        ..badCertificateCallback = (cert, host, port) => true;
+
+      try {
+        // 1. 列出 diary_backups 目录下的所有子目录
+        final uri = Uri.parse('${baseUrl}diary_backups/');
+        _debugPrint('扫描备份目录: $uri');
+
+        final request = await httpClient.openUrl('PROPFIND', uri);
+        final auth = base64Encode(utf8.encode('$_username:$_password'));
+        request.headers.set('Authorization', 'Basic $auth');
+        request.headers.set('Depth', '1'); // 只列出一级子目录
+        request.headers.set('Content-Type', 'application/xml');
+        request.headers.set('Connection', 'close');
+        request.write(
+          '<?xml version="1.0"?>'
+          '<d:propfind xmlns:d="DAV:">'
+          '<d:prop><d:displayname/><d:resourcetype/><d:getlastmodified/></d:prop>'
+          '</d:propfind>'
+        );
+
+        final response = await request.close().timeout(const Duration(seconds: 30));
+        final statusCode = response.statusCode;
+
+        if (statusCode == 207) {
+          final bytes = await response.fold<List<int>>([], (prev, chunk) => prev..addAll(chunk));
+          final xmlStr = utf8.decode(bytes);
+          
+          // 解析XML响应，提取文件夹名
+          final folderNames = _parseWebDAVListing(xmlStr);
+          _debugPrint('发现 ${folderNames.length} 个备份文件夹');
+
+          // 获取当前设备的文件夹名
+          final currentFolder = await _getCurrentBackupFolderName();
+
+          for (final folderName in folderNames) {
+            if (folderName.startsWith('backup_')) {
+              backups.add(CloudBackupInfo(
+                folderName: folderName,
+                isCurrentDevice: folderName == currentFolder,
+              ));
+            }
+          }
+        }
+
+        await response.drain();
+        httpClient.close();
+      } catch (e) {
+        httpClient.close();
+        _debugPrint('扫描备份目录失败: $e');
+      }
+    } catch (e) {
+      _debugPrint('扫描所有备份失败: $e', level: 'ERROR');
+    }
+
+    return backups;
+  }
+
+  /// 解析WebDAV PROPFIND响应，提取文件夹名
+  List<String> _parseWebDAVListing(String xmlStr) {
+    final names = <String>[];
+    
+    // 简单的XML解析，提取displayname
+    final regExp = RegExp(r'<d:displayname>([^<]+)</d:displayname>');
+    final matches = regExp.allMatches(xmlStr);
+    
+    for (final match in matches) {
+      final name = match.group(1);
+      if (name != null && name != 'diary_backups') {
+        names.add(name);
+      }
+    }
+    
+    return names;
+  }
+
+  @override
+  Future<SyncResult> mergeBackupToLocal(Map<String, dynamic> backupData) async {
+    _debugPrint('=== 开始合并备份到本地 ===');
+    
+    try {
+      int diaryCount = 0;
+      int moodCount = 0;
+      int tagCount = 0;
+
+      // 1. 合并日记（根据ID去重，保留最新的）
+      final diariesList = backupData['diaries'] as List<dynamic>?;
+      if (diariesList != null && diariesList.isNotEmpty) {
+        _debugPrint('合并 ${diariesList.length} 篇日记...');
+        final diaries = diariesList
+            .map((d) => Diary.fromMap(d as Map<String, dynamic>))
+            .toList();
+        
+        for (final diary in diaries) {
+          // 检查是否已存在
+          if (diary.id == null) continue;
+          final existing = await DatabaseService.getDiary(diary.id!);
+          if (existing == null) {
+            // 不存在，直接插入
+            await DatabaseService.insertDiary(diary);
+            diaryCount++;
+          } else {
+            // 存在，保留更新时间较新的
+            final diaryUpdatedAt = DateTime.tryParse(diary.updatedAt ?? '');
+            final existingUpdatedAt = DateTime.tryParse(existing.updatedAt ?? '');
+            if (diaryUpdatedAt != null && existingUpdatedAt != null && 
+                diaryUpdatedAt.isAfter(existingUpdatedAt)) {
+              await DatabaseService.updateDiary(diary);
+              diaryCount++;
+            }
+          }
+        }
+        _debugPrint('成功合并 $diaryCount 篇新日记');
+      }
+
+      // 2. 合并心情
+      final moodsList = backupData['moods'] as List<dynamic>?;
+      if (moodsList != null && moodsList.isNotEmpty) {
+        _debugPrint('合并 ${moodsList.length} 个心情...');
+        final moods = moodsList
+            .map((m) => Mood.fromMap(m as Map<String, dynamic>))
+            .toList();
+        
+        for (final mood in moods) {
+          if (mood.id == null) continue;
+          final existing = await DatabaseService.getMood(mood.id!);
+          if (existing == null) {
+            await DatabaseService.insertMood(mood);
+            moodCount++;
+          }
+        }
+        _debugPrint('成功合并 $moodCount 个新心情');
+      }
+
+      // 3. 合并标签
+      final tagsList = backupData['tags'] as List<dynamic>?;
+      if (tagsList != null && tagsList.isNotEmpty) {
+        _debugPrint('合并 ${tagsList.length} 个标签...');
+        final tags = tagsList
+            .map((t) => Tag.fromMap(t as Map<String, dynamic>))
+            .toList();
+        
+        for (final tag in tags) {
+          if (tag.id == null) continue;
+          final existing = await DatabaseService.getTag(tag.id!);
+          if (existing == null) {
+            await DatabaseService.insertTag(tag);
+            tagCount++;
+          }
+        }
+        _debugPrint('成功合并 $tagCount 个新标签');
+      }
+
+      // 4. 合并日记-标签关联
+      final diaryTagsList = backupData['diary_tags'] as List<dynamic>?;
+      if (diaryTagsList != null && diaryTagsList.isNotEmpty) {
+        _debugPrint('合并 ${diaryTagsList.length} 个日记标签关联...');
+        await DatabaseService.mergeDiaryTags(
+          diaryTagsList.cast<Map<String, dynamic>>()
+        );
+      }
+
+      return SyncResult.success(
+        message: '成功导入备份',
+        downloaded: diaryCount + moodCount + tagCount,
+      );
+    } catch (e) {
+      _debugPrint('合并备份失败: $e', level: 'ERROR');
+      return SyncResult.failure('导入失败: $e');
     }
   }
 
@@ -619,10 +926,13 @@ class WebDAVSyncService extends CloudSyncService {
     try {
       _debugPrint('上传加密图片包: $fileName');
 
-      // 1. 先确保目录存在
-      final dirCreated = await _ensureDirectoryExists('diary/images');
+      // 获取当前设备的备份文件夹
+      final folderName = await _getCurrentBackupFolderName();
+
+      // 确保目录存在
+      final dirCreated = await _ensureDirectoryExists('diary_backups/$folderName/images');
       if (!dirCreated) {
-        _debugPrint('创建图片目录失败，尝试直接上传...', level: 'WARN');
+        _debugPrint('创建图片目录失败', level: 'WARN');
       }
 
       final httpClient = HttpClient()
@@ -634,7 +944,8 @@ class WebDAVSyncService extends CloudSyncService {
           baseUrl = '$baseUrl/';
         }
 
-        final uri = Uri.parse('${baseUrl}diary/images/$fileName');
+        // 上传到当前设备的备份文件夹
+        final uri = Uri.parse('${baseUrl}diary_backups/$folderName/images/$fileName');
         _debugPrint('上传图片包到: $uri');
 
         final request = await httpClient.putUrl(uri);
@@ -687,18 +998,32 @@ class WebDAVSyncService extends CloudSyncService {
           baseUrl = '$baseUrl/';
         }
 
-        final uri = Uri.parse('${baseUrl}diary/images/$fileName');
-        _debugPrint('下载图片包: $uri');
+        // 优先从当前设备的备份文件夹下载
+        final folderName = await _getCurrentBackupFolderName();
+        var uri = Uri.parse('${baseUrl}diary_backups/$folderName/images/$fileName');
+        _debugPrint('尝试从设备文件夹下载: $uri');
 
-        final request = await httpClient.getUrl(uri);
-
+        var request = await httpClient.getUrl(uri);
         final auth = base64Encode(utf8.encode('$_username:$_password'));
         request.headers.set('Authorization', 'Basic $auth');
         request.headers.set('Connection', 'close');
 
-        final response =
-            await request.close().timeout(const Duration(minutes: 5));
-        final statusCode = response.statusCode;
+        var response = await request.close().timeout(const Duration(minutes: 5));
+        var statusCode = response.statusCode;
+
+        // 如果从设备文件夹下载失败，尝试旧路径
+        if (statusCode != 200) {
+          await response.drain();
+          _debugPrint('从设备文件夹下载失败，尝试旧路径');
+          
+          uri = Uri.parse('${baseUrl}diary/images/$fileName');
+          request = await httpClient.getUrl(uri);
+          request.headers.set('Authorization', 'Basic $auth');
+          request.headers.set('Connection', 'close');
+          
+          response = await request.close().timeout(const Duration(minutes: 5));
+          statusCode = response.statusCode;
+        }
 
         if (statusCode == 200) {
           final bytes = await response
@@ -853,7 +1178,7 @@ class WebDAVSyncService extends CloudSyncService {
       _debugPrint('  - 日记标签关联: ${diaryTags.length} 个');
 
       final backupData = {
-        'version': '1.1.0',
+        'version': '1.1.5',
         'syncTime': DateTime.now().toIso8601String(),
         'diaries': diaries.map((d) => d.toMap()).toList(),
         'moods': moods.map((m) => m.toMap()).toList(),
@@ -1012,6 +1337,14 @@ class WebDAVSyncService extends CloudSyncService {
     } catch (e) {
       return SyncResult.failure('恢复失败: $e');
     }
+  }
+
+  void _debugPrint(String message, {String level = 'INFO'}) {
+    final timestamp = DateTime.now().toIso8601String();
+    debugPrint('[$timestamp] [WebDAV-$level] $message');
+    
+    // 同时记录到同步日志
+    SyncLogService.log(message, level: level);
   }
 }
 
@@ -1201,7 +1534,7 @@ class _WebDAVLoginDialogState extends State<WebDAVLoginDialog> {
             'password': password,
           });
         } else {
-          _showError(result.errorMessage ?? '连接失败，请检查配置');
+          _showError(result.message ?? '连接失败');
         }
       }
     } catch (e) {
@@ -1217,47 +1550,13 @@ class _WebDAVLoginDialogState extends State<WebDAVLoginDialog> {
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        duration: const Duration(seconds: 3),
       ),
     );
   }
 }
 
-/// 云同步服务工厂
-class CloudSyncFactory {
-  static CloudSyncService? _instance;
-
-  static CloudSyncService get instance {
-    _instance ??= WebDAVSyncService();
-    return _instance!;
-  }
-
-  static Future<void> initialize() async {
-    await instance.initialize();
-  }
-}
-
-// 使用日志服务记录（同时输出到控制台和 Markdown 文件）
-void _debugPrint(String message, {String level = 'INFO'}) {
-  // 异步记录到日志文件
-  SyncLogService.log(message, level: level);
-}
-
-/// 连接测试结果
-class ConnectionResult {
-  final bool success;
-  final String? url;
-  final String? errorMessage;
-
-  ConnectionResult({
-    required this.success,
-    this.url,
-    this.errorMessage,
-  });
-}
-
-/// WebDAV连接测试器 - 用于登录对话框中测试连接
+/// WebDAV连接测试器
 class _WebDAVConnectionTester {
   final String serverUrl;
   final String username;
@@ -1269,30 +1568,24 @@ class _WebDAVConnectionTester {
     required this.password,
   });
 
-  /// 带详细错误信息的测试
-  Future<ConnectionResult> testConnectionWithDetails() async {
+  Future<ConnectionTestResult> testConnectionWithDetails() async {
     try {
-      // 规范化服务器URL
+      // 规范化URL
       var baseUrl = serverUrl.trim();
       if (!baseUrl.endsWith('/')) {
         baseUrl = '$baseUrl/';
       }
-
-      // 确保URL以http://或https://开头
       if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
         baseUrl = 'https://$baseUrl';
       }
 
-      _debugPrint('测试连接: $baseUrl');
-
-      // 创建HttpClient - 直接使用PROPFIND测试
       final httpClient = HttpClient()
         ..badCertificateCallback = (cert, host, port) => true;
 
-      // 直接尝试PROPFIND请求（坚果云等WebDAV服务器需要）
       try {
         final request =
             await httpClient.openUrl('PROPFIND', Uri.parse(baseUrl));
+
         final auth = base64Encode(utf8.encode('$username:$password'));
         request.headers.set('Authorization', 'Basic $auth');
         request.headers.set('Depth', '0');
@@ -1303,86 +1596,67 @@ class _WebDAVConnectionTester {
 
         final response =
             await request.close().timeout(const Duration(seconds: 30));
+        final statusCode = response.statusCode;
         await response.drain();
 
-        _debugPrint('PROPFIND响应码: ${response.statusCode}');
-
         httpClient.close();
 
-        if (response.statusCode == 401) {
-          return ConnectionResult(
+        if (statusCode == 207) {
+          return ConnectionTestResult(
+            success: true,
+            url: baseUrl,
+            message: '连接成功',
+          );
+        } else if (statusCode == 401) {
+          return ConnectionTestResult(
             success: false,
-            errorMessage: '用户名或密码错误',
+            message: '认证失败：用户名或密码错误',
+          );
+        } else {
+          return ConnectionTestResult(
+            success: false,
+            message: '服务器返回错误: $statusCode',
           );
         }
-
-        // 207 Multi-Status 是WebDAV成功的标志
-        if (response.statusCode == 207) {
-          return ConnectionResult(success: true, url: baseUrl);
-        }
-
-        // 200/404 也表示服务器可达
-        if (response.statusCode == 200 || response.statusCode == 404) {
-          return ConnectionResult(success: true, url: baseUrl);
-        }
-
-        return ConnectionResult(
-          success: false,
-          errorMessage: '服务器返回错误: ${response.statusCode}',
-        );
       } catch (e) {
-        _debugPrint('PROPFIND请求失败: $e', level: 'ERROR');
         httpClient.close();
-
-        // 备用：尝试GET请求
-        final httpClient2 = HttpClient()
-          ..badCertificateCallback = (cert, host, port) => true;
-
-        try {
-          final request = await httpClient2.getUrl(Uri.parse(baseUrl));
-          final auth = base64Encode(utf8.encode('$username:$password'));
-          request.headers.set('Authorization', 'Basic $auth');
-          request.headers.set('Connection', 'close');
-
-          final response =
-              await request.close().timeout(const Duration(seconds: 20));
-          await response.drain();
-
-          _debugPrint('GET响应码: ${response.statusCode}');
-
-          httpClient2.close();
-
-          if (response.statusCode == 401) {
-            return ConnectionResult(
-              success: false,
-              errorMessage: '用户名或密码错误',
-            );
-          }
-
-          if (response.statusCode >= 200 && response.statusCode < 300 ||
-              response.statusCode == 404) {
-            return ConnectionResult(success: true, url: baseUrl);
-          }
-
-          return ConnectionResult(
-            success: false,
-            errorMessage: '服务器返回错误: ${response.statusCode}',
-          );
-        } catch (e2) {
-          _debugPrint('GET请求也失败: $e2');
-          httpClient2.close();
-          return ConnectionResult(
-            success: false,
-            errorMessage: '无法连接到服务器，请检查网络或服务器地址',
-          );
-        }
+        return ConnectionTestResult(
+          success: false,
+          message: '连接失败: $e',
+        );
       }
     } catch (e) {
-      _debugPrint('WebDAV连接测试异常: $e', level: 'ERROR');
-      return ConnectionResult(
+      return ConnectionTestResult(
         success: false,
-        errorMessage: '连接异常: ${e.toString()}',
+        message: '异常: $e',
       );
     }
+  }
+}
+
+/// 连接测试结果
+class ConnectionTestResult {
+  final bool success;
+  final String? url;
+  final String? message;
+
+  ConnectionTestResult({
+    required this.success,
+    this.url,
+    this.message,
+  });
+}
+
+/// 云同步工厂
+class CloudSyncFactory {
+  static CloudSyncService? _instance;
+
+  static CloudSyncService get instance {
+    _instance ??= WebDAVSyncService();
+    return _instance!;
+  }
+
+  static Future<void> initialize() async {
+    await instance.initialize();
   }
 }
