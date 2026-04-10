@@ -16,6 +16,28 @@ import 'stats_screen.dart';
 import 'profile_screen.dart';
 import 'write_diary_screen.dart';
 
+/// 全局路由观察者，用于监听页面导航
+class MainScreenRouteObserver extends NavigatorObserver {
+  VoidCallback? onRoutePopped;
+  VoidCallback? onRoutePushed;
+  
+  @override
+  void didPop(Route route, Route? previousRoute) {
+    super.didPop(route, previousRoute);
+    // 页面返回时触发回调
+    onRoutePopped?.call();
+  }
+  
+  @override
+  void didPush(Route route, Route? previousRoute) {
+    super.didPush(route, previousRoute);
+    onRoutePushed?.call();
+  }
+}
+
+/// 全局路由观察者实例
+final mainScreenRouteObserver = MainScreenRouteObserver();
+
 class MainScreen extends StatefulWidget {
   final int initialIndex;
   
@@ -36,15 +58,19 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   bool _isNavVisible = true;
   double _lastScrollPixels = 0;
 
-  // 3秒无操作计时器
+  // 5秒无操作计时器
   Timer? _inactivityTimer;
-  static const _inactivityDuration = Duration(seconds: 3);
+  static const _inactivityDuration = Duration(seconds: 5);
 
   // 标记是否刚处理过点击，防止点击触发的微滚动干扰
   bool _justTapped = false;
 
   // 标记是否强制显示导航栏（用于页面切换时立即显示，无动画）
   bool _forceShowNav = false;
+
+  // 标记是否正在切换页面（禁用滚动通知处理，防止导航栏闪烁）
+  bool _isPageChanging = false;
+  Timer? _pageChangeTimer;
 
   // 页面列表，动态创建以避免循环依赖
   List<Widget> get _screens => [
@@ -61,10 +87,22 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     _pageController = PageController(initialPage: widget.initialIndex);
     // 注册生命周期监听
     WidgetsBinding.instance.addObserver(this);
+    // 注册路由监听
+    mainScreenRouteObserver.onRoutePopped = () {
+      // 从其他页面返回时，显示导航栏并重新开始计时
+      if (mounted) {
+        _showNavBarImmediately();
+        _resetInactivityTimer();
+      }
+    };
+    mainScreenRouteObserver.onRoutePushed = () {
+      // 跳转到其他页面时，取消计时器
+      _inactivityTimer?.cancel();
+    };
     // 延迟加载数据，避免在构建过程中调用 setState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadData();
-      // 启动3秒无操作计时器
+      // 启动无操作计时器
       _resetInactivityTimer();
     });
   }
@@ -72,9 +110,13 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   @override
   void dispose() {
     _inactivityTimer?.cancel();
+    _pageChangeTimer?.cancel();
     _pageController.dispose();
     // 移除生命周期监听
     WidgetsBinding.instance.removeObserver(this);
+    // 清理路由监听
+    mainScreenRouteObserver.onRoutePopped = null;
+    mainScreenRouteObserver.onRoutePushed = null;
     super.dispose();
   }
 
@@ -82,7 +124,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // 应用从后台返回前台，显示导航栏并重新开始3秒计时
+      // 应用从后台返回前台，显示导航栏并重新开始5秒计时
       if (mounted) {
         _showNavBar();
         _resetInactivityTimer();
@@ -251,7 +293,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       setState(() {
         _currentIndex = index;
       });
-      // 页面跳转完成后，重新开始3秒倒计时
+      // 页面跳转完成后，重新开始5秒倒计时
       _resetInactivityTimer();
     } else {
       // 即使索引相同，也确保导航栏显示并重置计时器
@@ -265,20 +307,26 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     // 播放点击音效
     SoundService.playClick();
 
-    // 点击导航栏时：立即显示导航栏（无动画）并重置3秒计时器（最高优先级）
+    // 点击导航栏时：立即显示导航栏（无动画）并重置5秒计时器（最高优先级）
     _showNavBarImmediately();
     _resetInactivityTimer();
 
     // 使用 PageController 跳转页面，提高性能
     if (_currentIndex != index) {
+      // 设置页面切换标志，禁用滚动通知处理
+      _isPageChanging = true;
+      _pageChangeTimer?.cancel();
+      
       _pageController.animateToPage(
         index,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
-      // 页面切换动画结束后（300ms），再次强制显示导航栏
-      Future.delayed(const Duration(milliseconds: 350), () {
+      
+      // 页面切换动画结束后（350ms），清除标志并强制显示导航栏
+      _pageChangeTimer = Timer(const Duration(milliseconds: 350), () {
         if (mounted) {
+          _isPageChanging = false;
           _showNavBarImmediately();
           _resetInactivityTimer();
         }
@@ -288,8 +336,11 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   /// 处理滚动通知，控制导航栏显示/隐藏
   /// 下滑（向下滚动）：立即隐藏导航栏
-  /// 上滑（向上滚动）：立即显示导航栏，3秒后隐藏
+  /// 上滑（向上滚动）：立即显示导航栏，5秒后隐藏
   bool _onScrollNotification(ScrollNotification notification) {
+    // 如果正在切换页面，忽略所有滚动事件（防止导航栏闪烁）
+    if (_isPageChanging) return false;
+    
     // 如果刚点击过，忽略滚动事件（防止点击触发的微滚动干扰）
     if (_justTapped) return false;
     
@@ -308,7 +359,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           // 取消计时器，因为已经隐藏了
           _inactivityTimer?.cancel();
         }
-        // 上滑（向上滚动）时立即显示导航栏并重新开始3秒计时
+        // 上滑（向上滚动）时立即显示导航栏并重新开始5秒计时
         else if (scrollDelta < -5) {
           _showNavBar();
           _resetInactivityTimer();
@@ -317,7 +368,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         _lastScrollPixels = pixels;
       }
     }
-    // 滚动到顶部时显示导航栏并重新开始3秒计时
+    // 滚动到顶部时显示导航栏并重新开始5秒计时
     else if (notification is ScrollEndNotification) {
       if (notification.metrics.pixels <= 0) {
         _showNavBar();
@@ -331,22 +382,34 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   void _onAddTap() async {
     // 播放点击音效
     SoundService.playClick();
-    // 导航到其他页面前取消计时器
+    // 导航到其他页面前取消计时器，防止后台计时导致导航栏隐藏
     _inactivityTimer?.cancel();
+    // 强制显示导航栏，确保跳转前是显示状态
+    _showNavBarImmediately();
+    
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => const WriteDiaryScreen(),
       ),
     );
-    // 返回后显示导航栏并重新开始3秒计时
+    
+    // 返回后一定显示导航栏并重新开始5秒计时（使用finally确保一定执行）
     if (mounted) {
-      _showNavBar();
+      _showNavBarImmediately();
       _resetInactivityTimer();
     }
     if (result == true && mounted) {
       // 刷新数据
       context.read<DiaryProvider>().loadDiaries();
+    }
+  }
+  
+  /// 公共方法：供子页面调用，返回时重置导航栏状态
+  void resetNavBarState() {
+    if (mounted) {
+      _showNavBarImmediately();
+      _resetInactivityTimer();
     }
   }
 

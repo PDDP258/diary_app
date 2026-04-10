@@ -9,6 +9,8 @@ import 'diary_search_screen.dart';
 import 'write_diary_screen.dart';
 import 'stats_detail_screen.dart';
 import 'tags_classification_screen.dart';
+import 'emotion_stats_screen_v2.dart';
+import 'smart_recall_screen_v2.dart';
 
 class StatsScreen extends StatefulWidget {
   const StatsScreen({super.key});
@@ -291,6 +293,16 @@ class _StatsScreenState extends State<StatsScreen>
 
                   // 按标签分类入口
                   _buildTagClassificationCard(),
+
+                  const SizedBox(height: 20),
+
+                  // 智能回忆入口
+                  _buildSmartRecallCard(),
+
+                  const SizedBox(height: 20),
+
+                  // 情绪趋势入口
+                  _buildEmotionTrendCard(),
 
                   const SizedBox(height: 20),
 
@@ -800,6 +812,180 @@ class _StatsScreenState extends State<StatsScreen>
                 Icons.arrow_forward_ios_rounded,
                 size: 16,
                 color: scheme.primaryColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSmartRecallCard() {
+    final scheme = AppTheme.schemeOf(context);
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const SmartRecallScreen(),
+        ),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppTheme.warmYellow.withOpacity(0.15),
+              scheme.cardColor,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: AppTheme.cardShadow,
+          border: Border.all(
+            color: AppTheme.warmYellow.withOpacity(0.3),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppTheme.warmYellow,
+                    AppTheme.warmYellow.withOpacity(0.8),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(
+                Icons.auto_awesome,
+                color: Colors.white,
+                size: 26,
+              ),
+            ),
+            const SizedBox(width: 18),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '智能回忆',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: scheme.textDarkColor,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '发现值得回味的精彩瞬间',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: scheme.textMediumColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.warmYellow.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 16,
+                color: AppTheme.warmYellow.withOpacity(0.8),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmotionTrendCard() {
+    final scheme = AppTheme.schemeOf(context);
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const EmotionStatsScreen(),
+        ),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppTheme.warmPink.withOpacity(0.1),
+              scheme.cardColor,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: AppTheme.cardShadow,
+          border: Border.all(
+            color: AppTheme.warmPink.withOpacity(0.2),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppTheme.warmPink,
+                    AppTheme.warmPink.withOpacity(0.7),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(
+                Icons.psychology_outlined,
+                color: Colors.white,
+                size: 26,
+              ),
+            ),
+            const SizedBox(width: 18),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '情绪分析',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: scheme.textDarkColor,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '了解自己的情绪变化趋势',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: scheme.textMediumColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.warmPink.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 16,
+                color: AppTheme.warmPink,
               ),
             ),
           ],

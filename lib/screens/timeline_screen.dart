@@ -10,6 +10,7 @@ import '../providers/theme_provider.dart';
 import '../utils/platform_helpers.dart';
 import 'diary_detail_screen.dart';
 import 'gacha_screen.dart';
+import 'smart_recall_screen_v2.dart';
 
 class TimelineScreen extends StatefulWidget {
   const TimelineScreen({super.key});
@@ -69,6 +70,9 @@ class _TimelineScreenState extends State<TimelineScreen>
               children: [
                 // 顶部标题栏 - 玻璃态效果
                 _buildHeader(scheme, diaries.length),
+
+                // 智能回忆卡片
+                if (diaries.isNotEmpty) const SmartRecallHomeCard(),
 
                 // 日记列表
                 Expanded(

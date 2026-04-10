@@ -33,13 +33,50 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
   bool _isLoading = true;
   List<Anniversary> _anniversaries = [];
   late bool _isFavorite;
-
+  late Diary _currentDiary;
+  
+  // 相邻日记
+  Diary? _prevDiary;
+  Diary? _nextDiary;
+  
   @override
   void initState() {
     super.initState();
-    _isFavorite = widget.diary.isFavorite;
-    _loadTags();
-    _loadAnniversaries();
+    _currentDiary = widget.diary;
+    _isFavorite = _currentDiary.isFavorite;
+    _loadData();
+  }
+  
+  Future<void> _loadData() async {
+    await Future.wait([
+      _loadTags(),
+      _loadAnniversaries(),
+      _loadAdjacentDiaries(),
+    ]);
+  }
+
+  /// 加载相邻日记（前一篇和后一篇）
+  Future<void> _loadAdjacentDiaries() async {
+    final provider = context.read<DiaryProvider>();
+    final diaries = provider.diaries;
+    
+    // 按日期排序（最新的在前）
+    final sortedDiaries = List<Diary>.from(diaries)
+      ..sort((a, b) => b.date.compareTo(a.date));
+    
+    // 找到当前日记的索引
+    final currentIndex = sortedDiaries.indexWhere((d) => d.id == _currentDiary.id);
+    
+    if (currentIndex != -1) {
+      setState(() {
+        _prevDiary = currentIndex < sortedDiaries.length - 1 
+            ? sortedDiaries[currentIndex + 1] 
+            : null;
+        _nextDiary = currentIndex > 0 
+            ? sortedDiaries[currentIndex - 1] 
+            : null;
+      });
+    }
   }
 
   Future<void> _loadAnniversaries() async {
@@ -53,7 +90,7 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
 
   Future<void> _loadTags() async {
     final provider = context.read<DiaryProvider>();
-    final tags = await provider.getDiaryTags(widget.diary.id!);
+    final tags = await provider.getDiaryTags(_currentDiary.id!);
     if (mounted) {
       setState(() {
         _tags = tags;
@@ -64,10 +101,11 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
 
   Future<void> _toggleFavorite() async {
     final provider = context.read<DiaryProvider>();
-    final newFavoriteState = await provider.toggleFavorite(widget.diary.id!);
+    final newFavoriteState = await provider.toggleFavorite(_currentDiary.id!);
     if (mounted) {
       setState(() {
         _isFavorite = newFavoriteState;
+        _currentDiary = _currentDiary.copyWith(isFavorite: newFavoriteState);
       });
     }
   }
@@ -76,17 +114,55 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => WriteDiaryScreen(diary: widget.diary),
+        builder: (context) => WriteDiaryScreen(diary: _currentDiary),
       ),
     );
     if (result == true && mounted) {
-      Navigator.pop(context, true);
+      // 重新加载数据
+      final provider = context.read<DiaryProvider>();
+      await provider.loadDiaries();
+      // 刷新当前日记数据
+      final updatedDiary = provider.diaries.firstWhere(
+        (d) => d.id == _currentDiary.id,
+        orElse: () => _currentDiary,
+      );
+      setState(() {
+        _currentDiary = updatedDiary;
+        _isFavorite = updatedDiary.isFavorite;
+      });
+      _loadData();
+    }
+  }
+  
+  /// 切换到上一篇日记
+  void _goToPrevDiary() {
+    if (_prevDiary != null) {
+      setState(() {
+        _currentDiary = _prevDiary!;
+        _isFavorite = _prevDiary!.isFavorite;
+        _isLoading = true;
+        _tags = [];
+      });
+      _loadData();
+    }
+  }
+  
+  /// 切换到下一篇日记
+  void _goToNextDiary() {
+    if (_nextDiary != null) {
+      setState(() {
+        _currentDiary = _nextDiary!;
+        _isFavorite = _nextDiary!.isFavorite;
+        _isLoading = true;
+        _tags = [];
+      });
+      _loadData();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final date = DateFormat('yyyy-MM-dd').parse(widget.diary.date);
+    final date = DateFormat('yyyy-MM-dd').parse(_currentDiary.date);
     final scheme = AppTheme.schemeOf(context);
 
     return Scaffold(
@@ -94,6 +170,27 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
       appBar: AppBar(
         title: const Text('日记详情'),
         actions: [
+          // 上一篇按钮
+          if (_prevDiary != null)
+            IconButton(
+              icon: Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: scheme.textMediumColor,
+              ),
+              tooltip: '上一篇',
+              onPressed: _goToPrevDiary,
+            ),
+          // 下一篇按钮
+          if (_nextDiary != null)
+            IconButton(
+              icon: Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: scheme.textMediumColor,
+              ),
+              tooltip: '下一篇',
+              onPressed: _goToNextDiary,
+            ),
+          const SizedBox(width: 4),
           IconButton(
             icon: Icon(
               _isFavorite ? Icons.favorite : Icons.favorite_border,
@@ -110,48 +207,66 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
       ),
       body: Stack(
         children: [
-          // 主要内容
-          SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 日期和心情卡片
-                _buildHeaderCard(date),
-                const SizedBox(height: 20),
-
-                // 标签
-                if (_tags.isNotEmpty) _buildTags(),
-                if (_tags.isNotEmpty) const SizedBox(height: 20),
-
-                // 标题
-                if (widget.diary.title != null &&
-                    widget.diary.title!.isNotEmpty)
-                  _buildTitle(),
-                if (widget.diary.title != null &&
-                    widget.diary.title!.isNotEmpty)
+          // 主要内容 - 支持左右滑动手势
+          GestureDetector(
+            onHorizontalDragEnd: (details) {
+              // 左滑：下一篇（较新的日记）
+              if (details.primaryVelocity != null && details.primaryVelocity! < -200) {
+                _goToNextDiary();
+              }
+              // 右滑：上一篇（较旧的日记）
+              else if (details.primaryVelocity != null && details.primaryVelocity! > 200) {
+                _goToPrevDiary();
+              }
+            },
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 日期和心情卡片
+                  _buildHeaderCard(date),
                   const SizedBox(height: 20),
 
-                // 内容
-                if (widget.diary.content != null &&
-                    widget.diary.content!.isNotEmpty)
-                  _buildContent(),
-                if (widget.diary.content != null &&
-                    widget.diary.content!.isNotEmpty)
+                  // 标签
+                  if (_tags.isNotEmpty) _buildTags(),
+                  if (_tags.isNotEmpty) const SizedBox(height: 20),
+
+                  // 标题
+                  if (_currentDiary.title != null &&
+                      _currentDiary.title!.isNotEmpty)
+                    _buildTitle(),
+                  if (_currentDiary.title != null &&
+                      _currentDiary.title!.isNotEmpty)
+                    const SizedBox(height: 20),
+
+                  // 内容
+                  if (_currentDiary.content != null &&
+                      _currentDiary.content!.isNotEmpty)
+                    _buildContent(),
+                  if (_currentDiary.content != null &&
+                      _currentDiary.content!.isNotEmpty)
+                    const SizedBox(height: 20),
+
+                  // 图片
+                  if (_currentDiary.images != null &&
+                      _currentDiary.images!.isNotEmpty)
+                    _buildImages(),
+
+                  const SizedBox(height: 32),
+
+                  // 底部信息
+                  _buildFooter(),
+                  
+                  // 翻页提示
                   const SizedBox(height: 20),
-
-                // 图片
-                if (widget.diary.images != null &&
-                    widget.diary.images!.isNotEmpty)
-                  _buildImages(),
-
-                const SizedBox(height: 32),
-
-                // 底部信息
-                _buildFooter(),
-              ],
+                  _buildNavigationHint(scheme),
+                ],
+              ),
             ),
           ),
+          // 翻页浮动按钮
+          _buildNavigationFloatButtons(scheme),
           // 随机贴图装饰
           const RandomStickerOverlay(
               targetPage: 'diary', appearProbability: 0.5),
@@ -282,7 +397,7 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
                         color: scheme.textMediumColor,
                       ),
                     ),
-                    if (widget.diary.moodName != null) ...[
+                    if (_currentDiary.moodName != null) ...[
                       const SizedBox(width: 12),
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -295,12 +410,12 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              widget.diary.moodEmoji ?? '',
+                              _currentDiary.moodEmoji ?? '',
                               style: const TextStyle(fontSize: 16),
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              widget.diary.moodName!,
+                              _currentDiary.moodName!,
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
@@ -380,6 +495,178 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
     );
   }
 
+  /// 构建翻页导航提示
+  Widget _buildNavigationHint(ThemeScheme scheme) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      decoration: BoxDecoration(
+        color: scheme.lightColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
+        border: Border.all(
+          color: scheme.lightColor.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (_prevDiary != null) ...[
+            Icon(
+              Icons.swipe_left_rounded,
+              size: 16,
+              color: scheme.textLightColor,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '右滑上一篇',
+              style: TextStyle(
+                fontSize: 12,
+                color: scheme.textLightColor,
+              ),
+            ),
+          ],
+          if (_prevDiary != null && _nextDiary != null)
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 12),
+              width: 4,
+              height: 4,
+              decoration: BoxDecoration(
+                color: scheme.lightColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+          if (_nextDiary != null) ...[
+            Text(
+              '左滑下一篇',
+              style: TextStyle(
+                fontSize: 12,
+                color: scheme.textLightColor,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              Icons.swipe_right_rounded,
+              size: 16,
+              color: scheme.textLightColor,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// 构建翻页浮动按钮
+  Widget _buildNavigationFloatButtons(ThemeScheme scheme) {
+    return Positioned.fill(
+      child: IgnorePointer(
+        ignoring: false,
+        child: Stack(
+          children: [
+            // 左翻页按钮（上一篇）
+            if (_prevDiary != null)
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                child: GestureDetector(
+                  onTap: _goToPrevDiary,
+                  child: Container(
+                    width: 44,
+                    margin: const EdgeInsets.only(left: 4),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          scheme.primaryColor.withValues(alpha: 0.15),
+                          Colors.transparent,
+                        ],
+                      ),
+                      borderRadius: const BorderRadius.horizontal(
+                        right: Radius.circular(22),
+                      ),
+                    ),
+                    child: Center(
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: scheme.cardColor.withValues(alpha: 0.9),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.chevron_left_rounded,
+                          color: scheme.primaryColor,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            // 右翻页按钮（下一篇）
+            if (_nextDiary != null)
+              Positioned(
+                right: 0,
+                top: 0,
+                bottom: 0,
+                child: GestureDetector(
+                  onTap: _goToNextDiary,
+                  child: Container(
+                    width: 44,
+                    margin: const EdgeInsets.only(right: 4),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.centerRight,
+                        end: Alignment.centerLeft,
+                        colors: [
+                          scheme.primaryColor.withValues(alpha: 0.15),
+                          Colors.transparent,
+                        ],
+                      ),
+                      borderRadius: const BorderRadius.horizontal(
+                        left: Radius.circular(22),
+                      ),
+                    ),
+                    child: Center(
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: scheme.cardColor.withValues(alpha: 0.9),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.chevron_right_rounded,
+                          color: scheme.primaryColor,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildTitle() {
     final scheme = AppTheme.schemeOf(context);
 
@@ -416,7 +703,7 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
           ),
           Expanded(
             child: Text(
-              widget.diary.title!,
+              _currentDiary.title!,
               style: TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.bold,
@@ -433,7 +720,7 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
 
   Widget _buildContent() {
     final scheme = AppTheme.schemeOf(context);
-    final contentParts = _parseContent(widget.diary.content!);
+    final contentParts = _parseContent(_currentDiary.content!);
 
     return Container(
       width: double.infinity,
@@ -573,7 +860,7 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
   }
 
   Widget _buildImages() {
-    final images = widget.diary.imageList;
+    final images = _currentDiary.imageList;
     final scheme = AppTheme.schemeOf(context);
 
     return Container(
@@ -739,7 +1026,7 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
   }
 
   void _showImageViewer(String path, int index) {
-    final images = widget.diary.imageList;
+    final images = _currentDiary.imageList;
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -753,14 +1040,14 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
 
   Widget _buildFooter() {
     final scheme = AppTheme.schemeOf(context);
-    final createdAt = widget.diary.createdAt != null
+    final createdAt = _currentDiary.createdAt != null
         ? DateFormat('yyyy-MM-dd HH:mm')
-            .format(DateTime.parse(widget.diary.createdAt!))
+            .format(DateTime.parse(_currentDiary.createdAt!))
         : '-';
-    final updatedAt = widget.diary.updatedAt != null &&
-            widget.diary.updatedAt != widget.diary.createdAt
+    final updatedAt = _currentDiary.updatedAt != null &&
+            _currentDiary.updatedAt != _currentDiary.createdAt
         ? DateFormat('yyyy-MM-dd HH:mm')
-            .format(DateTime.parse(widget.diary.updatedAt!))
+            .format(DateTime.parse(_currentDiary.updatedAt!))
         : null;
 
     return Container(

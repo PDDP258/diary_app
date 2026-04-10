@@ -1022,6 +1022,25 @@ class GachaService {
     }
     
     final rewards = _allRewards.where((r) => r.rarity == rarity).toList();
+    
+    // 安全检查：如果该稀有度没有奖励，返回第一个可用的奖励
+    if (rewards.isEmpty) {
+      // 尝试其他稀有度
+      for (final fallbackRarity in [
+        GachaRarity.common,
+        GachaRarity.uncommon,
+        GachaRarity.rare,
+        GachaRarity.legendary,
+      ]) {
+        final fallback = _allRewards.where((r) => r.rarity == fallbackRarity).toList();
+        if (fallback.isNotEmpty) {
+          return fallback[_random.nextInt(fallback.length)];
+        }
+      }
+      // 如果全部为空，返回第一个奖励
+      return _allRewards.first;
+    }
+    
     return rewards[_random.nextInt(rewards.length)];
   }
 
@@ -1102,19 +1121,15 @@ class GachaService {
         break;
       
       case GachaRewardType.stickerPack:
+        // 批量添加贴纸，减少多次写入操作
+        final emojis = <String>[];
         if (reward.id == 'sticker_pack_basic') {
-          await _addEmojiToCustomStickers('⭐');
-          await _addEmojiToCustomStickers('❤️');
-          await _addEmojiToCustomStickers('☀️');
-          await _addEmojiToCustomStickers('🌙');
-          await _addEmojiToCustomStickers('🌸');
+          emojis.addAll(['⭐', '❤️', '☀️', '🌙', '🌸']);
         } else if (reward.id == 'sticker_pack_legendary') {
-          await _addEmojiToCustomStickers('🌈');
-          await _addEmojiToCustomStickers('💎');
-          await _addEmojiToCustomStickers('👑');
-          await _addEmojiToCustomStickers('🎆');
-          await _addEmojiToCustomStickers('🔥');
+          emojis.addAll(['🌈', '💎', '👑', '🎆', '🔥']);
         }
+        // 使用批量添加方法
+        await _addEmojisToCustomStickers(emojis);
         break;
       
       case GachaRewardType.badgeHint:
@@ -1484,19 +1499,32 @@ class GachaService {
   }
 
   static Future<void> _saveToHistory(GachaReward reward) async {
-    final prefs = await SharedPreferences.getInstance();
-    final record = GachaRecord(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      reward: reward,
-      time: DateTime.now(),
-    );
-
-    final history = prefs.getStringList(_historyKey) ?? [];
-    history.insert(0, jsonEncode(record.toJson()));
-    if (history.length > 50) {
-      history.removeLast();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // 使用更轻量的方式存储历史记录
+      final record = {
+        'id': DateTime.now().millisecondsSinceEpoch.toString(),
+        'rewardId': reward.id,
+        'time': DateTime.now().toIso8601String(),
+      };
+      
+      // 获取现有历史
+      final historyKey = '${_historyKey}list';
+      final history = prefs.getStringList(historyKey) ?? [];
+      
+      // 添加新记录到开头
+      history.insert(0, jsonEncode(record));
+      
+      // 只保留最近20条记录
+      if (history.length > 20) {
+        history.removeRange(20, history.length);
+      }
+      
+      await prefs.setStringList(historyKey, history);
+    } catch (e) {
+      print('保存历史记录失败: $e');
     }
-    await prefs.setStringList(_historyKey, history);
   }
 
   static Future<void> _addToCollection(GachaReward reward) async {
@@ -1529,7 +1557,19 @@ class GachaService {
   /// 获取历史记录
   static Future<List<GachaRecord>> getHistory() async {
     final prefs = await SharedPreferences.getInstance();
-    final historyJson = prefs.getStringList(_historyKey) ?? [];
+    
+    // 尝试新的存储格式
+    final historyKey = '${_historyKey}list';
+    final historyJson = prefs.getStringList(historyKey) ?? [];
+    
+    // 如果新格式为空，尝试旧格式迁移
+    if (historyJson.isEmpty) {
+      final oldHistory = prefs.getStringList(_historyKey) ?? [];
+      if (oldHistory.isNotEmpty) {
+        // 异步迁移到新的存储格式
+        _migrateHistory(prefs, oldHistory);
+      }
+    }
     
     final records = <GachaRecord>[];
     for (final jsonStr in historyJson) {
@@ -1551,6 +1591,32 @@ class GachaService {
     }
     
     return records;
+  }
+  
+  /// 异步迁移历史记录
+  static void _migrateHistory(SharedPreferences prefs, List<String> oldHistory) async {
+    try {
+      final historyKey = '${_historyKey}list';
+      final newHistory = <String>[];
+      
+      for (final jsonStr in oldHistory.take(20)) {
+        try {
+          final data = jsonDecode(jsonStr);
+          final newRecord = {
+            'id': data['id'] as String,
+            'rewardId': data['rewardId'] as String,
+            'time': data['time'] as String,
+          };
+          newHistory.add(jsonEncode(newRecord));
+        } catch (e) {
+          // 跳过无效记录
+        }
+      }
+      
+      await prefs.setStringList(historyKey, newHistory);
+    } catch (e) {
+      print('历史记录迁移失败: $e');
+    }
   }
 
   /// 清空历史记录
@@ -1590,23 +1656,47 @@ class GachaService {
   }
 
   static Future<void> _addEmojiToCustomStickers(String emoji) async {
-    final prefs = await SharedPreferences.getInstance();
-    final stickersJson = prefs.getString('custom_stickers');
-    List<CustomSticker> stickers = [];
-
-    if (stickersJson != null) {
-      final List<dynamic> list = jsonDecode(stickersJson);
-      stickers = list.map((e) => CustomSticker.fromMap(e)).toList();
+    await _addEmojisToCustomStickers([emoji]);
+  }
+  
+  /// 批量添加贴纸
+  static Future<void> _addEmojisToCustomStickers(List<String> emojis) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final stickerListKey = 'custom_sticker_keys';
+      var keys = prefs.getStringList(stickerListKey) ?? [];
+      
+      // 批量写入所有贴纸
+      final now = DateTime.now().millisecondsSinceEpoch;
+      for (int i = 0; i < emojis.length; i++) {
+        final stickerKey = 'custom_sticker_${now + i}_${emojis[i]}';
+        await prefs.setString(stickerKey, jsonEncode({
+          'emoji': emojis[i],
+          'type': 'emoji',
+          'createdAt': DateTime.now().toIso8601String(),
+        }));
+        keys.add(stickerKey);
+      }
+      
+      // 只保留最近100个贴纸
+      if (keys.length > 100) {
+        final removedKeys = keys.sublist(0, keys.length - 100);
+        keys = keys.sublist(keys.length - 100);
+        // 异步清理旧贴纸，不阻塞主流程
+        _cleanupOldStickers(prefs, removedKeys);
+      }
+      
+      await prefs.setStringList(stickerListKey, keys);
+    } catch (e) {
+      print('批量添加贴纸失败: $e');
     }
-
-    stickers.add(CustomSticker(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      type: CustomStickerType.emoji,
-      emoji: emoji,
-    ));
-
-    final newStickersJson = jsonEncode(stickers.map((e) => e.toMap()).toList());
-    await prefs.setString('custom_stickers', newStickersJson);
+  }
+  
+  /// 异步清理旧贴纸
+  static void _cleanupOldStickers(SharedPreferences prefs, List<String> keys) async {
+    for (final key in keys) {
+      await prefs.remove(key);
+    }
   }
 
   // ==================== 日记模板管理 ====================

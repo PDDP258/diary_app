@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:isolate';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -198,6 +199,28 @@ class SyncResult {
       timestamp: DateTime.now(),
     );
   }
+}
+
+/// Isolate消息 - 图片批次处理
+class _ImageBatchMessage {
+  final List<String> imagePaths;
+  final SendPort sendPort;
+
+  _ImageBatchMessage({
+    required this.imagePaths,
+    required this.sendPort,
+  });
+}
+
+/// Isolate消息 - 加密处理
+class _EncryptMessage {
+  final Archive archive;
+  final SendPort sendPort;
+
+  _EncryptMessage({
+    required this.archive,
+    required this.sendPort,
+  });
 }
 
 /// WebDAV 同步服务实现
@@ -1092,7 +1115,7 @@ class WebDAVSyncService extends CloudSyncService {
     }
   }
 
-  /// 打包并加密图片
+  /// 打包并加密图片（使用Isolate避免主线程卡顿）
   Future<List<int>?> _createEncryptedImageArchive(List<Diary> diaries) async {
     try {
       _debugPrint('开始打包加密图片...');
@@ -1114,32 +1137,48 @@ class WebDAVSyncService extends CloudSyncService {
 
       _debugPrint('找到 ${allImagePaths.length} 张图片');
 
-      // 创建ZIP归档
+      // 分批处理图片，避免内存溢出
+      const batchSize = 50;
+      final allPaths = allImagePaths.toList();
       final archive = Archive();
       int successCount = 0;
 
-      for (final imagePath in allImagePaths) {
-        final file = File(imagePath);
-        if (await file.exists()) {
-          final bytes = await file.readAsBytes();
-          final fileName = imagePath.split('/').last;
-          archive.addFile(ArchiveFile(fileName, bytes.length, bytes));
+      for (int i = 0; i < allPaths.length; i += batchSize) {
+        final batch = allPaths.skip(i).take(batchSize).toList();
+        
+        // 在Isolate中处理每一批图片
+        final batchResult = await _processImageBatchInIsolate(batch);
+        
+        for (final fileData in batchResult) {
+          archive.addFile(ArchiveFile(
+            fileData['name'] as String,
+            (fileData['bytes'] as List<int>).length,
+            fileData['bytes'] as List<int>,
+          ));
           successCount++;
         }
+        
+        // 让出时间片，避免阻塞UI
+        await Future.delayed(const Duration(milliseconds: 10));
       }
 
       _debugPrint('成功打包 $successCount 张图片');
 
-      // 编码ZIP数据
-      final zipBytes = ZipEncoder().encode(archive);
+      if (successCount == 0) {
+        _debugPrint('没有图片可以打包', level: 'WARN');
+        return null;
+      }
+
+      // 在Isolate中编码ZIP
+      final zipBytes = await _encodeInIsolate(archive);
+      
       if (zipBytes == null) {
         _debugPrint('ZIP编码失败', level: 'ERROR');
         return null;
       }
 
-      // 加密ZIP数据
-      final encrypted =
-          await EncryptionService.encryptData(Uint8List.fromList(zipBytes));
+      // 在主线程加密（因为EncryptionService是异步的）
+      final encrypted = await EncryptionService.encryptData(Uint8List.fromList(zipBytes));
       if (encrypted == null) {
         _debugPrint('加密失败', level: 'ERROR');
         return null;
@@ -1148,8 +1187,105 @@ class WebDAVSyncService extends CloudSyncService {
       _debugPrint(
           '图片打包加密完成，大小: ${(encrypted.length / 1024 / 1024).toStringAsFixed(2)}MB');
       return encrypted;
-    } catch (e) {
+    } catch (e, stackTrace) {
       _debugPrint('打包加密图片失败: $e', level: 'ERROR');
+      _debugPrint('堆栈: $stackTrace', level: 'ERROR');
+      return null;
+    }
+  }
+
+  /// 在Isolate中处理图片批次
+  Future<List<Map<String, dynamic>>> _processImageBatchInIsolate(List<String> imagePaths) async {
+    try {
+      final receivePort = ReceivePort();
+      
+      await Isolate.spawn(
+        _processImageBatchIsolate,
+        _ImageBatchMessage(
+          imagePaths: imagePaths,
+          sendPort: receivePort.sendPort,
+        ),
+      );
+
+      final result = await receivePort.first as List<Map<String, dynamic>>;
+      return result;
+    } catch (e) {
+      _debugPrint('Isolate处理图片批次失败: $e', level: 'ERROR');
+      // 降级为在主线程处理
+      return _processImageBatch(imagePaths);
+    }
+  }
+
+  /// Isolate入口函数 - 处理图片批次
+  static void _processImageBatchIsolate(_ImageBatchMessage message) {
+    final result = _processImageBatch(message.imagePaths);
+    message.sendPort.send(result);
+  }
+
+  /// 处理图片批次（静态方法，可在Isolate中运行）
+  static List<Map<String, dynamic>> _processImageBatch(List<String> imagePaths) {
+    final result = <Map<String, dynamic>>[];
+    
+    for (final imagePath in imagePaths) {
+      try {
+        final file = File(imagePath);
+        if (file.existsSync()) {
+          final bytes = file.readAsBytesSync();
+          final fileName = imagePath.split('/').last;
+          result.add({
+            'name': fileName,
+            'bytes': bytes,
+          });
+        }
+      } catch (e) {
+        // 单张图片失败不中断整个批次
+        debugPrint('读取图片失败: $imagePath - $e');
+      }
+    }
+    
+    return result;
+  }
+
+  /// 在Isolate中编码ZIP
+  Future<List<int>?> _encodeInIsolate(Archive archive) async {
+    try {
+      final receivePort = ReceivePort();
+      
+      await Isolate.spawn(
+        _encodeIsolate,
+        _EncryptMessage(
+          archive: archive,
+          sendPort: receivePort.sendPort,
+        ),
+      );
+
+      final result = await receivePort.first as List<int>?;
+      return result;
+    } catch (e) {
+      _debugPrint('Isolate编码失败: $e', level: 'ERROR');
+      // 降级为在主线程处理
+      return _encodeArchive(archive);
+    }
+  }
+
+  /// Isolate入口函数 - 编码ZIP
+  static void _encodeIsolate(_EncryptMessage message) {
+    final result = _encodeArchive(message.archive);
+    message.sendPort.send(result);
+  }
+
+  /// 编码ZIP（静态方法，可在Isolate中运行）
+  static List<int>? _encodeArchive(Archive archive) {
+    try {
+      // 编码ZIP数据
+      final zipBytes = ZipEncoder().encode(archive);
+      if (zipBytes == null) {
+        debugPrint('ZIP编码失败');
+        return null;
+      }
+      return zipBytes;
+    } catch (e) {
+      debugPrint('编码失败: $e');
       return null;
     }
   }

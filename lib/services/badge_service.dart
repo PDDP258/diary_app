@@ -766,11 +766,11 @@ class BadgeService {
       id: 'content_consistent_writer',
       name: '持之以恒',
       emoji: '📅',
-      description: '每天写日记超过300字',
+      description: '连续3天每天写日记超过300字',
       hiddenDescription: '持续输出',
       type: BadgeType.content,
       rarity: BadgeRarity.rare,
-      tip: 'Tip: 连续3天写300字以上',
+      tip: 'Tip: 连续3天每天写300字以上',
     ),
     const Badge(
       id: 'time_lunch',
@@ -862,7 +862,7 @@ class BadgeService {
       type: BadgeType.photo,
       rarity: BadgeRarity.uncommon,
       requiredCount: 50,
-      tip: '添加50张照片',
+      tip: 'Tip: 累计添加50张照片',
     ),
     const Badge(
       id: 'photo_100',
@@ -1364,6 +1364,25 @@ class BadgeService {
       return '继续写日记，发现更多惊喜！✨';
     }
 
+    final random = Random();
+    return tips[random.nextInt(tips.length)];
+  }
+
+  /// 获取所有徽章的tips（用于彩蛋）
+  static List<String> getAllBadgeTips() {
+    final tips = _allBadges
+        .where((b) => b.tip != null && b.tip!.isNotEmpty)
+        .map((b) => b.tip!)
+        .toList();
+    return tips;
+  }
+
+  /// 获取随机徽章tip（用于彩蛋，不依赖异步）
+  static String getRandomBadgeTip() {
+    final tips = getAllBadgeTips();
+    if (tips.isEmpty) {
+      return 'Tip: 继续写日记，发现更多惊喜！✨';
+    }
     final random = Random();
     return tips[random.nextInt(tips.length)];
   }

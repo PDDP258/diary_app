@@ -178,6 +178,9 @@ class _CustomGoalMiniCardState extends State<CustomGoalMiniCard> {
             ),
           ),
         
+        // 完成/+1 按钮
+        _buildCompleteButton(goal, scheme),
+        
         // 展开/收起图标
         AnimatedRotation(
           turns: _isExpanded ? 0.5 : 0,
@@ -209,35 +212,106 @@ class _CustomGoalMiniCardState extends State<CustomGoalMiniCard> {
     );
   }
 
+  /// 构建完成/+1按钮
+  Widget _buildCompleteButton(CustomGoal goal, ThemeScheme scheme) {
+    // 如果目标已完成，显示完成图标
+    if (goal.isCompleted) {
+      return Container(
+        padding: const EdgeInsets.all(6),
+        margin: const EdgeInsets.only(right: 8),
+        decoration: BoxDecoration(
+          color: Colors.green.withOpacity(0.1),
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(
+          Icons.check_circle,
+          size: 20,
+          color: Colors.green,
+        ),
+      );
+    }
+    
+    // 未完成，显示+1按钮
+    return GestureDetector(
+      onTap: () => _incrementGoal(goal.id),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        margin: const EdgeInsets.only(right: 8),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              scheme.primaryColor,
+              scheme.primaryColor.withOpacity(0.8),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: scheme.primaryColor.withOpacity(0.3),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: const Text(
+          '+1',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 增加目标进度
+  void _incrementGoal(String goalId) async {
+    try {
+      await context.read<CustomGoalProvider>().incrementGoal(goalId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('目标进度+1')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('更新失败: $e')),
+        );
+      }
+    }
+  }
+
   /// 构建其他目标项
   Widget _buildOtherGoalItem(CustomGoal goal, ThemeScheme scheme) {
-    return GestureDetector(
-      onTap: () => _switchActiveGoal(goal.id),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: scheme.lightColor.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            // 进度指示
-            SizedBox(
-              width: 28,
-              height: 28,
-              child: CircularProgressIndicator(
-                value: goal.progress,
-                strokeWidth: 2.5,
-                backgroundColor: scheme.lightColor.withOpacity(0.3),
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  goal.isCompleted ? Colors.green : scheme.primaryColor,
-                ),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: scheme.lightColor.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          // 进度指示
+          SizedBox(
+            width: 28,
+            height: 28,
+            child: CircularProgressIndicator(
+              value: goal.progress,
+              strokeWidth: 2.5,
+              backgroundColor: scheme.lightColor.withOpacity(0.3),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                goal.isCompleted ? Colors.green : scheme.primaryColor,
               ),
             ),
-            const SizedBox(width: 10),
-            // 目标信息
-            Expanded(
+          ),
+          const SizedBox(width: 10),
+          // 目标信息（点击切换目标）
+          Expanded(
+            child: GestureDetector(
+              onTap: () => _switchActiveGoal(goal.id),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -272,8 +346,42 @@ class _CustomGoalMiniCardState extends State<CustomGoalMiniCard> {
                 ],
               ),
             ),
-            // 切换按钮
+          ),
+          // +1 按钮（已完成则显示勾选）
+          if (goal.isCompleted)
             Container(
+              padding: const EdgeInsets.all(4),
+              margin: const EdgeInsets.only(right: 6),
+              child: const Icon(
+                Icons.check_circle,
+                size: 18,
+                color: Colors.green,
+              ),
+            )
+          else
+            GestureDetector(
+              onTap: () => _incrementGoal(goal.id),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                margin: const EdgeInsets.only(right: 6),
+                decoration: BoxDecoration(
+                  color: scheme.primaryColor,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  '+1',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          // 切换按钮
+          GestureDetector(
+            onTap: () => _switchActiveGoal(goal.id),
+            child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
                 color: scheme.primaryColor.withOpacity(0.1),
@@ -288,21 +396,21 @@ class _CustomGoalMiniCardState extends State<CustomGoalMiniCard> {
                 ),
               ),
             ),
-            // 编辑按钮
-            GestureDetector(
-              onTap: () => _showEditGoalSheet(goal),
-              child: Container(
-                padding: const EdgeInsets.all(6),
-                margin: const EdgeInsets.only(left: 6),
-                child: Icon(
-                  Icons.edit_outlined,
-                  size: 16,
-                  color: scheme.textLightColor,
-                ),
+          ),
+          // 编辑按钮
+          GestureDetector(
+            onTap: () => _showEditGoalSheet(goal),
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              margin: const EdgeInsets.only(left: 6),
+              child: Icon(
+                Icons.edit_outlined,
+                size: 16,
+                color: scheme.textLightColor,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

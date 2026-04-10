@@ -8,6 +8,7 @@ import 'providers/settings_provider.dart';
 import 'providers/custom_goal_provider.dart';
 import 'screens/splash_screen.dart';
 import 'screens/protection_violation_screen.dart';
+import 'screens/main_screen.dart';
 import 'services/auto_backup_service.dart';
 import 'services/cloud_sync_service.dart';
 import 'services/sound_service.dart';
@@ -84,6 +85,7 @@ class MyApp extends StatelessWidget {
               debugShowCheckedModeBanner: false,
               theme: themeProvider.theme,
               home: const SplashScreen(),
+              navigatorObservers: [mainScreenRouteObserver],
             ),
           );
         },

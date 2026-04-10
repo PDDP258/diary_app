@@ -20,9 +20,12 @@ import '../widgets/random_sticker_overlay.dart';
 import '../widgets/motion_photo_widget.dart';
 import '../services/motion_photo_service.dart';
 import '../services/sound_service.dart';
+import '../services/sentiment_analysis_service.dart';
 import '../services/tag_system_service.dart';
 import '../models/tag_system.dart';
 import '../widgets/tag_selector_v3.dart';
+import '../widgets/voice_recorder_button_v2.dart';
+import '../services/voice_diary_service.dart';
 import 'dart:io';
 
 class WriteDiaryScreen extends StatefulWidget {
@@ -70,6 +73,9 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
   // 图片区域提示
   bool _showImageHint = true;
   bool _imageSectionVisible = false;
+  
+  // 情绪分析结果
+  SentimentResult? _sentimentResult;
 
   @override
   void initState() {
@@ -107,6 +113,30 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
 
     // 加载提示设置
     _loadImageHintSetting();
+    
+    // 添加内容变化监听进行情绪分析
+    _contentController.addListener(_analyzeSentiment);
+  }
+  
+  /// 分析文本情绪
+  void _analyzeSentiment() {
+    final text = '${_titleController.text} ${_contentController.text}';
+    if (text.trim().length >= 5) {
+      final result = SentimentAnalysisService.analyze(text);
+      if (mounted && 
+          (_sentimentResult?.dominantEmotion != result.dominantEmotion ||
+           (_sentimentResult == null))) {
+        setState(() {
+          _sentimentResult = result;
+        });
+      }
+    } else {
+      if (mounted && _sentimentResult != null) {
+        setState(() {
+          _sentimentResult = null;
+        });
+      }
+    }
   }
 
   /// 加载图片提示设置
@@ -124,6 +154,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _contentController.removeListener(_analyzeSentiment);
     super.dispose();
   }
 
@@ -196,11 +227,32 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
         return;
       }
 
-      final XFile? image = await _imagePicker.pickImage(source: source);
-      if (image != null) {
-        setState(() {
-          _images.add(image.path);
-        });
+      if (source == ImageSource.gallery) {
+        // 从相册选择：支持多选
+        final int remainingSlots = _maxImageCount - _images.length;
+        final List<XFile> images = await _imagePicker.pickMultiImage(
+          limit: remainingSlots,
+        );
+        if (images.isNotEmpty) {
+          setState(() {
+            for (final image in images) {
+              if (_images.length < _maxImageCount) {
+                _images.add(image.path);
+              }
+            }
+          });
+          if (images.length >= remainingSlots && images.length > remainingSlots) {
+            _showSnackBar('已达到最大图片数量限制 ($_maxImageCount 张)');
+          }
+        }
+      } else {
+        // 拍照：单选
+        final XFile? image = await _imagePicker.pickImage(source: source);
+        if (image != null) {
+          setState(() {
+            _images.add(image.path);
+          });
+        }
       }
     } catch (e) {
       _showSnackBar('选择图片失败: $e');
@@ -908,6 +960,10 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
                 _buildTitleInput(),
                 const SizedBox(height: 16),
 
+                // 语音日记按钮
+                _buildVoiceRecorderButton(),
+                const SizedBox(height: 16),
+
                 // 内容输入
                 _buildContentInput(),
                 const SizedBox(height: 16),
@@ -960,6 +1016,71 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
         _selectedDate = picked;
       });
     }
+  }
+
+  Widget _buildVoiceRecorderButton() {
+    final scheme = AppTheme.schemeOf(context);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            scheme.cardColor,
+            scheme.cardColor.withOpacity(0.95),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(AppTheme.largeRadius),
+        boxShadow: AppTheme.cardShadow,
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [scheme.primaryColor, scheme.darkColor],
+              ),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.mic,
+              color: Colors.white,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '语音日记',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: scheme.textDarkColor,
+                  ),
+                ),
+                Text(
+                  '用声音记录当下的心情',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: scheme.textMediumColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          VoiceRecorderButton(
+            date: DateFormat('yyyy-MM-dd').format(_selectedDate),
+            onRecordingComplete: (entry) {
+              // 录音完成，可以在这里刷新列表显示
+              setState(() {});
+            },
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildDateCard() {
@@ -1514,6 +1635,78 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
             ),
             maxLines: 12,
             keyboardType: TextInputType.multiline,
+          ),
+          // 情绪分析标签
+          if (_sentimentResult != null)
+            _buildSentimentTag(scheme),
+        ],
+      ),
+    );
+  }
+  
+  /// 构建情绪分析标签
+  Widget _buildSentimentTag(ThemeScheme scheme) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Color(_sentimentResult!.color).withOpacity(0.15),
+            Color(_sentimentResult!.color).withOpacity(0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
+        border: Border.all(
+          color: Color(_sentimentResult!.color).withOpacity(0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Color(_sentimentResult!.color),
+                  Color(_sentimentResult!.color).withOpacity(0.7),
+                ],
+              ),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                _sentimentResult!.emoji,
+                style: const TextStyle(fontSize: 18),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '检测到的情绪: ${_sentimentResult!.dominantEmotion}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: scheme.textDarkColor,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _sentimentResult!.description,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: scheme.textMediumColor,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

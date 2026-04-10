@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
@@ -19,51 +20,67 @@ class PdfExportService {
 
   /// 预加载字体（在导出前调用）
   static Future<bool> preloadFonts({Function(double)? onProgress}) async {
-    if (_chineseFont != null) return true;
+    if (_chineseFont != null && !_fontLoadFailed) return true;
     
-    // 尝试加载已下载的字体
-    final regularFont = await FontDownloadService.getFontData('NotoSansSC-Regular');
-    if (regularFont != null) {
-      _chineseFont = pw.Font.ttf(regularFont);
-      print('PDF: 使用已下载的字体');
+    // 使用_loadChineseFont确保字体正确加载
+    try {
+      _chineseFont = await _loadChineseFont();
       
-      final boldFont = await FontDownloadService.getFontData('NotoSansSC-Bold');
-      if (boldFont != null) {
-        _chineseBoldFont = pw.Font.ttf(boldFont);
+      // 同时尝试加载粗体（失败也没关系，会用普通字体代替）
+      try {
+        _chineseBoldFont = await _loadChineseBoldFont();
+      } catch (e) {
+        print('PDF: 粗体字体加载失败，将使用普通字体代替');
+        _chineseBoldFont = _chineseFont;
       }
+      
       return true;
+    } catch (e) {
+      print('PDF: 预加载字体失败: $e');
+      return false;
+    }
+  }
+  
+  /// 测试字体加载（用于诊断）
+  static Future<Map<String, dynamic>> diagnoseFontLoading() async {
+    final results = <String, dynamic>{};
+    
+    // 1. 测试从assets加载
+    try {
+      final fontData = await rootBundle.load('assets/fonts/NotoSerifCJKsc-Regular.otf');
+      results['assets_load'] = {
+        'success': true,
+        'size_mb': (fontData.lengthInBytes / 1024 / 1024).toStringAsFixed(2),
+      };
+    } catch (e) {
+      results['assets_load'] = {'success': false, 'error': e.toString()};
     }
     
-    // 如果没有下载，尝试自动下载
-    if (!_isDownloading) {
-      _isDownloading = true;
-      final success = await FontDownloadService.downloadAllFonts(onProgress: onProgress);
-      _isDownloading = false;
-      
-      if (!success) {
-        print('PDF: 字体下载失败');
-        return false;
-      }
-      
-      // 再次尝试加载
-      final downloadedFont = await FontDownloadService.getFontData('NotoSansSC-Regular');
-      if (downloadedFont != null) {
-        _chineseFont = pw.Font.ttf(downloadedFont);
-        print('PDF: 自动下载并使用字体');
-        
-        final downloadedBold = await FontDownloadService.getFontData('NotoSansSC-Bold');
-        if (downloadedBold != null) {
-          _chineseBoldFont = pw.Font.ttf(downloadedBold);
-        }
-        return true;
-      }
+    // 2. 测试通过FontDownloadService加载
+    try {
+      final fontData = await FontDownloadService.getFontData('NotoSerifCJKsc-Regular');
+      results['service_load'] = {
+        'success': fontData != null,
+        'size_mb': fontData != null ? (fontData.lengthInBytes / 1024 / 1024).toStringAsFixed(2) : null,
+      };
+    } catch (e) {
+      results['service_load'] = {'success': false, 'error': e.toString()};
     }
     
-    return false;
+    // 3. 测试系统字体
+    try {
+      final systemFont = await _loadSystemChineseFont();
+      results['system_font'] = {'success': systemFont != null};
+    } catch (e) {
+      results['system_font'] = {'success': false, 'error': e.toString()};
+    }
+    
+    return results;
   }
 
   /// 加载中文字体 - 确保中文正常显示
-  /// 按优先级尝试：1.assets字体 2.已缓存字体 3.系统字体 4.尝试下载 5.默认字体
+  /// 按优先级尝试：1.assets字体 2.已缓存字体 3.系统字体 4.尝试下载
+  /// 如果所有方式都失败，抛出异常而不是使用默认字体（避免中文乱码）
   static Future<pw.Font> _loadChineseFont() async {
     // 如果已有字体且未标记失败，直接返回
     if (_chineseFont != null && !_fontLoadFailed) {
@@ -77,58 +94,49 @@ class PdfExportService {
 
     // 1. 优先尝试加载assets中的字体（最可靠，无需网络）
     try {
-      final fontData = await rootBundle.load('assets/fonts/NotoSansSC-Regular.ttf');
-      _chineseFont = pw.Font.ttf(fontData);
-      print('PDF: 加载assets字体成功');
-      return _chineseFont!;
+      print('PDF: 尝试加载assets字体...');
+      final fontData = await rootBundle.load('assets/fonts/NotoSerifCJKsc-Regular.otf');
+      if (fontData.lengthInBytes > 1000000) { // 验证字体大小（应大于1MB）
+        _chineseFont = pw.Font.ttf(fontData);
+        print('PDF: ✓ 加载assets字体成功 (${(fontData.lengthInBytes/1024/1024).toStringAsFixed(2)}MB)');
+        return _chineseFont!;
+      } else {
+        print('PDF: assets字体文件太小，可能损坏');
+      }
     } catch (e) {
-      print('PDF: assets字体未找到，尝试其他来源...');
+      print('PDF: assets字体加载失败: $e');
     }
 
-    // 2. 尝试加载已下载的字体
+    // 2. 尝试通过FontDownloadService加载（包含缓存和下载逻辑）
     try {
-      final fontData = await FontDownloadService.getFontData('NotoSansSC-Regular');
-      if (fontData != null) {
+      print('PDF: 尝试通过FontDownloadService加载字体...');
+      final fontData = await FontDownloadService.getFontData('NotoSerifCJKsc-Regular');
+      if (fontData != null && fontData.lengthInBytes > 1000000) {
         _chineseFont = pw.Font.ttf(fontData);
-        print('PDF: 加载已下载字体成功');
+        print('PDF: ✓ 加载字体成功 (${(fontData.lengthInBytes/1024/1024).toStringAsFixed(2)}MB)');
         return _chineseFont!;
       }
     } catch (e) {
-      print('PDF: 已下载字体加载失败: $e');
+      print('PDF: FontDownloadService加载失败: $e');
     }
 
     // 3. 尝试从系统加载中文字体（仅桌面端有效）
     try {
+      print('PDF: 尝试加载系统字体...');
       _chineseFont = await _loadSystemChineseFont();
       if (_chineseFont != null) {
-        print('PDF: 加载系统字体成功');
+        print('PDF: ✓ 加载系统字体成功');
         return _chineseFont!;
       }
     } catch (e) {
       print('PDF: 系统字体加载失败: $e');
     }
 
-    // 4. 尝试下载字体（带超时和错误处理）
-    print('PDF: 尝试下载字体...');
-    try {
-      final success = await FontDownloadService.downloadAllFonts();
-      if (success) {
-        final fontData = await FontDownloadService.getFontData('NotoSansSC-Regular');
-        if (fontData != null) {
-          _chineseFont = pw.Font.ttf(fontData);
-          print('PDF: 下载字体成功');
-          return _chineseFont!;
-        }
-      }
-    } catch (e) {
-      print('PDF: 下载字体失败: $e');
-    }
-
-    // 5. 使用内置字体（不支持中文，会显示方框）
-    print('PDF: 警告！使用默认字体，中文将显示为方框');
+    // 4. 所有方式都失败，标记失败并抛出异常
     _fontLoadFailed = true;
-    _chineseFont = pw.Font.helvetica();
-    return _chineseFont!;
+    final errorMsg = '中文字体加载失败，无法导出PDF。请确保字体文件已正确打包到应用。';
+    print('PDF: ✗ $errorMsg');
+    throw Exception(errorMsg);
   }
 
   /// 尝试加载系统中的中文字体
@@ -152,10 +160,11 @@ class PdfExportService {
     for (final path in fontPaths) {
       try {
         final file = File(path);
-        if (await file.exists()) {
+        if (await file.exists() && await file.length() > 1000000) {
           final bytes = await file.readAsBytes();
-          print('PDF: 找到系统字体: $path');
-          return pw.Font.ttf(bytes.buffer.asByteData());
+          print('PDF: 找到系统字体: $path (${(bytes.length/1024/1024).toStringAsFixed(2)}MB)');
+          // 将 Uint8List 转换为 ByteData
+          return pw.Font.ttf(ByteData.sublistView(bytes));
         }
       } catch (e) {
         // 继续尝试下一个
@@ -174,23 +183,30 @@ class PdfExportService {
 
     // 1. 尝试加载assets中的粗体字体
     try {
-      final fontData = await rootBundle.load('assets/fonts/NotoSansSC-Bold.ttf');
-      _chineseBoldFont = pw.Font.ttf(fontData);
-      return _chineseBoldFont!;
-    } catch (e) {
-      // 继续尝试自动下载的字体
-    }
-
-    // 2. 尝试加载自动下载的粗体字体
-    try {
-      final fontData = await FontDownloadService.getFontData('NotoSansSC-Bold');
-      if (fontData != null) {
+      print('PDF: 尝试加载assets粗体字体...');
+      final fontData = await rootBundle.load('assets/fonts/NotoSerifCJKsc-Bold.otf');
+      if (fontData.lengthInBytes > 1000000) {
+        // 将 ByteData 转换为 Uint8List
         _chineseBoldFont = pw.Font.ttf(fontData);
-        print('PDF: 加载自动下载粗体字体成功');
+        print('PDF: ✓ 加载assets粗体字体成功 (${(fontData.lengthInBytes/1024/1024).toStringAsFixed(2)}MB)');
         return _chineseBoldFont!;
       }
     } catch (e) {
-      print('PDF: 自动下载粗体字体加载失败: $e');
+      print('PDF: assets粗体字体加载失败: $e');
+    }
+
+    // 2. 尝试通过FontDownloadService加载粗体字体
+    try {
+      print('PDF: 尝试通过FontDownloadService加载粗体字体...');
+      final fontData = await FontDownloadService.getFontData('NotoSerifCJKsc-Bold');
+      if (fontData != null && fontData.lengthInBytes > 1000000) {
+        // 将 ByteData 转换为 Uint8List
+        _chineseBoldFont = pw.Font.ttf(fontData);
+        print('PDF: ✓ 加载粗体字体成功 (${(fontData.lengthInBytes/1024/1024).toStringAsFixed(2)}MB)');
+        return _chineseBoldFont!;
+      }
+    } catch (e) {
+      print('PDF: FontDownloadService粗体字体加载失败: $e');
     }
 
     // 3. 尝试系统粗体字体
@@ -204,9 +220,11 @@ class PdfExportService {
     for (final path in boldFontPaths) {
       try {
         final file = File(path);
-        if (await file.exists()) {
+        if (await file.exists() && await file.length() > 1000000) {
           final bytes = await file.readAsBytes();
-          _chineseBoldFont = pw.Font.ttf(bytes.buffer.asByteData());
+          // 将 Uint8List 转换为 ByteData
+          _chineseBoldFont = pw.Font.ttf(ByteData.sublistView(bytes));
+          print('PDF: ✓ 加载系统粗体字体成功: $path');
           return _chineseBoldFont!;
         }
       } catch (e) {
@@ -214,7 +232,8 @@ class PdfExportService {
       }
     }
 
-    // 4. 使用普通字体代替粗体
+    // 4. 使用普通字体代替粗体（如果普通字体已加载）
+    print('PDF: 使用普通字体代替粗体');
     _chineseBoldFont = await _loadChineseFont();
     return _chineseBoldFont!;
   }
@@ -249,26 +268,31 @@ class PdfExportService {
       throw Exception('没有日记可导出');
     }
 
-    // 加载中文字体 - 尝试加载但不强制要求成功
+    // 加载中文字体 - 必须成功才能导出PDF（否则中文会乱码）
     print('PDF: 开始加载中文字体...');
     bool fontLoaded = false;
     int retryCount = 0;
-    const maxRetries = 2;
+    const maxRetries = 3;
     
     while (!fontLoaded && retryCount < maxRetries) {
-      fontLoaded = await preloadFonts(onProgress: onFontDownloadProgress);
-      if (!fontLoaded) {
+      try {
+        // 使用_loadChineseFont确保字体正确加载
+        final font = await _loadChineseFont();
+        _chineseFont = font;
+        fontLoaded = true;
+        print('PDF: ✓ 字体加载成功');
+      } catch (e) {
         retryCount++;
-        print('PDF: 字体加载失败，第$retryCount次重试...');
-        await Future.delayed(const Duration(milliseconds: 300));
+        print('PDF: 字体加载失败，第$retryCount次重试... ($e)');
+        if (retryCount < maxRetries) {
+          await Future.delayed(const Duration(milliseconds: 500));
+        }
       }
     }
     
-    // 如果字体加载失败，使用默认字体（中文会显示为方框，但不影响导出）
+    // 如果字体加载失败，抛出异常阻止导出（避免生成乱码PDF）
     if (!fontLoaded || _chineseFont == null) {
-      print('PDF: 警告 - 中文字体加载失败，将使用默认字体（中文可能显示为方框）');
-      _chineseFont = pw.Font.helvetica();
-      _fontLoadFailed = true;
+      throw Exception('中文字体加载失败，无法导出PDF。请检查字体文件是否已正确打包到assets/fonts/目录。');
     }
     
     final pdf = pw.Document();
@@ -454,8 +478,14 @@ class PdfExportService {
     final dateFormat = DateFormat('yyyy年MM月dd日 HH:mm');
     final pdf = pw.Document();
 
-    // 预加载字体
-    final chineseFont = await _loadChineseFont();
+    // 预加载字体 - 使用改进的字体加载逻辑
+    try {
+      _chineseFont = await _loadChineseFont();
+    } catch (e) {
+      throw Exception('中文字体加载失败，无法导出PDF: $e');
+    }
+    
+    final chineseFont = _chineseFont!;
     final dateStyle = pw.TextStyle(
         font: chineseFont,
         fontSize: 14,
@@ -583,7 +613,12 @@ class PdfExportService {
     final fullFormat = DateFormat('yyyy年MM月dd日 HH:mm');
 
     // 预加载字体
-    final chineseFont = await _loadChineseFont();
+    pw.Font chineseFont;
+    try {
+      chineseFont = await _loadChineseFont();
+    } catch (e) {
+      throw Exception('中文字体加载失败，无法导出PDF: $e');
+    }
     final titleStyle = pw.TextStyle(
         font: chineseFont, fontSize: 36, fontWeight: pw.FontWeight.bold);
     final subtitleStyle = pw.TextStyle(font: chineseFont, fontSize: 16);

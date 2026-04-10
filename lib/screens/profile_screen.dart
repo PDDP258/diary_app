@@ -25,6 +25,7 @@ import 'data_management_screen.dart';
 import 'icon_theme_screen.dart';
 import 'main_screen.dart';
 import 'tag_management_screen_v3.dart';
+import 'time_capsule_list_screen_v2.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -188,6 +189,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   trailing: _buildBiometricToggle(),
                   onTap: () => _toggleBiometric(),
                 ),
+            ], scheme),
+
+            const SizedBox(height: 16),
+
+            // 时间胶囊
+            _buildMenuGroup([
+              _MenuItem(
+                icon: Icons.mark_email_unread_outlined,
+                title: '时间胶囊',
+                subtitle: '给未来的自己写一封信',
+                onTap: () => _navigateTo(const TimeCapsuleListScreen()),
+              ),
             ], scheme),
 
             const SizedBox(height: 16),
@@ -2319,6 +2332,9 @@ class _AboutEasterEgg {
 
     if (!context.mounted) return;
 
+    // 获取随机徽章tip
+    final randomTip = badge_service.BadgeService.getRandomBadgeTip();
+
     // 显示彩蛋弹窗
     showDialog(
       context: context,
@@ -2377,9 +2393,9 @@ class _AboutEasterEgg {
                 color: Colors.amber.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Text(
-                'Tip: 写一个超过10字的标题',
-                style: TextStyle(color: Colors.amber, fontSize: 12),
+              child: Text(
+                randomTip,
+                style: const TextStyle(color: Colors.amber, fontSize: 12),
               ),
             ),
           ],

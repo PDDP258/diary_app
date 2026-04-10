@@ -37,6 +37,7 @@ dependencies:
   video_player: ^2.9.2  # 视频播放
   url_launcher: ^6.3.0  # URL启动器
   local_auth: ^3.0.1
+  record: ^6.2.0
 
 dev_dependencies:
   flutter_test:
@@ -48,3 +49,8 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/splash_cover.png
+    # === PDF中文字体（必须） ===
+    # 字体来源: https://github.com/notofonts/noto-cjk/releases
+    # 使用 NotoSerifCJKsc（思源宋体）作为中文字体
+    - assets/fonts/NotoSerifCJKsc-Regular.otf
+    - assets/fonts/NotoSerifCJKsc-Bold.otf

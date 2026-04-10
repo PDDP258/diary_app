@@ -101,9 +101,10 @@ class _GachaScreenState extends State<GachaScreen>
     });
 
     // 播放抽奖动画
-    _animationController.forward(from: 0);
+    await _animationController.forward(from: 0);
 
-    await Future.delayed(const Duration(milliseconds: 1500));
+    // 延迟执行抽奖逻辑，确保动画播放
+    await Future.delayed(const Duration(milliseconds: 500));
 
     try {
       final result = await GachaService.performDraw();
@@ -117,7 +118,7 @@ class _GachaScreenState extends State<GachaScreen>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
+          SnackBar(content: Text('抽奖失败: $e')),
         );
       }
     } finally {
