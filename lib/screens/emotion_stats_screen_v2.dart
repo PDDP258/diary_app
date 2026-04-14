@@ -174,7 +174,7 @@ class _EmotionStatsScreenState extends State<EmotionStatsScreen>
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
-                side: BorderSide(color: scheme.lightColor.withOpacity(0.5)),
+                side: BorderSide(color: scheme.lightColor.withValues(alpha: 0.5)),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(24),
@@ -185,7 +185,7 @@ class _EmotionStatsScreenState extends State<EmotionStatsScreen>
                       width: 80,
                       height: 80,
                       decoration: BoxDecoration(
-                        color: Color(config['color'] as int).withOpacity(0.1),
+                        color: Color(config['color'] as int).withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: Center(
@@ -249,7 +249,7 @@ class _EmotionStatsScreenState extends State<EmotionStatsScreen>
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(color: scheme.lightColor.withOpacity(0.5)),
+                  side: BorderSide(color: scheme.lightColor.withValues(alpha: 0.5)),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -284,7 +284,7 @@ class _EmotionStatsScreenState extends State<EmotionStatsScreen>
                                 borderRadius: BorderRadius.circular(4),
                                 child: LinearProgressIndicator(
                                   value: percentage / 100,
-                                  backgroundColor: scheme.lightColor.withOpacity(0.3),
+                                  backgroundColor: scheme.lightColor.withValues(alpha: 0.3),
                                   valueColor: AlwaysStoppedAnimation(
                                     Color(config['color'] as int),
                                   ),
@@ -335,7 +335,7 @@ class _EmotionStatsScreenState extends State<EmotionStatsScreen>
           label,
           style: TextStyle(
             fontSize: 13,
-            color: color.withOpacity(0.7),
+            color: color.withValues(alpha: 0.7),
           ),
         ),
       ],
@@ -363,8 +363,8 @@ class _EmotionStatsScreenState extends State<EmotionStatsScreen>
               borderRadius: BorderRadius.circular(12),
               side: BorderSide(
                 color: isToday 
-                    ? scheme.primaryColor.withOpacity(0.3)
-                    : scheme.lightColor.withOpacity(0.5),
+                    ? scheme.primaryColor.withValues(alpha: 0.3)
+                    : scheme.lightColor.withValues(alpha: 0.5),
                 width: isToday ? 2 : 1,
               ),
             ),
@@ -378,8 +378,8 @@ class _EmotionStatsScreenState extends State<EmotionStatsScreen>
                     height: 44,
                     decoration: BoxDecoration(
                       color: isToday
-                          ? scheme.primaryColor.withOpacity(0.1)
-                          : scheme.lightColor.withOpacity(0.3),
+                          ? scheme.primaryColor.withValues(alpha: 0.1)
+                          : scheme.lightColor.withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Column(
@@ -410,7 +410,7 @@ class _EmotionStatsScreenState extends State<EmotionStatsScreen>
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: Color(data['color'] as int).withOpacity(0.1),
+                        color: Color(data['color'] as int).withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: Center(

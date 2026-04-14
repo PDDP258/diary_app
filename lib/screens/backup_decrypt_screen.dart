@@ -235,7 +235,7 @@ ${firstContent ?? '无文本内容'}
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: scheme.lightColor.withOpacity(0.3),
+                        color: scheme.lightColor.withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Column(
@@ -355,8 +355,8 @@ ${firstContent ?? '无文本内容'}
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: _success
-                      ? Colors.green.withOpacity(0.1)
-                      : Colors.red.withOpacity(0.1),
+                      ? Colors.green.withValues(alpha: 0.1)
+                      : Colors.red.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: _success ? Colors.green : Colors.red,

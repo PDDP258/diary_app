@@ -107,7 +107,7 @@ class _TagsClassificationScreenState extends State<TagsClassificationScreen> {
           Icon(
             Icons.label_outlined,
             size: 64,
-            color: scheme.textLightColor.withOpacity(0.5),
+            color: scheme.textLightColor.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 16),
           Text(
@@ -164,7 +164,7 @@ class _TagsClassificationScreenState extends State<TagsClassificationScreen> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: scheme.textDarkColor.withOpacity(0.05),
+              color: scheme.textDarkColor.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -179,7 +179,7 @@ class _TagsClassificationScreenState extends State<TagsClassificationScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: scheme.primaryColor.withOpacity(0.1),
+                    color: scheme.primaryColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -252,7 +252,7 @@ class _TagsClassificationScreenState extends State<TagsClassificationScreen> {
     
     return Container(
       decoration: BoxDecoration(
-        color: scheme.lightColor.withOpacity(0.1),
+        color: scheme.lightColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Center(

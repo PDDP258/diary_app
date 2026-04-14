@@ -118,20 +118,20 @@ class CustomGoalService {
     await prefs.setString(_activeGoalIdKey, goalId);
   }
   
-  /// 增加目标完成次数
-  static Future<void> incrementGoal(String goalId) async {
+  /// 增加目标完成次数（按指定值）
+  static Future<void> incrementGoal(String goalId, {int value = 1}) async {
     final goal = await getGoalById(goalId);
     if (goal != null) {
-      goal.increment();
+      goal.incrementBy(value);
       await updateGoal(goal);
     }
   }
   
-  /// 减少目标完成次数
-  static Future<void> decrementGoal(String goalId) async {
+  /// 减少目标完成次数（按指定值）
+  static Future<void> decrementGoal(String goalId, {int value = 1}) async {
     final goal = await getGoalById(goalId);
     if (goal != null) {
-      goal.decrement();
+      goal.decrementBy(value);
       await updateGoal(goal);
     }
   }
@@ -152,53 +152,77 @@ class CustomGoalService {
     return goals.where((g) => g.isActive).length;
   }
   
-  /// 重置每日进度（每天调用一次）
+  /// 重置每日进度（应用启动或从后台恢复时调用）
   static Future<void> resetDailyProgress() async {
     final goals = await getAllGoals();
     final today = DateTime.now();
-    final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
-    
+    final todayStr =
+        '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+
     bool hasChanges = false;
-    
+
     for (final goal in goals) {
-      // 检查是否需要重置
       if (goal.period == GoalPeriod.daily) {
-        // 每日目标：如果不是今天创建的，且没有今日记录，重置当前计数
-        final lastRecord = goal.records.isNotEmpty ? goal.records.last : null;
-        if (lastRecord != null && lastRecord.date != todayStr) {
+        // 每日目标：如果今天已经重置过，跳过
+        if (goal.lastResetDate == todayStr) continue;
+
+        final lastRecord =
+            goal.records.isNotEmpty ? goal.records.last : null;
+        // 如果最后记录不是今天，说明需要重置
+        if (lastRecord == null || lastRecord.date != todayStr) {
           goal.currentCount = 0;
           goal.completedAt = null;
+          goal.lastResetDate = todayStr;
           hasChanges = true;
         }
       } else if (goal.period == GoalPeriod.weekly) {
-        // 每周目标：检查是否跨周
-        if (_isNewWeek(goal.createdAt, today)) {
-          goal.currentCount = 0;
-          goal.completedAt = null;
-          hasChanges = true;
-        }
+        // 每周目标：检查本周是否已经重置过
+        if (_isSameWeek(goal.lastResetDate, todayStr)) continue;
+
+        goal.currentCount = 0;
+        goal.completedAt = null;
+        goal.lastResetDate = todayStr;
+        hasChanges = true;
       } else if (goal.period == GoalPeriod.monthly) {
-        // 每月目标：检查是否跨月
-        if (goal.createdAt.month != today.month || goal.createdAt.year != today.year) {
-          goal.currentCount = 0;
-          goal.completedAt = null;
-          hasChanges = true;
-        }
+        // 每月目标：检查本月是否已经重置过
+        if (_isSameMonth(goal.lastResetDate, todayStr)) continue;
+
+        goal.currentCount = 0;
+        goal.completedAt = null;
+        goal.lastResetDate = todayStr;
+        hasChanges = true;
       }
     }
-    
+
     if (hasChanges) {
       await saveGoals(goals);
     }
   }
-  
-  /// 检查是否是新的一周
-  static bool _isNewWeek(DateTime created, DateTime today) {
-    // 获取本周一
-    final monday = today.subtract(Duration(days: today.weekday - 1));
-    final weekStart = DateTime(monday.year, monday.month, monday.day);
-    
-    // 如果创建日期在本周一之前，则需要重置
-    return created.isBefore(weekStart);
+
+  /// 检查两个日期字符串是否在同一周（以周一为周起点）
+  static bool _isSameWeek(String? dateA, String dateB) {
+    if (dateA == null || dateA.isEmpty) return false;
+    try {
+      final a = DateTime.parse(dateA);
+      final b = DateTime.parse(dateB);
+      final mondayA = a.subtract(Duration(days: a.weekday - 1));
+      final mondayB = b.subtract(Duration(days: b.weekday - 1));
+      return DateTime(mondayA.year, mondayA.month, mondayA.day) ==
+          DateTime(mondayB.year, mondayB.month, mondayB.day);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// 检查两个日期字符串是否在同一个月
+  static bool _isSameMonth(String? dateA, String dateB) {
+    if (dateA == null || dateA.isEmpty) return false;
+    try {
+      final a = DateTime.parse(dateA);
+      final b = DateTime.parse(dateB);
+      return a.year == b.year && a.month == b.month;
+    } catch (e) {
+      return false;
+    }
   }
 }

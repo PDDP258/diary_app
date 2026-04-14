@@ -283,14 +283,14 @@ class StarryPainter extends CustomPainter {
     final currentOpacity = star.opacity * (0.6 + 0.4 * twinkle);
 
     final paint = Paint()
-      ..color = Colors.white.withOpacity(currentOpacity.clamp(0.1, 1.0))
+      ..color = Colors.white.withValues(alpha: currentOpacity.clamp(0.1, 1.0))
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 0.5);
 
     final center = Offset(star.x * size.width, star.y * size.height);
 
     // 绘制星星光晕
     canvas.drawCircle(center, star.size * 2,
-        Paint()..color = Colors.white.withOpacity(currentOpacity * 0.3));
+        Paint()..color = Colors.white.withValues(alpha: currentOpacity * 0.3));
 
     // 绘制星星核心
     canvas.drawCircle(center, star.size, paint);
@@ -347,9 +347,9 @@ class StarryPainter extends CustomPainter {
       begin: Alignment.centerLeft,
       end: Alignment.centerRight,
       colors: [
-        Colors.white.withOpacity(0),
-        Colors.white.withOpacity(0.8 * (1 - progress * 0.5)),
-        Colors.white.withOpacity(1 - progress * 0.3),
+        Colors.white.withValues(alpha: 0),
+        Colors.white.withValues(alpha: 0.8 * (1 - progress * 0.5)),
+        Colors.white.withValues(alpha: 1 - progress * 0.3),
       ],
     );
 
@@ -366,7 +366,7 @@ class StarryPainter extends CustomPainter {
     canvas.drawCircle(
       Offset(startX, startY),
       3,
-      Paint()..color = Colors.white.withOpacity(0.8 * (1 - progress * 0.3)),
+      Paint()..color = Colors.white.withValues(alpha: 0.8 * (1 - progress * 0.3)),
     );
   }
 
@@ -377,8 +377,8 @@ class StarryPainter extends CustomPainter {
         center: const Alignment(0.3, 0.3),
         radius: 0.8,
         colors: [
-          const Color(0xFF4A148C).withOpacity(0.15), // 紫色星云
-          const Color(0xFF1A237E).withOpacity(0.1), // 蓝色星云
+          const Color(0xFF4A148C).withValues(alpha: 0.15), // 紫色星云
+          const Color(0xFF1A237E).withValues(alpha: 0.1), // 蓝色星云
           Colors.transparent,
         ],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
@@ -392,8 +392,8 @@ class StarryPainter extends CustomPainter {
         center: const Alignment(0.8, 0.7),
         radius: 0.6,
         colors: [
-          const Color(0xFF311B92).withOpacity(0.12),
-          const Color(0xFF0D47A1).withOpacity(0.08),
+          const Color(0xFF311B92).withValues(alpha: 0.12),
+          const Color(0xFF0D47A1).withValues(alpha: 0.08),
           Colors.transparent,
         ],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))

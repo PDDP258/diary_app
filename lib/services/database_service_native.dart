@@ -654,7 +654,8 @@ class DatabaseService {
   static Future<int> importDiaries(List<Diary> diaries) async {
     int count = 0;
     for (final diary in diaries) {
-      final existing = await getDiary(diary.id);
+      if (diary.id == null) continue;
+      final existing = await getDiary(diary.id!);
       if (existing == null) {
         await insertDiary(diary);
         count++;
@@ -667,7 +668,8 @@ class DatabaseService {
   static Future<int> importMoods(List<Mood> moods) async {
     int count = 0;
     for (final mood in moods) {
-      final existing = await getMood(mood.id);
+      if (mood.id == null) continue;
+      final existing = await getMood(mood.id!);
       if (existing == null) {
         await insertMood(mood);
         count++;
@@ -680,7 +682,8 @@ class DatabaseService {
   static Future<int> importTags(List<Tag> tags) async {
     int count = 0;
     for (final tag in tags) {
-      final existing = await getTag(tag.id);
+      if (tag.id == null) continue;
+      final existing = await getTag(tag.id!);
       if (existing == null) {
         await insertTag(tag);
         count++;

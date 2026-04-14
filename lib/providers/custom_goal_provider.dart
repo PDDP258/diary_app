@@ -88,14 +88,14 @@ class CustomGoalProvider extends ChangeNotifier {
     }
   }
   
-  /// 增加目标完成次数
-  Future<void> incrementGoal(String goalId) async {
+  /// 增加目标完成次数（按指定值）
+  Future<void> incrementGoal(String goalId, {int value = 1}) async {
     try {
-      await CustomGoalService.incrementGoal(goalId);
+      await CustomGoalService.incrementGoal(goalId, value: value);
       
       // 更新本地状态
       final goal = _goals.firstWhere((g) => g.id == goalId);
-      goal.increment();
+      goal.incrementBy(value);
       
       if (_activeGoal?.id == goalId) {
         _activeGoal = goal;
@@ -107,14 +107,14 @@ class CustomGoalProvider extends ChangeNotifier {
     }
   }
   
-  /// 减少目标完成次数
-  Future<void> decrementGoal(String goalId) async {
+  /// 减少目标完成次数（按指定值）
+  Future<void> decrementGoal(String goalId, {int value = 1}) async {
     try {
-      await CustomGoalService.decrementGoal(goalId);
+      await CustomGoalService.decrementGoal(goalId, value: value);
       
       // 更新本地状态
       final goal = _goals.firstWhere((g) => g.id == goalId);
-      goal.decrement();
+      goal.decrementBy(value);
       
       if (_activeGoal?.id == goalId) {
         _activeGoal = goal;

@@ -491,10 +491,10 @@ class DiaryTemplateSelector extends StatelessWidget {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: template.color.withOpacity(0.1),
+          color: template.color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: template.color.withOpacity(0.3),
+            color: template.color.withValues(alpha: 0.3),
             width: 1,
           ),
         ),
@@ -543,10 +543,10 @@ class DiaryTemplatePrompts extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: template.color.withOpacity(0.1),
+        color: template.color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: template.color.withOpacity(0.3),
+          color: template.color.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -588,14 +588,14 @@ class DiaryTemplatePrompts extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: template.color.withOpacity(0.2),
+                    color: template.color.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
                     prompt,
                     style: TextStyle(
                       fontSize: 12,
-                      color: template.color.withOpacity(0.8),
+                      color: template.color.withValues(alpha: 0.8),
                     ),
                   ),
                 ),

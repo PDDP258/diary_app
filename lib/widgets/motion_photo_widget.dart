@@ -48,6 +48,20 @@ class _MotionPhotoWidgetState extends State<MotionPhotoWidget>
   }
 
   @override
+  void didUpdateWidget(MotionPhotoWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 当图片路径变化时，重新检测实况照片
+    if (oldWidget.imagePath != widget.imagePath) {
+      setState(() {
+        _isLoading = true;
+        _isMotionPhoto = false;
+        _videoPath = null;
+      });
+      _checkMotionPhoto();
+    }
+  }
+
+  @override
   void dispose() {
     _badgeController.dispose();
     super.dispose();
@@ -141,11 +155,11 @@ class _MotionPhotoWidgetState extends State<MotionPhotoWidget>
                     return Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.6),
+                        color: Colors.black.withValues(alpha: 0.6),
                         borderRadius: BorderRadius.circular(10),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.orange.withOpacity(
+                            color: Colors.orange.withValues(alpha: 
                               0.5 + 0.3 * _badgeController.value,
                             ),
                             blurRadius: 8,
@@ -186,7 +200,7 @@ class _MotionPhotoWidgetState extends State<MotionPhotoWidget>
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
+                    color: Colors.black.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: const Text(
@@ -210,7 +224,7 @@ class _MotionPhotoWidgetState extends State<MotionPhotoWidget>
                   child: Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.5),
+                      color: Colors.black.withValues(alpha: 0.5),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -341,13 +355,13 @@ class _MotionPhotoVideoPlayerState extends State<MotionPhotoVideoPlayer> {
                     Icon(
                       Icons.error_outline,
                       size: 64,
-                      color: Colors.white.withOpacity(0.5),
+                      color: Colors.white.withValues(alpha: 0.5),
                     ),
                     const SizedBox(height: 16),
                     Text(
                       '视频播放失败',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
+                        color: Colors.white.withValues(alpha: 0.7),
                         fontSize: 16,
                       ),
                     ),
@@ -355,7 +369,7 @@ class _MotionPhotoVideoPlayerState extends State<MotionPhotoVideoPlayer> {
                     Text(
                       _errorMessage,
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.5),
+                        color: Colors.white.withValues(alpha: 0.5),
                         fontSize: 12,
                       ),
                       textAlign: TextAlign.center,
@@ -375,7 +389,7 @@ class _MotionPhotoVideoPlayerState extends State<MotionPhotoVideoPlayer> {
                     Text(
                       '加载视频中...',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
+                        color: Colors.white.withValues(alpha: 0.7),
                         fontSize: 14,
                       ),
                     ),
@@ -392,7 +406,7 @@ class _MotionPhotoVideoPlayerState extends State<MotionPhotoVideoPlayer> {
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.5),
+                      color: Colors.black.withValues(alpha: 0.5),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -416,7 +430,7 @@ class _MotionPhotoVideoPlayerState extends State<MotionPhotoVideoPlayer> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.black.withOpacity(0.7),
+                      Colors.black.withValues(alpha: 0.7),
                       Colors.transparent,
                     ],
                   ),
@@ -459,7 +473,7 @@ class _MotionPhotoVideoPlayerState extends State<MotionPhotoVideoPlayer> {
                       begin: Alignment.bottomCenter,
                       end: Alignment.topCenter,
                       colors: [
-                        Colors.black.withOpacity(0.7),
+                        Colors.black.withValues(alpha: 0.7),
                         Colors.transparent,
                       ],
                     ),

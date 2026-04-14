@@ -90,7 +90,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _MenuItem(
                 icon: Icons.info_outline,
                 title: '关于日记',
-                subtitle: '版本 1.1.5'',
+                subtitle: '版本 1.1.5',
                 onTap: () => _showAbout(context),
               ),
             ], scheme),
@@ -121,7 +121,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 color: scheme.lightColor,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: scheme.primaryColor.withOpacity(0.3),
+                  color: scheme.primaryColor.withValues(alpha: 0.3),
                   width: 3,
                 ),
               ),
@@ -248,7 +248,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: scheme.lightColor.withOpacity(0.3),
+                color: scheme.lightColor.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Column(
@@ -262,7 +262,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    '版本 1.1.5''
+                    '版本 1.1.5',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -320,6 +320,7 @@ class _MenuItem extends StatelessWidget {
     required this.icon,
     required this.title,
     this.subtitle,
+    this.trailing,
     required this.onTap,
   });
 

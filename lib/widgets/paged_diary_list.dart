@@ -5,6 +5,8 @@ import '../services/database_service.dart';
 import '../utils/platform_helpers.dart';
 import '../screens/diary_detail_screen.dart';
 import '../providers/theme_provider.dart';
+import '../widgets/diary_interactions.dart';
+import '../widgets/skeleton_loading.dart';
 
 /// 分页日记列表
 /// 
@@ -169,18 +171,10 @@ class _PagedDiaryListState extends State<PagedDiaryList> {
   }
 
   Widget _buildLoadingState(ThemeScheme scheme) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(color: scheme.primaryColor),
-          const SizedBox(height: 16),
-          Text(
-            '加载中...',
-            style: TextStyle(color: scheme.textMediumColor),
-          ),
-        ],
-      ),
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: 5,
+      itemBuilder: (context, index) => const DiaryCardSkeleton(),
     );
   }
 
@@ -283,147 +277,144 @@ class _PagedDiaryListState extends State<PagedDiaryList> {
     final date = DateTime.parse(diary.date);
     final dateStr = '${date.month}月${date.day}日';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: scheme.cardColor,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: AppTheme.cardShadow,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-        child: InkWell(
-          onTap: () => _viewDiary(diary),
+    return TiltCard(
+      maxTilt: 0.05,
+      onTap: () => _viewDiary(diary),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: scheme.cardColor,
           borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 日期
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: scheme.lightColor.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        '${date.day}',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: scheme.primaryColor,
-                        ),
-                      ),
-                      Text(
-                        '${date.month}月',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: scheme.textMediumColor,
-                        ),
-                      ),
-                    ],
-                  ),
+          boxShadow: AppTheme.cardShadow,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 日期
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: scheme.lightColor.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                const SizedBox(width: 12),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '${date.day}',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: scheme.primaryColor,
+                      ),
+                    ),
+                    Text(
+                      '${date.month}月',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: scheme.textMediumColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
 
-                // 内容
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // 标题和心情
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              diary.title?.isNotEmpty == true
-                                  ? diary.title!
-                                  : '无标题',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: scheme.textDarkColor,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+              // 内容
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 标题和心情
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            diary.title?.isNotEmpty == true
+                                ? diary.title!
+                                : '无标题',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: scheme.textDarkColor,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          if (diary.moodEmoji != null)
-                            Text(
-                              diary.moodEmoji!,
-                              style: const TextStyle(fontSize: 18),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-
-                      // 预览内容
-                      Text(
-                        diary.content ?? '',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: scheme.textMediumColor,
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 8),
-
-                      // 底部信息
-                      Row(
-                        children: [
-                          if (hasImages)
-                            Icon(
-                              Icons.image_outlined,
-                              size: 14,
-                              color: scheme.textLightColor,
-                            ),
-                          if (hasImages) const SizedBox(width: 4),
-                          if (hasImages)
-                            Text(
-                              '${diary.imageList.length}张',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: scheme.textLightColor,
-                              ),
-                            ),
-                          if (hasImages) const SizedBox(width: 12),
+                        if (diary.moodEmoji != null)
                           Text(
-                            '${diary.wordCount}字',
+                            diary.moodEmoji!,
+                            style: const TextStyle(fontSize: 20),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+
+                    // 日记内容预览
+                    Text(
+                      diary.content ?? '',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: scheme.textMediumColor,
+                        height: 1.4,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+
+                    // 底部信息（图片数量、字数）
+                    Row(
+                      children: [
+                        if (hasImages)
+                          Icon(
+                            Icons.image_outlined,
+                            size: 14,
+                            color: scheme.textLightColor,
+                          ),
+                        if (hasImages) const SizedBox(width: 4),
+                        if (hasImages)
+                          Text(
+                            '${diary.imageList.length}张',
                             style: TextStyle(
                               fontSize: 12,
                               color: scheme.textLightColor,
                             ),
                           ),
-                        ],
-                      ),
-                    ],
+                        if (hasImages) const SizedBox(width: 12),
+                        Text(
+                          '${diary.wordCount}字',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: scheme.textLightColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // 图片缩略图
+              if (hasImages)
+                Container(
+                  width: 60,
+                  height: 60,
+                  margin: const EdgeInsets.only(left: 12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: PlatformImage(
+                    path: diary.imageList.first,
+                    fit: BoxFit.cover,
                   ),
                 ),
-
-                // 图片缩略图
-                if (hasImages)
-                  Container(
-                    width: 60,
-                    height: 60,
-                    margin: const EdgeInsets.only(left: 12),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: PlatformImage(
-                      path: diary.imageList.first,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-              ],
-            ),
+            ],
           ),
         ),
       ),
@@ -608,7 +599,8 @@ class _PagedDiaryGridState extends State<PagedDiaryGrid> {
     final hasImages = diary.imageList.isNotEmpty;
     final date = DateTime.parse(diary.date);
 
-    return GestureDetector(
+    return TiltCard(
+      maxTilt: 0.08,
       onTap: () => _viewDiary(diary),
       child: Container(
         decoration: BoxDecoration(
@@ -628,7 +620,7 @@ class _PagedDiaryGridState extends State<PagedDiaryGrid> {
                       fit: BoxFit.cover,
                     )
                   : Container(
-                      color: scheme.lightColor.withOpacity(0.3),
+                      color: scheme.lightColor.withValues(alpha: 0.3),
                       child: Center(
                         child: Text(
                           diary.moodEmoji ?? '📝',

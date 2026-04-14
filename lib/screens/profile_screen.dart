@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
@@ -17,6 +18,9 @@ import '../services/database_service.dart';
 import '../services/gacha_service.dart';
 import '../services/icon_theme_service.dart';
 import '../services/sound_service.dart';
+// 技能整合: 导入新组件和工具
+import '../widgets/widgets.dart';
+import '../utils/utils.dart';
 import 'app_lock_screen.dart';
 import 'backup_manager_screen.dart';
 import 'badge_detail_screen.dart';
@@ -602,148 +606,162 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildUserCard(SettingsProvider settings, ThemeScheme scheme) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            scheme.primaryColor,
-            scheme.darkColor,
-            scheme.primaryColor.withValues(alpha: 0.9),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          stops: const [0.0, 0.6, 1.0],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: scheme.primaryColor.withValues(alpha: 0.4),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-            spreadRadius: -4,
+    return BreathingAnimation(
+      minScale: 0.996,
+      maxScale: 1.004,
+      duration: const Duration(milliseconds: 4000),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              scheme.primaryColor,
+              scheme.darkColor,
+              scheme.primaryColor.withValues(alpha: 0.85),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            stops: const [0.0, 0.55, 1.0],
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // 头像/表情/自定义图片
-          GestureDetector(
-            onTap: () => _showAvatarOptions(context, settings),
-            child: Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(26),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.3),
-                  width: 2,
+          borderRadius: BorderRadius.circular(AppTheme.radius20),
+          boxShadow: [
+            BoxShadow(
+              color: scheme.primaryColor.withValues(alpha: 0.35),
+              blurRadius: 28,
+              offset: const Offset(0, 14),
+              spreadRadius: -2,
+            ),
+            BoxShadow(
+              color: scheme.shadowColor,
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // 头像/表情/自定义图片
+            GestureDetector(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                _showAvatarOptions(context, settings);
+              },
+              child: Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(AppTheme.radius24),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.35),
+                    width: 2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.12),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 12,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(22),
+                  child: settings.customAvatarPath != null
+                      ? Image.file(
+                          File(settings.customAvatarPath!),
+                          width: 80,
+                          height: 80,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Center(
+                              child: Text(
+                                settings.userEmoji,
+                                style: const TextStyle(
+                                  fontSize: 36,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black26,
+                                      blurRadius: 4,
+                                      offset: Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        )
+                      : Center(
+                          child: Text(
+                            settings.userEmoji,
+                            style: const TextStyle(
+                              fontSize: 36,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black26,
+                                  blurRadius: 4,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 20),
+            // 用户信息
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    settings.userName,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(AppTheme.radius12),
+                    ),
+                    child: Text(
+                      settings.userSignature != 'PD inc'
+                          ? settings.userSignature
+                          : '点击编辑个人信息',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.white.withValues(alpha: 0.92),
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: settings.customAvatarPath != null
-                    ? Image.file(
-                        File(settings.customAvatarPath!),
-                        width: 80,
-                        height: 80,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Center(
-                            child: Text(
-                              settings.userEmoji,
-                              style: const TextStyle(
-                                fontSize: 36,
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black26,
-                                    blurRadius: 4,
-                                    offset: Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      )
-                    : Center(
-                        child: Text(
-                          settings.userEmoji,
-                          style: const TextStyle(
-                            fontSize: 36,
-                            shadows: [
-                              Shadow(
-                                color: Colors.black26,
-                                blurRadius: 4,
-                                offset: Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+            ),
+            // 编辑图标
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.18),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.edit_rounded,
+                color: Colors.white.withValues(alpha: 0.92),
+                size: 20,
               ),
             ),
-          ),
-          const SizedBox(width: 20),
-          // 用户信息
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  settings.userName,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    settings.userSignature != 'PD inc'
-                        ? settings.userSignature
-                        : '点击编辑个人信息',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.white.withValues(alpha: 0.9),
-                      fontWeight: FontWeight.w500,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // 编辑图标
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.edit_rounded,
-              color: Colors.white.withValues(alpha: 0.9),
-              size: 20,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -756,7 +774,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         decoration: BoxDecoration(
-          color: scheme.cardColor,
+          color: scheme.surfaceColor,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: SafeArea(
@@ -764,7 +782,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                margin: const EdgeInsets.only(top: 8),
+                margin: const EdgeInsets.only(top: 12),
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
@@ -772,56 +790,132 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const SizedBox(height: 16),
-              ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: const Text('从相册选择'),
-                subtitle: const Text('使用自定义图片作为头像'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final picker = ImagePicker();
-                  final pickedFile = await picker.pickImage(
-                    source: ImageSource.gallery,
-                    maxWidth: 300,
-                    maxHeight: 300,
-                    imageQuality: 85,
-                  );
-                  if (pickedFile != null) {
-                    await settings.setCustomAvatar(pickedFile.path);
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('头像已更新')),
-                      );
-                    }
-                  }
-                },
-              ),
-              if (settings.customAvatarPath != null)
-                ListTile(
-                  leading: const Icon(Icons.emoji_emotions),
-                  title: const Text('恢复默认表情'),
-                  subtitle: const Text('使用表情作为头像'),
-                  onTap: () async {
-                    Navigator.pop(context);
-                    await settings.clearCustomAvatar();
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('已恢复默认表情头像')),
-                      );
-                    }
-                  },
+              const SizedBox(height: 24),
+              // 头像预览
+              Container(
+                width: 96,
+                height: 96,
+                decoration: BoxDecoration(
+                  color: scheme.lightColor.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(AppTheme.radius24),
+                  border: Border.all(
+                    color: scheme.primaryColor.withValues(alpha: 0.3),
+                    width: 2,
+                  ),
                 ),
-              ListTile(
-                leading: const Icon(Icons.edit),
-                title: const Text('编辑个人信息'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showUserEditDialog(context, scheme);
-                },
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(22),
+                  child: settings.customAvatarPath != null
+                      ? Image.file(
+                          File(settings.customAvatarPath!),
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Center(
+                            child: Text(settings.userEmoji,
+                                style: const TextStyle(fontSize: 40)),
+                          ),
+                        )
+                      : Center(
+                          child: Text(settings.userEmoji,
+                              style: const TextStyle(fontSize: 40)),
+                        ),
+                ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 24),
+              // 操作按钮
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  children: [
+                    _buildAvatarActionButton(
+                      icon: Icons.photo_library_outlined,
+                      label: '从相册选择',
+                      scheme: scheme,
+                      onTap: () async {
+                        Navigator.pop(context);
+                        final picker = ImagePicker();
+                        final pickedFile = await picker.pickImage(
+                          source: ImageSource.gallery,
+                          maxWidth: 300,
+                          maxHeight: 300,
+                          imageQuality: 85,
+                        );
+                        if (pickedFile != null) {
+                          await settings.setCustomAvatar(pickedFile.path);
+                          if (mounted) {
+                            context.showSuccess('头像已更新');
+                          }
+                        }
+                      },
+                    ),
+                    if (settings.customAvatarPath != null) ...[
+                      const SizedBox(height: 10),
+                      _buildAvatarActionButton(
+                        icon: Icons.emoji_emotions_outlined,
+                        label: '恢复默认表情',
+                        scheme: scheme,
+                        onTap: () async {
+                          Navigator.pop(context);
+                          await settings.clearCustomAvatar();
+                          if (mounted) {
+                            context.showSuccess('已恢复默认表情头像');
+                          }
+                        },
+                      ),
+                    ],
+                    const SizedBox(height: 10),
+                    _buildAvatarActionButton(
+                      icon: Icons.edit_outlined,
+                      label: '编辑个人信息',
+                      scheme: scheme,
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showUserEditDialog(context, scheme);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAvatarActionButton({
+    required IconData icon,
+    required String label,
+    required ThemeScheme scheme,
+    required VoidCallback onTap,
+  }) {
+    return InteractiveButton(
+      onPressed: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        decoration: BoxDecoration(
+          color: scheme.cardColor,
+          borderRadius: BorderRadius.circular(AppTheme.radius12),
+          border: Border.all(color: scheme.dividerColor),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: scheme.primaryColor, size: 22),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: scheme.textDarkColor,
+              ),
+            ),
+            const Spacer(),
+            Icon(Icons.chevron_right, color: scheme.textLightColor, size: 20),
+          ],
         ),
       ),
     );
@@ -860,7 +954,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               bottom: MediaQuery.of(context).viewInsets.bottom + 20,
             ),
             decoration: BoxDecoration(
-              color: scheme.cardColor,
+              color: scheme.surfaceColor,
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(20)),
             ),
@@ -870,7 +964,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 头部把手
                   Center(
                     child: Container(
                       width: 40,
@@ -882,36 +975,51 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  Text(
-                    '编辑个人信息',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: scheme.textDarkColor,
+                  Center(
+                    child: Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            scheme.lightColor.withValues(alpha: 0.5),
+                            scheme.primaryColor.withValues(alpha: 0.3),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(AppTheme.radius24),
+                        border: Border.all(
+                          color: scheme.primaryColor.withValues(alpha: 0.3),
+                          width: 2,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          selectedEmoji,
+                          style: const TextStyle(fontSize: 40),
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 20),
-                  // 表情选择
                   Text(
                     '选择头像',
                     style: TextStyle(
                       fontSize: 14,
+                      fontWeight: FontWeight.w600,
                       color: scheme.textMediumColor,
                     ),
                   ),
                   const SizedBox(height: 12),
-                  // 头像选择 - 包含基础头像和解锁头像
                   FutureBuilder<List<GachaReward>>(
                     future: GachaService.getUnlockedAvatars(),
                     builder: (context, snapshot) {
                       final unlockedAvatars = snapshot.data ?? [];
-                      // 合并基础头像和解锁头像
                       final allEmojis = <String, dynamic>{};
-                      // 添加基础头像
                       for (final emoji in baseEmojis) {
                         allEmojis[emoji] = {'type': 'emoji', 'value': emoji};
                       }
-                      // 添加解锁的头像
                       for (final avatar in unlockedAvatars) {
                         allEmojis[avatar.emoji] = {
                           'type': 'avatar',
@@ -921,10 +1029,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       }
 
                       return Wrap(
-                        spacing: 12,
-                        runSpacing: 12,
+                        spacing: 10,
+                        runSpacing: 10,
                         children: [
-                          // 表情头像
                           ...allEmojis.entries.map((entry) {
                             final emoji = entry.key;
                             final data = entry.value;
@@ -933,19 +1040,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                             return GestureDetector(
                               onTap: () {
+                                HapticFeedback.lightImpact();
                                 setState(() => selectedEmoji = emoji);
                               },
-                              child: Container(
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 150),
                                 width: 48,
                                 height: 48,
                                 decoration: BoxDecoration(
                                   color: isSelected
                                       ? scheme.primaryColor
-                                          .withValues(alpha: 0.2)
+                                          .withValues(alpha: 0.15)
                                       : isAvatar
-                                          ? Colors.amber.withValues(alpha: 0.15)
+                                          ? Colors.amber.withValues(alpha: 0.12)
                                           : scheme.lightColor
-                                              .withValues(alpha: 0.3),
+                                              .withValues(alpha: 0.35),
                                   borderRadius: BorderRadius.circular(24),
                                   border: isSelected
                                       ? Border.all(
@@ -966,7 +1075,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             );
                           }),
-                          // 从相册选择按钮
                           GestureDetector(
                             onTap: () async {
                               Navigator.pop(context);
@@ -980,9 +1088,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               if (pickedFile != null) {
                                 await settings.setCustomAvatar(pickedFile.path);
                                 if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('头像已更新')),
-                                  );
+                                  context.showSuccess('头像已更新');
                                 }
                               }
                             },
@@ -996,7 +1102,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   color: scheme.primaryColor
                                       .withValues(alpha: 0.3),
                                   width: 1,
-                                  style: BorderStyle.solid,
                                 ),
                               ),
                               child: Center(
@@ -1013,35 +1118,63 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     },
                   ),
                   const SizedBox(height: 20),
-                  // 名字输入框
                   TextField(
                     controller: nameController,
                     decoration: InputDecoration(
                       labelText: '昵称',
                       hintText: '输入你的昵称',
+                      filled: true,
+                      fillColor: scheme.cardColor,
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppTheme.radius12),
+                        borderSide: BorderSide.none,
                       ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppTheme.radius12),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppTheme.radius12),
+                        borderSide: BorderSide(
+                            color: scheme.primaryColor.withValues(alpha: 0.5),
+                            width: 1.5),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 14),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  // 签名输入框
+                  const SizedBox(height: 14),
                   TextField(
                     controller: signatureController,
                     decoration: InputDecoration(
                       labelText: '签名（显示在启动页）',
                       hintText: '输入启动页显示的签名',
+                      filled: true,
+                      fillColor: scheme.cardColor,
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppTheme.radius12),
+                        borderSide: BorderSide.none,
                       ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppTheme.radius12),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppTheme.radius12),
+                        borderSide: BorderSide(
+                            color: scheme.primaryColor.withValues(alpha: 0.5),
+                            width: 1.5),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 14),
                     ),
                   ),
                   const SizedBox(height: 24),
-                  // 保存按钮
                   SizedBox(
                     width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
+                    child: RippleButton(
+                      onTap: () {
+                        HapticFeedback.mediumImpact();
                         final signature = signatureController.text.trim();
                         settings.setUserInfo(
                           name: nameController.text.trim(),
@@ -1050,16 +1183,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               signature.isNotEmpty ? signature : 'PD inc',
                         );
                         Navigator.pop(context);
+                        context.showSuccess('个人信息已保存');
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: scheme.primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                      backgroundColor: scheme.primaryColor,
+                      borderRadius: BorderRadius.circular(AppTheme.radius12),
+                      child: const Text(
+                        '保存',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      child: const Text('保存'),
                     ),
                   ),
                 ],
@@ -1146,9 +1281,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         setState(() {
           _appLockEnabled = false;
         });
+        HapticFeedback.mediumImpact();
       }
     } else {
       // 开启应用锁 - 导航到设置页面
+      HapticFeedback.mediumImpact();
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -1206,21 +1343,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
       });
     } else {
       // 开启指纹验证 - 先测试指纹是否可用
+      HapticFeedback.mediumImpact();
       final success = await BiometricAuthService.enable();
       if (success) {
         setState(() {
           _biometricEnabled = true;
         });
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('指纹验证已开启')),
-          );
+          context.showSuccess('指纹验证已开启');
         }
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('指纹验证开启失败，请确认已录入指纹')),
-          );
+          context.showError('指纹验证开启失败，请确认已录入指纹');
         }
       }
     }
@@ -1238,13 +1372,136 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (!context.mounted) return;
 
+    Widget buildThemeCard(ThemeScheme colorScheme, {String? label, String? emoji}) {
+      final isSelected =
+          themeProvider.currentScheme.primaryColor.value ==
+              colorScheme.primaryColor.value;
+      return GestureDetector(
+        onTap: () async {
+          HapticFeedback.mediumImpact();
+          await themeProvider.setThemeScheme(colorScheme);
+          if (context.mounted) {
+            Navigator.pop(context);
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder: (context) => const MainScreen(initialIndex: 0),
+              ),
+              (route) => false,
+            );
+          }
+        },
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedScale(
+              scale: isSelected ? 1.05 : 1.0,
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOut,
+              child: Container(
+                width: 72,
+                height: 88,
+                decoration: BoxDecoration(
+                  color: colorScheme.cardColor,
+                  borderRadius: BorderRadius.circular(AppTheme.radius16),
+                  border: Border.all(
+                    color: isSelected
+                        ? colorScheme.primaryColor
+                        : scheme.dividerColor,
+                    width: isSelected ? 2.5 : 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colorScheme.primaryColor.withValues(alpha: 0.25),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Container(
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: colorScheme.primaryColor,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(AppTheme.radius16),
+                        ),
+                      ),
+                      child: Center(
+                        child: isSelected
+                            ? const Icon(Icons.check,
+                                color: Colors.white, size: 16)
+                            : (emoji != null
+                                ? Text(emoji,
+                                    style: const TextStyle(fontSize: 14))
+                                : null),
+                      ),
+                    ),
+                    Expanded(
+                      child: Container(
+                        color: colorScheme.backgroundColor,
+                        padding: const EdgeInsets.all(8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              height: 4,
+                              width: 24,
+                              decoration: BoxDecoration(
+                                color: colorScheme.textDarkColor,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Container(
+                              height: 4,
+                              width: 36,
+                              decoration: BoxDecoration(
+                                color: colorScheme.textMediumColor,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Container(
+                              height: 4,
+                              width: 28,
+                              decoration: BoxDecoration(
+                                color: colorScheme.textLightColor,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              label ?? colorScheme.name,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                color: isSelected
+                    ? scheme.primaryColor
+                    : scheme.textMediumColor,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) => Container(
         decoration: BoxDecoration(
-          color: scheme.cardColor,
+          color: scheme.surfaceColor,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
@@ -1273,168 +1530,62 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  // 预设主题（3x3网格）
                   Wrap(
-                    spacing: 16,
+                    spacing: 12,
                     runSpacing: 16,
-                    children: presetSchemes.map((colorScheme) {
-                      final isSelected =
-                          themeProvider.currentScheme.primaryColor.value ==
-                              colorScheme.primaryColor.value;
-                      return GestureDetector(
-                        onTap: () async {
-                          await themeProvider.setThemeScheme(colorScheme);
-                          if (context.mounted) {
-                            Navigator.pop(context);
-                            // 跳转到日历页
-                            Navigator.of(context).pushAndRemoveUntil(
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const MainScreen(initialIndex: 0),
-                              ),
-                              (route) => false,
-                            );
-                          }
-                        },
-                        child: Container(
-                          width: 56,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            color: colorScheme.primaryColor,
-                            borderRadius: BorderRadius.circular(28),
-                            border: isSelected
-                                ? Border.all(color: Colors.white, width: 3)
-                                : null,
-                            boxShadow: [
-                              BoxShadow(
-                                color: colorScheme.primaryColor
-                                    .withValues(alpha: 0.4),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: isSelected
-                              ? const Icon(Icons.check, color: Colors.white)
-                              : null,
-                        ),
-                      );
-                    }).toList(),
+                    children: presetSchemes
+                        .map((s) => buildThemeCard(s))
+                        .toList(),
                   ),
-                  // 已解锁的商店主题
                   if (unlockedThemeIds.isNotEmpty) ...[
                     const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        Text(
-                          '🎨 已解锁的特殊主题',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: scheme.textMediumColor,
-                          ),
-                        ),
-                      ],
+                    Text(
+                      '🎨 已解锁的特殊主题',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: scheme.textMediumColor,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Wrap(
-                      spacing: 16,
+                      spacing: 12,
                       runSpacing: 16,
                       children: unlockedThemeIds.map((themeId) {
                         final themeColors =
                             GachaService.getThemeColors(themeId);
-                        if (themeColors == null) return const SizedBox.shrink();
-
-                        final primaryColor =
-                            Color(themeColors['primary'] as int);
-                        final isSelected =
-                            themeProvider.currentScheme.primaryColor.value ==
-                                primaryColor.value;
-                        final themeName = GachaService.profileThemeShop[themeId]
-                                ?['name'] ??
-                            '特殊主题';
-
-                        return GestureDetector(
-                          onTap: () async {
-                            final newScheme = ThemeScheme(
-                              primaryColor: primaryColor,
-                              backgroundColor:
-                                  Color(themeColors['background'] as int),
-                              cardColor: themeColors['card'] != null
-                                  ? Color(themeColors['card'] as int)
-                                  : Colors.white,
-                              lightColor: Color(themeColors['light'] as int),
-                              darkColor: Color(themeColors['dark'] as int),
-                              textDarkColor:
-                                  Color(themeColors['textDark'] as int),
-                              textMediumColor:
-                                  Color(themeColors['textMedium'] as int),
-                              textLightColor:
-                                  Color(themeColors['textLight'] as int),
-                              name: themeName,
-                            );
-                            await themeProvider.setThemeScheme(newScheme);
-                            if (context.mounted) {
-                              Navigator.pop(context);
-                              // 跳转到日历页
-                              Navigator.of(context).pushAndRemoveUntil(
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const MainScreen(initialIndex: 0),
-                                ),
-                                (route) => false,
-                              );
-                            }
-                          },
-                          child: Column(
-                            children: [
-                              Container(
-                                width: 56,
-                                height: 56,
-                                decoration: BoxDecoration(
-                                  color: primaryColor,
-                                  borderRadius: BorderRadius.circular(28),
-                                  border: isSelected
-                                      ? Border.all(
-                                          color: Colors.amber, width: 3)
-                                      : null,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color:
-                                          primaryColor.withValues(alpha: 0.4),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: isSelected
-                                    ? const Icon(Icons.check,
-                                        color: Colors.white)
-                                    : Center(
-                                        child: Text(
-                                          GachaService.profileThemeShop[themeId]
-                                                  ?['preview'] ??
-                                              '🎨',
-                                          style: const TextStyle(fontSize: 24),
-                                        ),
-                                      ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                themeName,
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: scheme.textMediumColor,
-                                ),
-                              ),
-                            ],
-                          ),
+                        if (themeColors == null) {
+                          return const SizedBox.shrink();
+                        }
+                        final themeName =
+                            GachaService.profileThemeShop[themeId]?['name'] ??
+                                '特殊主题';
+                        final preview =
+                            GachaService.profileThemeShop[themeId]?['preview'] ??
+                                '🎨';
+                        final ts = ThemeScheme(
+                          primaryColor: Color(themeColors['primary'] as int),
+                          backgroundColor:
+                              Color(themeColors['background'] as int),
+                          cardColor: themeColors['card'] != null
+                              ? Color(themeColors['card'] as int)
+                              : Colors.white,
+                          lightColor: Color(themeColors['light'] as int),
+                          darkColor: Color(themeColors['dark'] as int),
+                          textDarkColor:
+                              Color(themeColors['textDark'] as int),
+                          textMediumColor:
+                              Color(themeColors['textMedium'] as int),
+                          textLightColor:
+                              Color(themeColors['textLight'] as int),
+                          name: themeName,
                         );
+                        return buildThemeCard(ts,
+                            label: themeName, emoji: preview);
                       }).toList(),
                     ),
                   ],
                   const SizedBox(height: 20),
-                  // 自定义颜色
                   ListTile(
                     leading:
                         Icon(Icons.colorize, color: scheme.textMediumColor),
@@ -1939,7 +2090,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       decoration: BoxDecoration(
         color: scheme.cardColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppTheme.radius16),
         boxShadow: AppTheme.softShadow,
       ),
       child: Column(
@@ -1953,17 +2104,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   height: 1,
                   indent: 76,
                   endIndent: 20,
-                  color: scheme.lightColor.withValues(alpha: 0.3),
+                  color: scheme.dividerColor,
                 ),
               ListTile(
                 contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
                 leading: Container(
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: scheme.lightColor.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(12),
+                    gradient: LinearGradient(
+                      colors: [
+                        scheme.lightColor.withValues(alpha: 0.45),
+                        scheme.primaryColor.withValues(alpha: 0.2),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(AppTheme.radius12),
                   ),
                   child: Icon(
                     item.icon,
@@ -1992,7 +2150,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: scheme.lightColor.withValues(alpha: 0.3),
+                        color: scheme.lightColor.withValues(alpha: 0.25),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -2002,6 +2160,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                 onTap: () {
+                  HapticFeedback.lightImpact();
                   SoundService.playClick();
                   item.onTap();
                 },
@@ -2165,9 +2324,7 @@ class _AboutEasterEgg {
                                   Clipboard.setData(const ClipboardData(
                                     text: '1638615339@qq.com',
                                   ));
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('邮箱已复制')),
-                                  );
+                                  context.showSuccess('邮箱已复制');
                                 },
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -2445,9 +2602,7 @@ class _AboutEasterEgg {
                   ),
                 );
               } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('密码错误')),
-                );
+                context.showError('密码错误');
               }
             },
             child: const Text('确定'),
@@ -2530,9 +2685,7 @@ class DebugScreen extends StatelessWidget {
               title:
                   Text('查看日志', style: TextStyle(color: scheme.textDarkColor)),
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('日志功能开发中')),
-                );
+                context.showToast('日志功能开发中');
               },
             ),
             Divider(
@@ -2544,9 +2697,7 @@ class DebugScreen extends StatelessWidget {
               title:
                   Text('查看数据库', style: TextStyle(color: scheme.textDarkColor)),
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('数据库功能开发中')),
-                );
+                context.showToast('数据库功能开发中');
               },
             ),
             Divider(
@@ -2561,9 +2712,7 @@ class DebugScreen extends StatelessWidget {
                 final prefs = await SharedPreferences.getInstance();
                 await prefs.remove('has_seen_guide');
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('引导页已重置')),
-                  );
+                  context.showSuccess('引导页已重置');
                 }
               },
             ),
@@ -2644,15 +2793,11 @@ class DebugScreen extends StatelessWidget {
           'unlocked_profile_themes', unlockedProfileThemes);
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('✅ 已解锁所有特殊主题')),
-        );
+        context.showSuccess('✅ 已解锁所有特殊主题');
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('解锁失败: $e')),
-        );
+        context.showError('解锁失败: $e');
       }
     }
   }
@@ -2665,16 +2810,11 @@ class DebugScreen extends StatelessWidget {
       await GachaService.addDraws(count);
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('✅ 已添加 $count 次扭蛋机会（当前: ${current + count}次）')),
-        );
+        context.showSuccess('✅ 已添加 $count 次扭蛋机会（当前: ${current + count}次）');
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('添加失败: $e')),
-        );
+        context.showError('添加失败: $e');
       }
     }
   }
@@ -2695,17 +2835,11 @@ class DebugScreen extends StatelessWidget {
       }
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(
-                  '✅ 已解锁全部 ${allBadges.length} 个徽章（新增: $unlockedCount 个）')),
-        );
+        context.showSuccess('✅ 已解锁全部 ${allBadges.length} 个徽章（新增: $unlockedCount 个）');
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('解锁失败: $e')),
-        );
+        context.showError('解锁失败: $e');
       }
     }
   }
@@ -2754,9 +2888,7 @@ class DebugScreen extends StatelessWidget {
               final prefs = await SharedPreferences.getInstance();
               await prefs.clear();
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('所有数据已清除')),
-                );
+                context.showSuccess('所有数据已清除');
               }
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),

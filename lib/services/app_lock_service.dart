@@ -199,7 +199,7 @@ class AppLockService {
       // 绘制圆点
       final normalPaint = Paint()
         ..color =
-            (colorScheme?.primary ?? const Color(0xFF7DD3C0)).withOpacity(0.3)
+            (colorScheme?.primary ?? const Color(0xFF7DD3C0)).withValues(alpha: 0.3)
         ..style = PaintingStyle.fill;
 
       final selectedPaint = Paint()
@@ -208,7 +208,7 @@ class AppLockService {
 
       final selectedBorderPaint = Paint()
         ..color =
-            (colorScheme?.primary ?? const Color(0xFF7DD3C0)).withOpacity(0.3)
+            (colorScheme?.primary ?? const Color(0xFF7DD3C0)).withValues(alpha: 0.3)
         ..strokeWidth = 8
         ..style = PaintingStyle.stroke;
 
@@ -256,7 +256,7 @@ class AppLockService {
         text: TextSpan(
           text: '请妥善保存此图片，忘记密码时需要使用',
           style: TextStyle(
-            color: colorScheme?.onSurface.withOpacity(0.6) ?? Colors.black54,
+            color: colorScheme?.onSurface.withValues(alpha: 0.6) ?? Colors.black54,
             fontSize: 14,
           ),
         ),

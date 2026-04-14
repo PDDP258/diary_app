@@ -275,7 +275,7 @@ class _TimeCapsuleListScreenState extends State<TimeCapsuleListScreen>
           gradient: LinearGradient(
             colors: [
               scheme.cardColor,
-              scheme.cardColor.withOpacity(0.95),
+              scheme.cardColor.withValues(alpha: 0.95),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -295,8 +295,8 @@ class _TimeCapsuleListScreenState extends State<TimeCapsuleListScreen>
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    scheme.primaryColor.withOpacity(0.1),
-                    scheme.lightColor.withOpacity(0.05),
+                    scheme.primaryColor.withValues(alpha: 0.1),
+                    scheme.lightColor.withValues(alpha: 0.05),
                   ],
                 ),
                 borderRadius: const BorderRadius.only(
@@ -335,8 +335,8 @@ class _TimeCapsuleListScreenState extends State<TimeCapsuleListScreen>
                     ),
                     decoration: BoxDecoration(
                       color: remainingDays <= 7
-                          ? AppTheme.warmPink.withOpacity(0.2)
-                          : scheme.lightColor.withOpacity(0.3),
+                          ? AppTheme.warmPink.withValues(alpha: 0.2)
+                          : scheme.lightColor.withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(AppTheme.chipRadius),
                     ),
                     child: Text(
@@ -429,7 +429,7 @@ class _TimeCapsuleListScreenState extends State<TimeCapsuleListScreen>
           gradient: LinearGradient(
             colors: [
               scheme.cardColor,
-              scheme.cardColor.withOpacity(0.95),
+              scheme.cardColor.withValues(alpha: 0.95),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -438,7 +438,7 @@ class _TimeCapsuleListScreenState extends State<TimeCapsuleListScreen>
           boxShadow: AppTheme.cardShadow,
           border: isUnread
               ? Border.all(
-                  color: scheme.primaryColor.withOpacity(0.3),
+                  color: scheme.primaryColor.withValues(alpha: 0.3),
                   width: 1.5,
                 )
               : null,
@@ -456,9 +456,9 @@ class _TimeCapsuleListScreenState extends State<TimeCapsuleListScreen>
                 gradient: LinearGradient(
                   colors: [
                     isUnread
-                        ? scheme.primaryColor.withOpacity(0.15)
-                        : AppTheme.success.withOpacity(0.1),
-                    scheme.lightColor.withOpacity(0.05),
+                        ? scheme.primaryColor.withValues(alpha: 0.15)
+                        : AppTheme.success.withValues(alpha: 0.1),
+                    scheme.lightColor.withValues(alpha: 0.05),
                   ],
                 ),
                 borderRadius: const BorderRadius.only(
@@ -577,7 +577,7 @@ class _TimeCapsuleListScreenState extends State<TimeCapsuleListScreen>
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: scheme.textLightColor.withOpacity(0.3),
+                  color: scheme.textLightColor.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -585,7 +585,7 @@ class _TimeCapsuleListScreenState extends State<TimeCapsuleListScreen>
               Icon(
                 Icons.lock_outline,
                 size: 64,
-                color: scheme.primaryColor.withOpacity(0.5),
+                color: scheme.primaryColor.withValues(alpha: 0.5),
               ),
               const SizedBox(height: AppTheme.spacingMd),
               Text(
@@ -664,8 +664,8 @@ class _TimeCapsuleListScreenState extends State<TimeCapsuleListScreen>
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    scheme.lightColor.withOpacity(0.5),
-                    scheme.lightColor.withOpacity(0.2),
+                    scheme.lightColor.withValues(alpha: 0.5),
+                    scheme.lightColor.withValues(alpha: 0.2),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -675,7 +675,7 @@ class _TimeCapsuleListScreenState extends State<TimeCapsuleListScreen>
               child: Icon(
                 icon,
                 size: 56,
-                color: scheme.primaryColor.withOpacity(0.6),
+                color: scheme.primaryColor.withValues(alpha: 0.6),
               ),
             ),
             const SizedBox(height: AppTheme.spacingLg),

@@ -222,9 +222,9 @@ class _TimeCapsuleDetailScreenState extends State<TimeCapsuleDetailScreen>
                   gradient: RadialGradient(
                     colors: [
                       scheme.primaryColor
-                          .withOpacity(0.3 * _glowAnimation.value),
+                          .withValues(alpha: 0.3 * _glowAnimation.value),
                       scheme.primaryColor
-                          .withOpacity(0.1 * _glowAnimation.value),
+                          .withValues(alpha: 0.1 * _glowAnimation.value),
                       Colors.transparent,
                     ],
                     stops: const [0.0, 0.5, 1.0],
@@ -255,7 +255,7 @@ class _TimeCapsuleDetailScreenState extends State<TimeCapsuleDetailScreen>
                       boxShadow: [
                         BoxShadow(
                           color: scheme.primaryColor
-                              .withOpacity(0.4 * _glowAnimation.value),
+                              .withValues(alpha: 0.4 * _glowAnimation.value),
                           blurRadius: 40,
                           spreadRadius: 10 * _glowAnimation.value,
                         ),
@@ -413,7 +413,7 @@ class _TimeCapsuleDetailScreenState extends State<TimeCapsuleDetailScreen>
                   child: Icon(
                     Icons.delete_outline,
                     size: 20,
-                    color: AppTheme.error.withOpacity(0.8),
+                    color: AppTheme.error.withValues(alpha: 0.8),
                   ),
                 ),
               ),
@@ -440,7 +440,7 @@ class _TimeCapsuleDetailScreenState extends State<TimeCapsuleDetailScreen>
                       gradient: LinearGradient(
                         colors: [
                           scheme.cardColor,
-                          scheme.cardColor.withOpacity(0.95),
+                          scheme.cardColor.withValues(alpha: 0.95),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(AppTheme.largeRadius),
@@ -467,7 +467,7 @@ class _TimeCapsuleDetailScreenState extends State<TimeCapsuleDetailScreen>
                       gradient: LinearGradient(
                         colors: [
                           scheme.cardColor,
-                          scheme.cardColor.withOpacity(0.95),
+                          scheme.cardColor.withValues(alpha: 0.95),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(AppTheme.largeRadius),
@@ -508,15 +508,15 @@ class _TimeCapsuleDetailScreenState extends State<TimeCapsuleDetailScreen>
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            scheme.primaryColor.withOpacity(0.15),
-            scheme.lightColor.withOpacity(0.1),
+            scheme.primaryColor.withValues(alpha: 0.15),
+            scheme.lightColor.withValues(alpha: 0.1),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(AppTheme.xlRadius),
         border: Border.all(
-          color: scheme.primaryColor.withOpacity(0.2),
+          color: scheme.primaryColor.withValues(alpha: 0.2),
         ),
       ),
       child: Column(
@@ -532,7 +532,7 @@ class _TimeCapsuleDetailScreenState extends State<TimeCapsuleDetailScreen>
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: scheme.primaryColor.withOpacity(0.3),
+                  color: scheme.primaryColor.withValues(alpha: 0.3),
                   blurRadius: 20,
                   spreadRadius: 5,
                 ),
@@ -640,8 +640,8 @@ class _TimeCapsuleDetailScreenState extends State<TimeCapsuleDetailScreen>
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            scheme.lightColor.withOpacity(0.3),
-            scheme.lightColor.withOpacity(0.1),
+            scheme.lightColor.withValues(alpha: 0.3),
+            scheme.lightColor.withValues(alpha: 0.1),
           ],
         ),
         borderRadius: BorderRadius.circular(AppTheme.largeRadius),

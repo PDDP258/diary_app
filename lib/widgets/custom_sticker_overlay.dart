@@ -116,11 +116,11 @@ class _CustomStickerOverlayState extends State<CustomStickerOverlay> {
           decoration: BoxDecoration(
             // 拖动时显示半透明背景提示可拖动区域
             color: _draggingSticker == sticker
-                ? Colors.white.withOpacity(0.1)
+                ? Colors.white.withValues(alpha: 0.1)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
             border: _draggingSticker == sticker
-                ? Border.all(color: Colors.white.withOpacity(0.3), width: 1)
+                ? Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1)
                 : null,
           ),
           child: Center(
@@ -133,7 +133,7 @@ class _CustomStickerOverlayState extends State<CustomStickerOverlay> {
                 borderRadius: BorderRadius.circular(8),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
+                    color: Colors.black.withValues(alpha: 0.15),
                     blurRadius: 6,
                     offset: const Offset(0, 3),
                   ),

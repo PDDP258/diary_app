@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 用户设置 Provider - 管理用户信息和应用设置
@@ -37,7 +39,18 @@ class SettingsProvider extends ChangeNotifier {
       _userGoal = prefs.getString(_userGoalKey) ?? '记录生活，珍藏回忆';
       _userEmoji = prefs.getString(_userEmojiKey) ?? '👋';
       _userSignature = prefs.getString(_userSignatureKey) ?? 'PD inc';
-      _customAvatarPath = prefs.getString(_userAvatarKey);
+      
+      // 验证头像文件是否仍然存在
+      final avatarPath = prefs.getString(_userAvatarKey);
+      if (avatarPath != null && File(avatarPath).existsSync()) {
+        _customAvatarPath = avatarPath;
+      } else {
+        _customAvatarPath = null;
+        if (avatarPath != null) {
+          await prefs.remove(_userAvatarKey);
+        }
+      }
+      
       _calendarYear = prefs.getInt(_calendarYearKey) ?? DateTime.now().year;
       _calendarMonth = prefs.getInt(_calendarMonthKey) ?? DateTime.now().month;
       
@@ -75,12 +88,34 @@ class SettingsProvider extends ChangeNotifier {
     }
   }
 
-  // 设置自定义头像
+  // 设置自定义头像（自动复制到持久化目录）
   Future<void> setCustomAvatar(String path) async {
     try {
-      _customAvatarPath = path;
+      final file = File(path);
+      if (!await file.exists()) return;
+
+      final docsDir = await getApplicationDocumentsDirectory();
+      final avatarDir = Directory('${docsDir.path}/avatars');
+      if (!await avatarDir.exists()) {
+        await avatarDir.create(recursive: true);
+      }
+
+      // 删除旧头像文件
+      if (_customAvatarPath != null) {
+        final oldFile = File(_customAvatarPath!);
+        if (await oldFile.exists()) {
+          await oldFile.delete();
+        }
+      }
+
+      final ext = path.split('.').lastOrNull ?? 'jpg';
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final newPath = '${avatarDir.path}/avatar_$timestamp.$ext';
+      await file.copy(newPath);
+
+      _customAvatarPath = newPath;
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_userAvatarKey, path);
+      await prefs.setString(_userAvatarKey, newPath);
       notifyListeners();
     } catch (e) {
       debugPrint('保存自定义头像失败: $e');
@@ -90,6 +125,12 @@ class SettingsProvider extends ChangeNotifier {
   // 清除自定义头像
   Future<void> clearCustomAvatar() async {
     try {
+      if (_customAvatarPath != null) {
+        final oldFile = File(_customAvatarPath!);
+        if (await oldFile.exists()) {
+          await oldFile.delete();
+        }
+      }
       _customAvatarPath = null;
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_userAvatarKey);

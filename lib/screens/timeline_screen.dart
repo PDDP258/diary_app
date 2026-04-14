@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../config/app_theme.dart';
@@ -8,6 +9,7 @@ import '../providers/diary_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/theme_provider.dart';
 import '../utils/platform_helpers.dart';
+import '../widgets/widgets.dart';
 import 'diary_detail_screen.dart';
 import 'gacha_screen.dart';
 import 'smart_recall_screen_v2.dart';
@@ -162,15 +164,15 @@ class _TimelineScreenState extends State<TimelineScreen>
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
         // 增强毛玻璃效果
-        color: scheme.cardColor.withOpacity(0.85),
+        color: scheme.cardColor.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(AppTheme.xlRadius),
         border: Border.all(
-          color: scheme.lightColor.withOpacity(0.4),
+          color: scheme.lightColor.withValues(alpha: 0.4),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: scheme.primaryColor.withOpacity(0.08),
+            color: scheme.primaryColor.withValues(alpha: 0.08),
             blurRadius: 20,
             offset: const Offset(0, 6),
             spreadRadius: -4,
@@ -191,10 +193,10 @@ class _TimelineScreenState extends State<TimelineScreen>
                   width: 62,
                   height: 62,
                   decoration: BoxDecoration(
-                    color: scheme.primaryColor.withOpacity(0.15),
+                    color: scheme.primaryColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: scheme.primaryColor.withOpacity(0.3),
+                      color: scheme.primaryColor.withValues(alpha: 0.3),
                       width: 2,
                     ),
                   ),
@@ -276,7 +278,7 @@ class _TimelineScreenState extends State<TimelineScreen>
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: scheme.primaryColor.withOpacity(0.3),
+                        color: scheme.primaryColor.withValues(alpha: 0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -292,55 +294,53 @@ class _TimelineScreenState extends State<TimelineScreen>
                   ),
                 ),
               const SizedBox(height: 8),
-              // 扭蛋按钮（在下，缩小到75%）
-              Transform.scale(
-                scale: 0.75,
-                alignment: Alignment.centerRight,
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const GachaScreen()),
-                    );
-                  },
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          scheme.primaryColor.withOpacity(0.8),
-                          scheme.primaryColor.withOpacity(0.6),
-                        ],
+              InteractiveButton(
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const GachaScreen()),
+                  );
+                },
+                padding: EdgeInsets.zero,
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        scheme.primaryColor.withValues(alpha: 0.85),
+                        scheme.primaryColor.withValues(alpha: 0.55),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: scheme.primaryColor.withValues(alpha: 0.25),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
                       ),
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(
-                          color: scheme.primaryColor.withOpacity(0.2),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        '🎰',
+                        style: TextStyle(fontSize: 16),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '扭蛋',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: scheme.textDarkColor,
                         ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text(
-                          '🎰',
-                          style: TextStyle(fontSize: 16),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '扭蛋',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: scheme.textDarkColor,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -383,24 +383,26 @@ class _TimelineScreenState extends State<TimelineScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            width: 140,
-            height: 140,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  scheme.lightColor.withOpacity(0.5),
-                  scheme.primaryColor.withOpacity(0.2),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+          BouncyCard(
+            child: Container(
+              width: 140,
+              height: 140,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    scheme.lightColor.withValues(alpha: 0.5),
+                    scheme.primaryColor.withValues(alpha: 0.2),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(AppTheme.xlRadius),
               ),
-              borderRadius: BorderRadius.circular(AppTheme.xlRadius),
-            ),
-            child: Icon(
-              Icons.menu_book_outlined,
-              size: 64,
-              color: scheme.primaryColor.withOpacity(0.5),
+              child: Icon(
+                Icons.menu_book_outlined,
+                size: 64,
+                color: scheme.primaryColor.withValues(alpha: 0.5),
+              ),
             ),
           ),
           const SizedBox(height: 24),
@@ -421,30 +423,35 @@ class _TimelineScreenState extends State<TimelineScreen>
             ),
           ),
           const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            decoration: BoxDecoration(
-              color: scheme.primaryColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.edit_note_rounded,
-                  size: 20,
-                  color: scheme.primaryColor,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '开始写日记',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
+          InteractiveButton(
+            onPressed: () {},
+            padding: EdgeInsets.zero,
+            borderRadius: BorderRadius.circular(24),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              decoration: BoxDecoration(
+                color: scheme.primaryColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.edit_note_rounded,
+                    size: 20,
                     color: scheme.primaryColor,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  Text(
+                    '开始写日记',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: scheme.primaryColor,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -500,8 +507,9 @@ class _TimelineScreenState extends State<TimelineScreen>
             ),
           ),
 
-        // 日记卡片 - 玻璃态效果，让主题背景透过来
-        GestureDetector(
+        // 日记卡片 - 3D倾斜 + 玻璃态效果
+        TiltCard(
+          maxTilt: 0.04,
           onTap: () async {
             final result = await Navigator.push(
               context,
@@ -516,84 +524,65 @@ class _TimelineScreenState extends State<TimelineScreen>
           child: Container(
             margin: const EdgeInsets.only(bottom: 16),
             decoration: BoxDecoration(
-              // 半透明背景，让主题动画透过来
-              color: scheme.cardColor.withOpacity(0.75),
+              color: scheme.cardColor,
               borderRadius: BorderRadius.circular(AppTheme.xlRadius),
               border: Border.all(
-                color: scheme.primaryColor.withOpacity(0.15),
+                color: scheme.primaryColor.withValues(alpha: 0.1),
                 width: 1,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                  spreadRadius: -4,
+                  color: scheme.shadowColor.withValues(alpha: 0.2),
+                  blurRadius: 14,
+                  offset: const Offset(0, 6),
+                  spreadRadius: 0,
                 ),
               ],
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(AppTheme.xlRadius),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () async {
-                    final result = await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => DiaryDetailScreen(diary: diary),
-                      ),
-                    );
-                    if (result == true) {
-                      context.read<DiaryProvider>().loadDiaries();
-                    }
-                  },
-                  splashColor: scheme.primaryColor.withOpacity(0.15),
-                  highlightColor: scheme.primaryColor.withOpacity(0.08),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // 日期行 + 心情
-                        Row(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 日期行 + 心情
+                  Row(
+                    children: [
+                      // 日期显示
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              scheme.lightColor.withValues(alpha: 0.5),
+                              scheme.lightColor.withValues(alpha: 0.2),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(
+                              AppTheme.mediumRadius),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            // 日期显示
-                            Container(
-                              width: 56,
-                              height: 56,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    scheme.lightColor.withOpacity(0.5),
-                                    scheme.lightColor.withOpacity(0.2),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(
-                                    AppTheme.mediumRadius),
-                              ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    day,
-                                    style: TextStyle(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.bold,
-                                      color: scheme.primaryColor,
-                                    ),
-                                  ),
-                                  Text(
-                                    weekday,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: scheme.textLightColor,
-                                    ),
-                                  ),
-                                ],
+                            Text(
+                              day,
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: scheme.primaryColor,
                               ),
                             ),
-                            const SizedBox(width: 16),
+                            Text(
+                              weekday,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: scheme.textLightColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -650,7 +639,7 @@ class _TimelineScreenState extends State<TimelineScreen>
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: Colors.red.withOpacity(0.1),
+                                  color: Colors.red.withValues(alpha: 0.1),
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(
@@ -696,7 +685,7 @@ class _TimelineScreenState extends State<TimelineScreen>
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(
                                           AppTheme.mediumRadius),
-                                      color: scheme.lightColor.withOpacity(0.3),
+                                      color: scheme.lightColor.withValues(alpha: 0.3),
                                     ),
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(
@@ -754,7 +743,7 @@ class _TimelineScreenState extends State<TimelineScreen>
                                 '${diary.wordCount} 字',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: scheme.textLightColor.withOpacity(0.8),
+                                  color: scheme.textLightColor.withValues(alpha: 0.8),
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -763,9 +752,6 @@ class _TimelineScreenState extends State<TimelineScreen>
                         ),
                       ],
                     ),
-                  ),
-                ),
-              ),
             ),
           ),
         ),
@@ -777,7 +763,7 @@ class _TimelineScreenState extends State<TimelineScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: scheme.lightColor.withOpacity(0.3),
+        color: scheme.lightColor.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(

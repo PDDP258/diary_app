@@ -208,7 +208,7 @@ class _BackupTestScreenState extends State<BackupTestScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: scheme.lightColor.withOpacity(0.3),
+                color: scheme.lightColor.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(

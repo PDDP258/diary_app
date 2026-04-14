@@ -42,7 +42,7 @@ class BadgeDetailScreen extends StatelessWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      badge.color.withOpacity(0.3),
+                      badge.color.withValues(alpha: 0.3),
                       scheme.backgroundColor,
                     ],
                   ),
@@ -62,19 +62,19 @@ class BadgeDetailScreen extends StatelessWidget {
                             end: Alignment.bottomRight,
                             colors: isUnlocked
                                 ? [
-                                    badge.color.withOpacity(0.9),
-                                    badge.color.withOpacity(0.5),
+                                    badge.color.withValues(alpha: 0.9),
+                                    badge.color.withValues(alpha: 0.5),
                                   ]
                                 : [
-                                    scheme.lightColor.withOpacity(0.5),
-                                    scheme.lightColor.withOpacity(0.2),
+                                    scheme.lightColor.withValues(alpha: 0.5),
+                                    scheme.lightColor.withValues(alpha: 0.2),
                                   ],
                           ),
                           borderRadius: BorderRadius.circular(30),
                           boxShadow: isUnlocked
                               ? [
                                   BoxShadow(
-                                    color: badge.color.withOpacity(0.4),
+                                    color: badge.color.withValues(alpha: 0.4),
                                     blurRadius: 20,
                                     offset: const Offset(0, 10),
                                     spreadRadius: -5,
@@ -145,19 +145,19 @@ class BadgeDetailScreen extends StatelessWidget {
         gradient: LinearGradient(
           colors: isUnlocked
               ? [
-                  badge.color.withOpacity(0.15),
-                  badge.color.withOpacity(0.05),
+                  badge.color.withValues(alpha: 0.15),
+                  badge.color.withValues(alpha: 0.05),
                 ]
               : [
-                  scheme.lightColor.withOpacity(0.3),
-                  scheme.lightColor.withOpacity(0.1),
+                  scheme.lightColor.withValues(alpha: 0.3),
+                  scheme.lightColor.withValues(alpha: 0.1),
                 ],
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isUnlocked
-              ? badge.color.withOpacity(0.3)
-              : scheme.lightColor.withOpacity(0.3),
+              ? badge.color.withValues(alpha: 0.3)
+              : scheme.lightColor.withValues(alpha: 0.3),
         ),
       ),
       child: Column(
@@ -291,7 +291,7 @@ class BadgeDetailScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
+                    color: Colors.green.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -324,9 +324,9 @@ class BadgeDetailScreen extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.orange.withOpacity(0.1),
+        color: Colors.orange.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.orange.withOpacity(0.2)),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [

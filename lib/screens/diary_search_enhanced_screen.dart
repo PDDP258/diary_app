@@ -310,7 +310,7 @@ class _DiarySearchEnhancedScreenState extends State<DiarySearchEnhancedScreen> {
                       }
                     });
                   },
-                  selectedColor: scheme.primaryColor.withOpacity(0.2),
+                  selectedColor: scheme.primaryColor.withValues(alpha: 0.2),
                   checkmarkColor: scheme.primaryColor,
                 );
               }).toList(),
@@ -481,11 +481,11 @@ class _DiarySearchEnhancedScreenState extends State<DiarySearchEnhancedScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: isActive
-              ? scheme.primaryColor.withOpacity(0.1)
-              : scheme.lightColor.withOpacity(0.3),
+              ? scheme.primaryColor.withValues(alpha: 0.1)
+              : scheme.lightColor.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(16),
           border: isActive
-              ? Border.all(color: scheme.primaryColor.withOpacity(0.5))
+              ? Border.all(color: scheme.primaryColor.withValues(alpha: 0.5))
               : null,
         ),
         child: Row(
@@ -607,7 +607,7 @@ class _DiarySearchEnhancedScreenState extends State<DiarySearchEnhancedScreen> {
                   width: 50,
                   height: 50,
                   decoration: BoxDecoration(
-                    color: scheme.lightColor.withOpacity(0.3),
+                    color: scheme.lightColor.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Column(

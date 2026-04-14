@@ -124,7 +124,7 @@ class _TagManagementScreenV3State extends State<TagManagementScreenV3> {
       color: scheme.cardColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: category.color.withOpacity(0.3), width: 2),
+        side: BorderSide(color: category.color.withValues(alpha: 0.3), width: 2),
       ),
       child: ExpansionTile(
         leading: GestureDetector(
@@ -133,7 +133,7 @@ class _TagManagementScreenV3State extends State<TagManagementScreenV3> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: category.color.withOpacity(0.15),
+              color: category.color.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Center(
@@ -185,7 +185,7 @@ class _TagManagementScreenV3State extends State<TagManagementScreenV3> {
     return Container(
       decoration: BoxDecoration(
         border: Border(
-          top: BorderSide(color: scheme.lightColor.withOpacity(0.1)),
+          top: BorderSide(color: scheme.lightColor.withValues(alpha: 0.1)),
         ),
       ),
       child: ExpansionTile(
@@ -238,7 +238,7 @@ class _TagManagementScreenV3State extends State<TagManagementScreenV3> {
         width: 32,
         height: 32,
         decoration: BoxDecoration(
-          color: category.color.withOpacity(0.1),
+          color: category.color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Center(
@@ -270,7 +270,7 @@ class _TagManagementScreenV3State extends State<TagManagementScreenV3> {
             onPressed: () => _showEditTagDialog(context, category, sub, tag),
           ),
           IconButton(
-            icon: Icon(Icons.delete_outline, size: 18, color: scheme.errorColor.withOpacity(0.7)),
+            icon: Icon(Icons.delete_outline, size: 18, color: scheme.errorColor.withValues(alpha: 0.7)),
             onPressed: () => _showDeleteTagConfirm(context, category, sub, tag),
           ),
         ],
@@ -306,7 +306,7 @@ class _TagManagementScreenV3State extends State<TagManagementScreenV3> {
                   width: 60,
                   height: 60,
                   decoration: BoxDecoration(
-                    color: selectedColor.withOpacity(0.2),
+                    color: selectedColor.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Center(
@@ -350,7 +350,7 @@ class _TagManagementScreenV3State extends State<TagManagementScreenV3> {
                             ? Border.all(color: Colors.white, width: 3)
                             : null,
                         boxShadow: selectedColor == color
-                            ? [BoxShadow(color: color.withOpacity(0.5), blurRadius: 8)]
+                            ? [BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 8)]
                             : null,
                       ),
                     ),
@@ -409,7 +409,7 @@ class _TagManagementScreenV3State extends State<TagManagementScreenV3> {
                   width: 60,
                   height: 60,
                   decoration: BoxDecoration(
-                    color: selectedColor.withOpacity(0.2),
+                    color: selectedColor.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Center(
@@ -502,7 +502,7 @@ class _TagManagementScreenV3State extends State<TagManagementScreenV3> {
                   width: 50,
                   height: 50,
                   decoration: BoxDecoration(
-                    color: category.color.withOpacity(0.2),
+                    color: category.color.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Center(
@@ -569,7 +569,7 @@ class _TagManagementScreenV3State extends State<TagManagementScreenV3> {
                   width: 50,
                   height: 50,
                   decoration: BoxDecoration(
-                    color: category.color.withOpacity(0.2),
+                    color: category.color.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Center(
@@ -634,7 +634,7 @@ class _TagManagementScreenV3State extends State<TagManagementScreenV3> {
                   width: 50,
                   height: 50,
                   decoration: BoxDecoration(
-                    color: category.color.withOpacity(0.2),
+                    color: category.color.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Center(
@@ -702,7 +702,7 @@ class _TagManagementScreenV3State extends State<TagManagementScreenV3> {
                   width: 50,
                   height: 50,
                   decoration: BoxDecoration(
-                    color: category.color.withOpacity(0.2),
+                    color: category.color.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Center(

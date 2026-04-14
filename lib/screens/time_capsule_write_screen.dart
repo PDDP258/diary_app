@@ -284,15 +284,15 @@ class _TimeCapsuleWriteScreenState extends State<TimeCapsuleWriteScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            scheme.primaryColor.withOpacity(0.1),
-            scheme.lightColor.withOpacity(0.05),
+            scheme.primaryColor.withValues(alpha: 0.1),
+            scheme.lightColor.withValues(alpha: 0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(AppTheme.largeRadius),
         border: Border.all(
-          color: scheme.primaryColor.withOpacity(0.2),
+          color: scheme.primaryColor.withValues(alpha: 0.2),
         ),
       ),
       child: Column(
@@ -433,7 +433,7 @@ class _TimeCapsuleWriteScreenState extends State<TimeCapsuleWriteScreen> {
         decoration: InputDecoration(
           hintText: '给这封信起个标题...',
           hintStyle: TextStyle(
-            color: scheme.textLightColor.withOpacity(0.5),
+            color: scheme.textLightColor.withValues(alpha: 0.5),
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -464,7 +464,7 @@ class _TimeCapsuleWriteScreenState extends State<TimeCapsuleWriteScreen> {
         decoration: InputDecoration(
           hintText: '亲爱的未来的我：\n\n此刻的我有很多话想对你说...',
           hintStyle: TextStyle(
-            color: scheme.textLightColor.withOpacity(0.5),
+            color: scheme.textLightColor.withValues(alpha: 0.5),
             fontSize: 15,
             height: 1.6,
           ),
@@ -522,7 +522,7 @@ class _TimeCapsuleWriteScreenState extends State<TimeCapsuleWriteScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? Color(int.parse(mood.color)).withOpacity(0.2)
+                            ? Color(int.parse(mood.color)).withValues(alpha: 0.2)
                             : scheme.backgroundColor,
                         borderRadius: BorderRadius.circular(AppTheme.chipRadius),
                         border: Border.all(
@@ -612,7 +612,7 @@ class _TimeCapsuleWriteScreenState extends State<TimeCapsuleWriteScreen> {
                       color: scheme.backgroundColor,
                       borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                       border: Border.all(
-                        color: scheme.lightColor.withOpacity(0.5),
+                        color: scheme.lightColor.withValues(alpha: 0.5),
                         style: BorderStyle.solid,
                       ),
                     ),

@@ -487,20 +487,20 @@ class LunarInfoCard extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            scheme.surface.withOpacity(0.9),
-            scheme.surface.withOpacity(0.7),
+            scheme.surface.withValues(alpha: 0.9),
+            scheme.surface.withValues(alpha: 0.7),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isSpecial
-              ? scheme.primary.withOpacity(0.3)
-              : scheme.outline.withOpacity(0.1),
+              ? scheme.primary.withValues(alpha: 0.3)
+              : scheme.outline.withValues(alpha: 0.1),
           width: isSpecial ? 1.5 : 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -531,7 +531,7 @@ class LunarInfoCard extends StatelessWidget {
                       lunarDate.fullLunarString,
                       style: TextStyle(
                         fontSize: 13,
-                        color: scheme.onSurface.withOpacity(0.8),
+                        color: scheme.onSurface.withValues(alpha: 0.8),
                       ),
                     ),
                   ],
@@ -543,7 +543,7 @@ class LunarInfoCard extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: scheme.error.withOpacity(0.15),
+                      color: scheme.error.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -560,7 +560,7 @@ class LunarInfoCard extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: scheme.tertiary.withOpacity(0.15),
+                      color: scheme.tertiary.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -577,7 +577,7 @@ class LunarInfoCard extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: Colors.amber.withOpacity(0.15),
+                      color: Colors.amber.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -600,14 +600,14 @@ class LunarInfoCard extends StatelessWidget {
               gradient: isSpecial
                   ? LinearGradient(
                       colors: [
-                        scheme.primary.withOpacity(0.2),
-                        scheme.primary.withOpacity(0.05),
+                        scheme.primary.withValues(alpha: 0.2),
+                        scheme.primary.withValues(alpha: 0.05),
                       ],
                     )
                   : null,
               color: isSpecial
                   ? null
-                  : scheme.surfaceContainerHighest.withOpacity(0.3),
+                  : scheme.surfaceContainerHighest.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Center(
@@ -678,7 +678,7 @@ class LunarDayLabel extends StatelessWidget {
         ? Colors.white
         : isHighlight
             ? highlightColor
-            : textColor ?? scheme.onSurface.withOpacity(0.6);
+            : textColor ?? scheme.onSurface.withValues(alpha: 0.6);
 
     return Text(
       displayText,

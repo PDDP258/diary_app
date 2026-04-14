@@ -176,7 +176,7 @@ class _AppLockScreenState extends State<AppLockScreen>
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    color: scheme.primaryColor.withOpacity(0.1),
+                    color: scheme.primaryColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -241,7 +241,7 @@ class _AppLockScreenState extends State<AppLockScreen>
                         color: Colors.transparent,
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
-                          color: scheme.lightColor.withOpacity(0.5),
+                          color: scheme.lightColor.withValues(alpha: 0.5),
                           width: 1,
                         ),
                       ),
@@ -265,7 +265,7 @@ class _AppLockScreenState extends State<AppLockScreen>
                 '等待指纹验证...',
                 style: TextStyle(
                   fontSize: 14,
-                  color: scheme.textLightColor.withOpacity(0.6),
+                  color: scheme.textLightColor.withValues(alpha: 0.6),
                 ),
               ),
             ),
@@ -543,7 +543,7 @@ class _AppLockScreenState extends State<AppLockScreen>
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.1),
+                  color: Colors.orange.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -664,7 +664,7 @@ class _AppLockScreenState extends State<AppLockScreen>
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
+                    color: Colors.blue.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -740,7 +740,7 @@ class _AppLockScreenState extends State<AppLockScreen>
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
+                    color: Colors.orange.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Column(

@@ -668,7 +668,7 @@ class _BackupManagerScreenState extends State<BackupManagerScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: scheme.cardColor.withOpacity(0.5),
+        color: scheme.cardColor.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: scheme.lightColor),
       ),
@@ -782,7 +782,7 @@ class _BackupManagerScreenState extends State<BackupManagerScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: AppTheme.cardShadow,
         border: isLatest
-            ? Border.all(color: scheme.primaryColor.withOpacity(0.5), width: 2)
+            ? Border.all(color: scheme.primaryColor.withValues(alpha: 0.5), width: 2)
             : null,
       ),
       child: ListTile(
@@ -792,8 +792,8 @@ class _BackupManagerScreenState extends State<BackupManagerScreen> {
           height: 48,
           decoration: BoxDecoration(
             color: isLatest
-                ? scheme.primaryColor.withOpacity(0.1)
-                : scheme.lightColor.withOpacity(0.3),
+                ? scheme.primaryColor.withValues(alpha: 0.1)
+                : scheme.lightColor.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
@@ -816,7 +816,7 @@ class _BackupManagerScreenState extends State<BackupManagerScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: scheme.primaryColor.withOpacity(0.1),
+                  color: scheme.primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -893,7 +893,7 @@ class _BackupManagerScreenState extends State<BackupManagerScreen> {
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: scheme.primaryColor.withOpacity(0.1),
+            color: scheme.primaryColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(

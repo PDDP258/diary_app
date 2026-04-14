@@ -236,7 +236,7 @@ class _TimeCapsuleListScreenState extends State<TimeCapsuleListScreen>
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: scheme.lightColor.withOpacity(0.3),
+                color: scheme.lightColor.withValues(alpha: 0.3),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, size: 36, color: scheme.primaryColor),
@@ -354,7 +354,7 @@ class _LockedCapsuleCard extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: scheme.lightColor.withOpacity(0.5)),
+        side: BorderSide(color: scheme.lightColor.withValues(alpha: 0.5)),
       ),
       child: InkWell(
         onTap: onTap,
@@ -368,7 +368,7 @@ class _LockedCapsuleCard extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: scheme.primaryColor.withOpacity(0.1),
+                  color: scheme.primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -409,8 +409,8 @@ class _LockedCapsuleCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: remainingDays <= 7
-                      ? AppTheme.warmPink.withOpacity(0.1)
-                      : scheme.lightColor.withOpacity(0.3),
+                      ? AppTheme.warmPink.withValues(alpha: 0.1)
+                      : scheme.lightColor.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -454,8 +454,8 @@ class _UnlockedCapsuleCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
           color: isUnread 
-              ? scheme.primaryColor.withOpacity(0.3)
-              : scheme.lightColor.withOpacity(0.5),
+              ? scheme.primaryColor.withValues(alpha: 0.3)
+              : scheme.lightColor.withValues(alpha: 0.5),
           width: isUnread ? 2 : 1,
         ),
       ),
@@ -472,8 +472,8 @@ class _UnlockedCapsuleCard extends StatelessWidget {
                 height: 48,
                 decoration: BoxDecoration(
                   color: isUnread
-                      ? scheme.primaryColor.withOpacity(0.1)
-                      : scheme.lightColor.withOpacity(0.3),
+                      ? scheme.primaryColor.withValues(alpha: 0.1)
+                      : scheme.lightColor.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(

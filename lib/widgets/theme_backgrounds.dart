@@ -491,7 +491,7 @@ class SakuraPainter extends CustomPainter {
     final center = Offset(petal.x * size.width, petal.y * size.height);
     
     final paint = Paint()
-      ..color = petal.color.withOpacity(petal.opacity.clamp(0, 1))
+      ..color = petal.color.withValues(alpha: petal.opacity.clamp(0, 1))
       ..style = PaintingStyle.fill;
 
     canvas.save();
@@ -551,9 +551,9 @@ class SakuraPainter extends CustomPainter {
         center: const Alignment(0, 0.3),
         radius: 0.8,
         colors: [
-          flower.color.withOpacity(0.9 * flowerOpacity),           // 中心较深
-          flower.color.withOpacity(0.7 * flowerOpacity),           // 中间
-          flower.color.withOpacity(0.4 * flowerOpacity),           // 边缘渐淡
+          flower.color.withValues(alpha: 0.9 * flowerOpacity),           // 中心较深
+          flower.color.withValues(alpha: 0.7 * flowerOpacity),           // 中间
+          flower.color.withValues(alpha: 0.4 * flowerOpacity),           // 边缘渐淡
         ],
       );
       
@@ -567,7 +567,7 @@ class SakuraPainter extends CustomPainter {
       
       // 柔和的边缘线（应用整体透明度）
       final edgePaint = Paint()
-        ..color = flower.color.withOpacity(0.6 * flowerOpacity)
+        ..color = flower.color.withValues(alpha: 0.6 * flowerOpacity)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 0.8;
       canvas.drawPath(path, edgePaint);
@@ -578,8 +578,8 @@ class SakuraPainter extends CustomPainter {
     // 绘制花心（柔和渐变，应用整体透明度）
     final centerGradient = RadialGradient(
       colors: [
-        const Color(0xFFFFFACD).withOpacity(0.9 * flowerOpacity), // 浅黄色中心
-        const Color(0xFFFFE4B5).withOpacity(0.6 * flowerOpacity), // 过渡
+        const Color(0xFFFFFACD).withValues(alpha: 0.9 * flowerOpacity), // 浅黄色中心
+        const Color(0xFFFFE4B5).withValues(alpha: 0.6 * flowerOpacity), // 过渡
         Colors.transparent,
       ],
     );
@@ -602,8 +602,8 @@ class SakuraPainter extends CustomPainter {
       // 花蕊渐变点（应用整体透明度）
       final stamenGradient = RadialGradient(
         colors: [
-          const Color(0xFFFFD700).withOpacity(flowerOpacity), // 金黄中心
-          const Color(0xFFFFA500).withOpacity(flowerOpacity), // 橙色边缘
+          const Color(0xFFFFD700).withValues(alpha: flowerOpacity), // 金黄中心
+          const Color(0xFFFFA500).withValues(alpha: flowerOpacity), // 橙色边缘
         ],
       );
       canvas.drawCircle(
@@ -898,7 +898,7 @@ class OceanPainter extends CustomPainter {
   void _drawWave(Canvas canvas, Size size, double yOffset, Color color,
       double phaseOffset, double amplitude, double opacity) {
     final paint = Paint()
-      ..color = color.withOpacity(opacity)
+      ..color = color.withValues(alpha: opacity)
       ..style = PaintingStyle.fill;
 
     final path = Path();
@@ -955,7 +955,7 @@ class OceanPainter extends CustomPainter {
     
     // 添加白色轮廓/阴影，使其在蓝色背景下更明显
     final outlinePaint = Paint()
-      ..color = Colors.white.withOpacity(0.4)
+      ..color = Colors.white.withValues(alpha: 0.4)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
     
@@ -1015,7 +1015,7 @@ class OceanPainter extends CustomPainter {
     
     // 白色轮廓画笔
     final outlinePaint = Paint()
-      ..color = Colors.white.withOpacity(0.5)
+      ..color = Colors.white.withValues(alpha: 0.5)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
     
@@ -1107,7 +1107,7 @@ class OceanPainter extends CustomPainter {
     
     // 白色轮廓画笔
     final outlinePaint = Paint()
-      ..color = Colors.white.withOpacity(0.5)
+      ..color = Colors.white.withValues(alpha: 0.5)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
     
@@ -1162,7 +1162,7 @@ class OceanPainter extends CustomPainter {
     
     // 长触须（白色）
     final antennaPaint = Paint()
-      ..color = Colors.white.withOpacity(0.8)
+      ..color = Colors.white.withValues(alpha: 0.8)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
     
@@ -1200,7 +1200,7 @@ class OceanPainter extends CustomPainter {
           center,
           2,
           Paint()
-            ..color = Colors.white.withOpacity(sparkleOpacity)
+            ..color = Colors.white.withValues(alpha: sparkleOpacity)
             ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2),
         );
       }
@@ -1216,7 +1216,7 @@ class OceanPainter extends CustomPainter {
       center,
       bubble.size,
       Paint()
-        ..color = Colors.white.withOpacity(bubble.opacity * 0.5)
+        ..color = Colors.white.withValues(alpha: bubble.opacity * 0.5)
         ..style = PaintingStyle.fill,
     );
     
@@ -1225,7 +1225,7 @@ class OceanPainter extends CustomPainter {
       Offset(center.dx - bubble.size * 0.3, center.dy - bubble.size * 0.3),
       bubble.size * 0.3,
       Paint()
-        ..color = Colors.white.withOpacity(bubble.opacity * 0.9)
+        ..color = Colors.white.withValues(alpha: bubble.opacity * 0.9)
         ..style = PaintingStyle.fill,
     );
     
@@ -1234,7 +1234,7 @@ class OceanPainter extends CustomPainter {
       center,
       bubble.size,
       Paint()
-        ..color = Colors.white.withOpacity(bubble.opacity * 0.25)
+        ..color = Colors.white.withValues(alpha: bubble.opacity * 0.25)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 0.5,
     );
@@ -1380,7 +1380,7 @@ class PureGreenAuroraPainter extends CustomPainter {
         center,
         star.size * 2,
         Paint()
-          ..color = Colors.white.withOpacity(opacity * 0.2)
+          ..color = Colors.white.withValues(alpha: opacity * 0.2)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2),
       );
       
@@ -1479,9 +1479,9 @@ class PureGreenAuroraPainter extends CustomPainter {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          colors[0].withOpacity(breath * config.opacityMul),
-          colors[1].withOpacity(breath * 0.5 * config.opacityMul),
-          colors[2].withOpacity(breath * 0.2 * config.opacityMul),
+          colors[0].withValues(alpha: breath * config.opacityMul),
+          colors[1].withValues(alpha: breath * 0.5 * config.opacityMul),
+          colors[2].withValues(alpha: breath * 0.2 * config.opacityMul),
           Colors.transparent,
         ],
       ).createShader(Rect.fromLTWH(0, centerY - amp, size.width, amp * 3))
@@ -1812,7 +1812,7 @@ class OptimizedTimeVaultPainter extends CustomPainter {
   /// 简化液态黄金 - 2层，大步长25
   void _drawSimplifiedLiquidGold(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFFFFD700).withOpacity(0.08)
+      ..color = const Color(0xFFFFD700).withValues(alpha: 0.08)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 40);
     
     // 只绘制2层
@@ -1845,7 +1845,7 @@ class OptimizedTimeVaultPainter extends CustomPainter {
   /// 优化金箔 - 预计算位置，减少模糊
   void _drawOptimizedGoldFoil(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFFFFF8E1).withOpacity(0.05)
+      ..color = const Color(0xFFFFF8E1).withValues(alpha: 0.05)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
     
     for (var foil in foils) {
@@ -1896,12 +1896,12 @@ class OptimizedTimeVaultPainter extends CustomPainter {
     
     // 单一颜色填充
     canvas.drawPath(path, Paint()
-      ..color = const Color(0xFFFFD700).withOpacity(0.25)
+      ..color = const Color(0xFFFFD700).withValues(alpha: 0.25)
       ..style = PaintingStyle.fill);
     
     // 简化边框
     canvas.drawPath(path, Paint()
-      ..color = const Color(0xFFFFF8E1).withOpacity(0.3)
+      ..color = const Color(0xFFFFF8E1).withValues(alpha: 0.3)
       ..strokeWidth = 1
       ..style = PaintingStyle.stroke);
   }
@@ -1917,7 +1917,7 @@ class OptimizedTimeVaultPainter extends CustomPainter {
       
       // 单次绘制（主体+高光合并为圆形）
       canvas.drawCircle(center, p.size, Paint()
-        ..color = color.withOpacity(p.opacity)
+        ..color = color.withValues(alpha: p.opacity)
         ..style = PaintingStyle.fill);
     }
   }
@@ -1929,7 +1929,7 @@ class OptimizedTimeVaultPainter extends CustomPainter {
         text: rune.symbol,
         style: TextStyle(
           fontSize: rune.size,
-          color: const Color(0xFFFFD700).withOpacity(rune.opacity * 0.7),
+          color: const Color(0xFFFFD700).withValues(alpha: rune.opacity * 0.7),
           fontWeight: FontWeight.w300,
         ),
       );
@@ -1958,7 +1958,7 @@ class OptimizedTimeVaultPainter extends CustomPainter {
     
     // 外圈8个点（减少从12个）
     final dotPaint = Paint()
-      ..color = const Color(0xFFFFD700).withOpacity(0.5)
+      ..color = const Color(0xFFFFD700).withValues(alpha: 0.5)
       ..style = PaintingStyle.fill;
     
     for (int i = 0; i < 8; i++) {
@@ -1971,12 +1971,12 @@ class OptimizedTimeVaultPainter extends CustomPainter {
     
     // 内圈光晕
     canvas.drawCircle(center, 45 * pulse, Paint()
-      ..color = const Color(0xFFFFD700).withOpacity(0.12)
+      ..color = const Color(0xFFFFD700).withValues(alpha: 0.12)
       ..style = PaintingStyle.fill);
     
     // 瞳孔
     canvas.drawCircle(center, 18 * pulse, Paint()
-      ..color = const Color(0xFFFFF8E1).withOpacity(0.8));
+      ..color = const Color(0xFFFFF8E1).withValues(alpha: 0.8));
   }
 
   @override
@@ -2185,11 +2185,11 @@ class _StarryPainter extends CustomPainter {
 
       // 大星星带光晕
       if (r > 2.5) {
-        glowPaint.color = Colors.white.withOpacity(opacity * 0.2);
+        glowPaint.color = Colors.white.withValues(alpha: opacity * 0.2);
         canvas.drawCircle(Offset(cx, cy), r * 2.5, glowPaint);
       }
 
-      paint.color = Colors.white.withOpacity(opacity.clamp(0.1, 0.95));
+      paint.color = Colors.white.withValues(alpha: opacity.clamp(0.1, 0.95));
       canvas.drawCircle(Offset(cx, cy), r, paint);
     }
   }
@@ -2213,7 +2213,7 @@ class _StarryPainter extends CustomPainter {
       canvas.drawPath(
         path,
         Paint()
-          ..color = meteor.color.withOpacity(opacity * 0.6)
+          ..color = meteor.color.withValues(alpha: opacity * 0.6)
           ..strokeWidth = 3
           ..strokeCap = StrokeCap.round
           ..style = PaintingStyle.stroke
@@ -2226,15 +2226,15 @@ class _StarryPainter extends CustomPainter {
       ..style = PaintingStyle.fill
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
     
-    glowPaint.color = meteor.color.withOpacity(opacity * 0.3);
+    glowPaint.color = meteor.color.withValues(alpha: opacity * 0.3);
     canvas.drawCircle(Offset(headX, headY), 12, glowPaint);
     
     glowPaint.maskFilter = const MaskFilter.blur(BlurStyle.normal, 1);
-    glowPaint.color = meteor.color.withOpacity(opacity * 0.8);
+    glowPaint.color = meteor.color.withValues(alpha: opacity * 0.8);
     canvas.drawCircle(Offset(headX, headY), 5, glowPaint);
     
     glowPaint.maskFilter = null;
-    glowPaint.color = Colors.white.withOpacity(opacity);
+    glowPaint.color = Colors.white.withValues(alpha: opacity);
     canvas.drawCircle(Offset(headX, headY), 2.5, glowPaint);
   }
 

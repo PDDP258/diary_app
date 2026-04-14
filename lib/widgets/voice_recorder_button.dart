@@ -216,7 +216,7 @@ class _VoiceRecorderButtonState extends State<VoiceRecorderButton>
         borderRadius: BorderRadius.circular(AppTheme.largeRadius),
         boxShadow: AppTheme.cardShadow,
         border: Border.all(
-          color: isRecording ? Colors.red.withOpacity(0.3) : scheme.lightColor,
+          color: isRecording ? Colors.red.withValues(alpha: 0.3) : scheme.lightColor,
           width: 2,
         ),
       ),
@@ -304,7 +304,7 @@ class _VoiceRecorderButtonState extends State<VoiceRecorderButton>
                           boxShadow: [
                             BoxShadow(
                               color: (isRecording ? Colors.red : scheme.primaryColor)
-                                  .withOpacity(0.4),
+                                  .withValues(alpha: 0.4),
                               blurRadius: 20,
                               spreadRadius: isRecording ? 5 : 0,
                             ),
@@ -331,7 +331,7 @@ class _VoiceRecorderButtonState extends State<VoiceRecorderButton>
                   height: 56,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [AppTheme.success, AppTheme.success.withOpacity(0.8)],
+                      colors: [AppTheme.success, AppTheme.success.withValues(alpha: 0.8)],
                     ),
                     shape: BoxShape.circle,
                   ),
@@ -360,7 +360,7 @@ class _VoiceRecorderButtonState extends State<VoiceRecorderButton>
             width: 4,
             height: 10 + (index % 5) * 6.0,
             decoration: BoxDecoration(
-              color: scheme.primaryColor.withOpacity(0.5 + (index % 3) * 0.2),
+              color: scheme.primaryColor.withValues(alpha: 0.5 + (index % 3) * 0.2),
               borderRadius: BorderRadius.circular(2),
             ),
           );

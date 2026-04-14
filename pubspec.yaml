@@ -51,6 +51,5 @@ flutter:
     - assets/images/splash_cover.png
     # === PDF中文字体（必须） ===
     # 字体来源: https://github.com/notofonts/noto-cjk/releases
-    # 使用 NotoSerifCJKsc（思源宋体）作为中文字体
-    - assets/fonts/NotoSerifCJKsc-Regular.otf
-    - assets/fonts/NotoSerifCJKsc-Bold.otf
+    # 使用 NotoSerifCJKsc-VF（思源宋体可变字体）作为中文字体
+    - assets/fonts/NotoSerifCJKsc-VF.ttf

@@ -97,8 +97,8 @@ class SkeletonContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = AppTheme.schemeOf(context);
-    final baseColor = scheme.textLightColor.withOpacity(0.2);
-    final highlightColor = scheme.textLightColor.withOpacity(0.1);
+    final baseColor = scheme.textLightColor.withValues(alpha: 0.2);
+    final highlightColor = scheme.textLightColor.withValues(alpha: 0.1);
 
     return ShimmerEffect(
       baseColor: baseColor,
@@ -131,7 +131,7 @@ class DiaryCardSkeleton extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppTheme.largeRadius),
         boxShadow: [
           BoxShadow(
-            color: scheme.textDarkColor.withOpacity(0.05),
+            color: scheme.textDarkColor.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

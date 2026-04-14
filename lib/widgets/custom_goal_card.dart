@@ -51,7 +51,7 @@ class _CustomGoalMiniCardState extends State<CustomGoalMiniCard> {
               gradient: LinearGradient(
                 colors: [
                   scheme.cardColor,
-                  scheme.cardColor.withOpacity(0.9),
+                  scheme.cardColor.withValues(alpha: 0.9),
                 ],
               ),
               borderRadius: BorderRadius.circular(AppTheme.xlRadius),
@@ -66,7 +66,7 @@ class _CustomGoalMiniCardState extends State<CustomGoalMiniCard> {
                 // 展开后的其他目标列表
                 if (_isExpanded && otherGoals.isNotEmpty) ...[
                   const SizedBox(height: 12),
-                  Divider(height: 1, color: scheme.lightColor.withOpacity(0.3)),
+                  Divider(height: 1, color: scheme.lightColor.withValues(alpha: 0.3)),
                   const SizedBox(height: 12),
                   ...otherGoals.map((goal) => _buildOtherGoalItem(goal, scheme)),
                 ],
@@ -114,7 +114,7 @@ class _CustomGoalMiniCardState extends State<CustomGoalMiniCard> {
           child: CircularProgressIndicator(
             value: goal.progress,
             strokeWidth: 3,
-            backgroundColor: scheme.lightColor.withOpacity(0.3),
+            backgroundColor: scheme.lightColor.withValues(alpha: 0.3),
             valueColor: AlwaysStoppedAnimation<Color>(
               goal.isCompleted ? Colors.green : scheme.primaryColor,
             ),
@@ -149,7 +149,7 @@ class _CustomGoalMiniCardState extends State<CustomGoalMiniCard> {
               ),
               const SizedBox(height: 2),
               Text(
-                '${goal.currentCount} / ${goal.targetCount}${goal.unit} · ${goal.periodDisplay}',
+                '${goal.currentCount} / ${goal.targetCount}${goal.unitDisplay} · ${goal.periodDisplay}',
                 style: TextStyle(
                   fontSize: 11,
                   color: scheme.textMediumColor,
@@ -165,7 +165,7 @@ class _CustomGoalMiniCardState extends State<CustomGoalMiniCard> {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             margin: const EdgeInsets.only(right: 8),
             decoration: BoxDecoration(
-              color: scheme.primaryColor.withOpacity(0.1),
+              color: scheme.primaryColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
@@ -198,7 +198,7 @@ class _CustomGoalMiniCardState extends State<CustomGoalMiniCard> {
             padding: const EdgeInsets.all(6),
             margin: const EdgeInsets.only(left: 8),
             decoration: BoxDecoration(
-              color: scheme.lightColor.withOpacity(0.3),
+              color: scheme.lightColor.withValues(alpha: 0.3),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -214,26 +214,32 @@ class _CustomGoalMiniCardState extends State<CustomGoalMiniCard> {
 
   /// 构建完成/+1按钮
   Widget _buildCompleteButton(CustomGoal goal, ThemeScheme scheme) {
-    // 如果目标已完成，显示完成图标
+    // 如果目标已完成，显示完成图标（点击可弹出撤销选项）
     if (goal.isCompleted) {
-      return Container(
-        padding: const EdgeInsets.all(6),
-        margin: const EdgeInsets.only(right: 8),
-        decoration: BoxDecoration(
-          color: Colors.green.withOpacity(0.1),
-          shape: BoxShape.circle,
-        ),
-        child: const Icon(
-          Icons.check_circle,
-          size: 20,
-          color: Colors.green,
+      return GestureDetector(
+        onTap: () => _showIncrementSheet(goal),
+        child: Container(
+          padding: const EdgeInsets.all(6),
+          margin: const EdgeInsets.only(right: 8),
+          decoration: BoxDecoration(
+            color: Colors.green.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.check_circle,
+            size: 20,
+            color: Colors.green,
+          ),
         ),
       );
     }
     
-    // 未完成，显示+1按钮
+    // 未完成，显示快捷增量按钮（首个增量值）
+    final steps = goal.incrementSteps;
+    final primaryStep = steps.isNotEmpty ? steps.first : 1;
+    
     return GestureDetector(
-      onTap: () => _incrementGoal(goal.id),
+      onTap: () => _showIncrementSheet(goal),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         margin: const EdgeInsets.only(right: 8),
@@ -241,21 +247,21 @@ class _CustomGoalMiniCardState extends State<CustomGoalMiniCard> {
           gradient: LinearGradient(
             colors: [
               scheme.primaryColor,
-              scheme.primaryColor.withOpacity(0.8),
+              scheme.primaryColor.withValues(alpha: 0.8),
             ],
           ),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: scheme.primaryColor.withOpacity(0.3),
+              color: scheme.primaryColor.withValues(alpha: 0.3),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
           ],
         ),
-        child: const Text(
-          '+1',
-          style: TextStyle(
+        child: Text(
+          '+$primaryStep',
+          style: const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -265,13 +271,175 @@ class _CustomGoalMiniCardState extends State<CustomGoalMiniCard> {
     );
   }
 
+  /// 显示增量选择弹窗
+  void _showIncrementSheet(CustomGoal goal) {
+    final scheme = AppTheme.schemeOf(context);
+    final steps = goal.incrementSteps;
+    final isCompleted = goal.isCompleted;
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: scheme.backgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    goal.name,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: scheme.textDarkColor,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '${goal.currentCount} / ${goal.targetCount}${goal.unitDisplay}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: scheme.textMediumColor,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              if (!isCompleted) ...[
+                Text(
+                  '增加进度',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: scheme.textDarkColor,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: steps.map((step) => GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context);
+                      _incrementGoal(goal.id, step);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: scheme.primaryColor,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '+$step${goal.unitDisplay}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  )).toList(),
+                ),
+              ],
+              if (isCompleted) ...[
+                Center(
+                  child: Column(
+                    children: [
+                      Icon(Icons.check_circle, size: 48, color: Colors.green),
+                      const SizedBox(height: 8),
+                      Text(
+                        '目标已完成！',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: scheme.textDarkColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 20),
+              // 撤销区域
+              if (goal.currentCount > 0) ...[
+                Divider(height: 1, color: scheme.lightColor.withValues(alpha: 0.3)),
+                const SizedBox(height: 16),
+                Text(
+                  '撤销',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: scheme.textDarkColor,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    ...steps.where((s) => s <= goal.currentCount).map((step) => GestureDetector(
+                      onTap: () {
+                        Navigator.pop(context);
+                        _decrementGoal(goal.id, step);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: scheme.cardColor,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: scheme.lightColor.withValues(alpha: 0.3)),
+                        ),
+                        child: Text(
+                          '-$step${goal.unitDisplay}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: scheme.textDarkColor,
+                          ),
+                        ),
+                      ),
+                    )),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   /// 增加目标进度
-  void _incrementGoal(String goalId) async {
+  void _incrementGoal(String goalId, int value) async {
     try {
-      await context.read<CustomGoalProvider>().incrementGoal(goalId);
+      await context.read<CustomGoalProvider>().incrementGoal(goalId, value: value);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('目标进度+1')),
+          SnackBar(content: Text('目标进度 +$value')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('更新失败: $e')),
+        );
+      }
+    }
+  }
+
+  /// 减少目标进度
+  void _decrementGoal(String goalId, int value) async {
+    try {
+      await context.read<CustomGoalProvider>().decrementGoal(goalId, value: value);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('已撤销 $value')),
         );
       }
     } catch (e) {
@@ -289,7 +457,7 @@ class _CustomGoalMiniCardState extends State<CustomGoalMiniCard> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: scheme.lightColor.withOpacity(0.2),
+        color: scheme.lightColor.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -301,7 +469,7 @@ class _CustomGoalMiniCardState extends State<CustomGoalMiniCard> {
             child: CircularProgressIndicator(
               value: goal.progress,
               strokeWidth: 2.5,
-              backgroundColor: scheme.lightColor.withOpacity(0.3),
+              backgroundColor: scheme.lightColor.withValues(alpha: 0.3),
               valueColor: AlwaysStoppedAnimation<Color>(
                 goal.isCompleted ? Colors.green : scheme.primaryColor,
               ),
@@ -337,7 +505,7 @@ class _CustomGoalMiniCardState extends State<CustomGoalMiniCard> {
                     ],
                   ),
                   Text(
-                    '${goal.currentCount}/${goal.targetCount}${goal.unit}',
+                    '${goal.currentCount}/${goal.targetCount}${goal.unitDisplay}',
                     style: TextStyle(
                       fontSize: 11,
                       color: scheme.textMediumColor,
@@ -349,18 +517,21 @@ class _CustomGoalMiniCardState extends State<CustomGoalMiniCard> {
           ),
           // +1 按钮（已完成则显示勾选）
           if (goal.isCompleted)
-            Container(
-              padding: const EdgeInsets.all(4),
-              margin: const EdgeInsets.only(right: 6),
-              child: const Icon(
-                Icons.check_circle,
-                size: 18,
-                color: Colors.green,
+            GestureDetector(
+              onTap: () => _showIncrementSheet(goal),
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                margin: const EdgeInsets.only(right: 6),
+                child: const Icon(
+                  Icons.check_circle,
+                  size: 18,
+                  color: Colors.green,
+                ),
               ),
             )
           else
             GestureDetector(
-              onTap: () => _incrementGoal(goal.id),
+              onTap: () => _showIncrementSheet(goal),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 margin: const EdgeInsets.only(right: 6),
@@ -368,9 +539,9 @@ class _CustomGoalMiniCardState extends State<CustomGoalMiniCard> {
                   color: scheme.primaryColor,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Text(
-                  '+1',
-                  style: TextStyle(
+                child: Text(
+                  '+${goal.incrementSteps.isNotEmpty ? goal.incrementSteps.first : 1}',
+                  style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -384,7 +555,7 @@ class _CustomGoalMiniCardState extends State<CustomGoalMiniCard> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: scheme.primaryColor.withOpacity(0.1),
+                color: scheme.primaryColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
@@ -422,10 +593,10 @@ class _CustomGoalMiniCardState extends State<CustomGoalMiniCard> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: scheme.primaryColor.withOpacity(0.1),
+          color: scheme.primaryColor.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: scheme.primaryColor.withOpacity(0.3),
+            color: scheme.primaryColor.withValues(alpha: 0.3),
           ),
         ),
         child: Row(
@@ -502,10 +673,10 @@ class _CustomGoalMiniCardState extends State<CustomGoalMiniCard> {
         margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: scheme.cardColor.withOpacity(0.5),
+          color: scheme.cardColor.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(AppTheme.xlRadius),
           border: Border.all(
-            color: scheme.primaryColor.withOpacity(0.1),
+            color: scheme.primaryColor.withValues(alpha: 0.1),
             width: 1,
           ),
         ),
@@ -515,12 +686,12 @@ class _CustomGoalMiniCardState extends State<CustomGoalMiniCard> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: scheme.lightColor.withOpacity(0.2),
+                color: scheme.lightColor.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.add,
-                color: scheme.primaryColor.withOpacity(0.5),
+                color: scheme.primaryColor.withValues(alpha: 0.5),
                 size: 20,
               ),
             ),
@@ -579,6 +750,7 @@ class _CustomGoalSettingSheetState extends State<CustomGoalSettingSheet> {
   late final TextEditingController _targetController;
   late GoalPeriod _selectedPeriod;
   late String _selectedIcon;
+  late String _selectedUnit;
   final bool _isCustomInput = false;
   
   bool get _isEditMode => widget.editGoal != null;
@@ -612,11 +784,13 @@ class _CustomGoalSettingSheetState extends State<CustomGoalSettingSheet> {
       _targetController = TextEditingController(text: goal.targetCount.toString());
       _selectedPeriod = goal.period;
       _selectedIcon = goal.icon ?? '💧';
+      _selectedUnit = goal.unit;
     } else {
       _nameController = TextEditingController();
       _targetController = TextEditingController(text: '8');
       _selectedPeriod = GoalPeriod.daily;
       _selectedIcon = '💧';
+      _selectedUnit = 'times';
     }
   }
 
@@ -692,6 +866,7 @@ class _CustomGoalSettingSheetState extends State<CustomGoalSettingSheet> {
                               template.targetCount.toString();
                           _selectedPeriod = template.period;
                           _selectedIcon = template.icon;
+                          _selectedUnit = template.unit;
                         });
                       },
                       child: Container(
@@ -701,7 +876,7 @@ class _CustomGoalSettingSheetState extends State<CustomGoalSettingSheet> {
                           color: scheme.cardColor,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: scheme.lightColor.withOpacity(0.3),
+                            color: scheme.lightColor.withValues(alpha: 0.3),
                           ),
                         ),
                         child: Row(
@@ -725,7 +900,7 @@ class _CustomGoalSettingSheetState extends State<CustomGoalSettingSheet> {
                 ),
 
                 const SizedBox(height: 24),
-                Divider(height: 1, color: scheme.lightColor.withOpacity(0.3)),
+                Divider(height: 1, color: scheme.lightColor.withValues(alpha: 0.3)),
                 const SizedBox(height: 24),
               ],
 
@@ -760,13 +935,13 @@ class _CustomGoalSettingSheetState extends State<CustomGoalSettingSheet> {
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? scheme.primaryColor.withOpacity(0.15)
+                            ? scheme.primaryColor.withValues(alpha: 0.15)
                             : scheme.cardColor,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isSelected
                               ? scheme.primaryColor
-                              : scheme.lightColor.withOpacity(0.3),
+                              : scheme.lightColor.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Text(
@@ -853,6 +1028,53 @@ class _CustomGoalSettingSheetState extends State<CustomGoalSettingSheet> {
 
               const SizedBox(height: 16),
 
+              // 单位选择
+              Text(
+                '计量单位',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: scheme.textMediumColor,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: GoalUnit.presets.map((unit) {
+                  final isSelected = _selectedUnit == unit.id;
+                  return GestureDetector(
+                    onTap: () => setState(() => _selectedUnit = unit.id),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? scheme.primaryColor.withValues(alpha: 0.15)
+                            : scheme.cardColor,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isSelected
+                              ? scheme.primaryColor
+                              : scheme.lightColor.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: Text(
+                        unit.name,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                          color: isSelected
+                              ? scheme.primaryColor
+                              : scheme.textDarkColor,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+
+              const SizedBox(height: 16),
+
               // 目标数量
               Text(
                 '目标数量',
@@ -892,7 +1114,7 @@ class _CustomGoalSettingSheetState extends State<CustomGoalSettingSheet> {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    '次/${_selectedPeriod.shortName}',
+                    '${GoalUnit.getNameById(_selectedUnit)}/${_selectedPeriod.shortName}',
                     style: TextStyle(
                       fontSize: 14,
                       color: scheme.textMediumColor,
@@ -956,6 +1178,7 @@ class _CustomGoalSettingSheetState extends State<CustomGoalSettingSheet> {
       icon: _selectedIcon,
       targetCount: target,
       period: _selectedPeriod,
+      unit: _selectedUnit,
     );
 
     context.read<CustomGoalProvider>().addGoal(goal).then((_) {
@@ -991,6 +1214,7 @@ class _CustomGoalSettingSheetState extends State<CustomGoalSettingSheet> {
       icon: _selectedIcon,
       targetCount: target,
       period: _selectedPeriod,
+      unit: _selectedUnit,
     );
 
     context.read<CustomGoalProvider>().updateGoal(updatedGoal).then((_) {

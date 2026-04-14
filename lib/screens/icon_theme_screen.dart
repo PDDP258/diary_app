@@ -213,7 +213,7 @@ class _IconThemeScreenState extends State<IconThemeScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: scheme.primaryColor.withOpacity(0.1),
+              color: scheme.primaryColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -282,7 +282,7 @@ class _IconThemeScreenState extends State<IconThemeScreen> {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color:
-                        isSelected ? color.withOpacity(0.15) : scheme.cardColor,
+                        isSelected ? color.withValues(alpha: 0.15) : scheme.cardColor,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isSelected ? color : Colors.transparent,
@@ -290,7 +290,7 @@ class _IconThemeScreenState extends State<IconThemeScreen> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 4,
                         offset: const Offset(0, 2),
                       ),
@@ -309,7 +309,7 @@ class _IconThemeScreenState extends State<IconThemeScreen> {
                               ? []
                               : [
                                   BoxShadow(
-                                    color: color.withOpacity(0.3),
+                                    color: color.withValues(alpha: 0.3),
                                     blurRadius: 8,
                                     offset: const Offset(0, 2),
                                   ),
@@ -318,7 +318,7 @@ class _IconThemeScreenState extends State<IconThemeScreen> {
                         child: Center(
                           child: isLocked
                               ? Icon(Icons.lock,
-                                  color: Colors.white.withOpacity(0.7))
+                                  color: Colors.white.withValues(alpha: 0.7))
                               : Text(
                                   data['emoji'] as String,
                                   style: const TextStyle(fontSize: 24),
@@ -352,7 +352,7 @@ class _IconThemeScreenState extends State<IconThemeScreen> {
                                       vertical: 2,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Colors.amber.withOpacity(0.2),
+                                      color: Colors.amber.withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: const Text(
@@ -408,7 +408,7 @@ class _IconThemeScreenState extends State<IconThemeScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.4),
+            color: color.withValues(alpha: 0.4),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -428,7 +428,7 @@ class _IconThemeScreenState extends State<IconThemeScreen> {
                   height: 60,
                   decoration: BoxDecoration(
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.6),
+                      color: Colors.white.withValues(alpha: 0.6),
                       width: 2,
                     ),
                     borderRadius: BorderRadius.circular(30),
@@ -455,8 +455,8 @@ class _IconThemeScreenState extends State<IconThemeScreen> {
                   child: Icon(
                     Icons.star,
                     color: isStarry
-                        ? const Color(0xFFFF6B6B).withOpacity(0.9) // 红色星星
-                        : Colors.white.withOpacity(0.9),
+                        ? const Color(0xFFFF6B6B).withValues(alpha: 0.9) // 红色星星
+                        : Colors.white.withValues(alpha: 0.9),
                     size: 16,
                   ),
                 ),

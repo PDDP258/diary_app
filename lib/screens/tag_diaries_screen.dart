@@ -87,7 +87,7 @@ class _TagDiariesScreenState extends State<TagDiariesScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: tagColor.withOpacity(0.15),
+                color: tagColor.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(

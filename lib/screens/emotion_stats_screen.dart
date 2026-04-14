@@ -309,7 +309,7 @@ class _EmotionStatsScreenState extends State<EmotionStatsScreen>
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Color(color).withOpacity(0.2),
+            Color(color).withValues(alpha: 0.2),
             scheme.cardColor,
           ],
           begin: Alignment.topLeft,
@@ -328,13 +328,13 @@ class _EmotionStatsScreenState extends State<EmotionStatsScreen>
               gradient: LinearGradient(
                 colors: [
                   Color(color),
-                  Color(color).withOpacity(0.7),
+                  Color(color).withValues(alpha: 0.7),
                 ],
               ),
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Color(color).withOpacity(0.3),
+                  color: Color(color).withValues(alpha: 0.3),
                   blurRadius: 20,
                   spreadRadius: 5,
                 ),
@@ -494,7 +494,7 @@ class _EmotionStatsScreenState extends State<EmotionStatsScreen>
                           height: 8,
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
-                              colors: [color, color.withOpacity(0.7)],
+                              colors: [color, color.withValues(alpha: 0.7)],
                             ),
                             borderRadius: BorderRadius.circular(4),
                           ),
@@ -574,7 +574,7 @@ class _EmotionStatsScreenState extends State<EmotionStatsScreen>
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: scheme.lightColor.withOpacity(0.2 + intensity * 0.3),
+              color: scheme.lightColor.withValues(alpha: 0.2 + intensity * 0.3),
               borderRadius: BorderRadius.circular(AppTheme.chipRadius),
             ),
             child: Text(
@@ -601,7 +601,7 @@ class _EmotionStatsScreenState extends State<EmotionStatsScreen>
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppTheme.primaryMint.withOpacity(0.1),
+            AppTheme.primaryMint.withValues(alpha: 0.1),
             scheme.cardColor,
           ],
           begin: Alignment.topLeft,
@@ -609,7 +609,7 @@ class _EmotionStatsScreenState extends State<EmotionStatsScreen>
         ),
         borderRadius: BorderRadius.circular(AppTheme.largeRadius),
         border: Border.all(
-          color: AppTheme.primaryMint.withOpacity(0.3),
+          color: AppTheme.primaryMint.withValues(alpha: 0.3),
         ),
       ),
       child: Column(
@@ -702,7 +702,7 @@ class _EmotionStatsScreenState extends State<EmotionStatsScreen>
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: hasRecord ? color.withOpacity(0.1) : scheme.backgroundColor,
+              color: hasRecord ? color.withValues(alpha: 0.1) : scheme.backgroundColor,
               borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
             ),
             child: Column(
@@ -736,7 +736,7 @@ class _EmotionStatsScreenState extends State<EmotionStatsScreen>
               height: 40,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [color, color.withOpacity(0.7)],
+                  colors: [color, color.withValues(alpha: 0.7)],
                 ),
                 shape: BoxShape.circle,
               ),
@@ -792,10 +792,10 @@ class _EmotionStatsScreenState extends State<EmotionStatsScreen>
     
     return Container(
       decoration: BoxDecoration(
-        color: hasRecord ? color.withOpacity(0.15) : scheme.backgroundColor,
+        color: hasRecord ? color.withValues(alpha: 0.15) : scheme.backgroundColor,
         borderRadius: BorderRadius.circular(AppTheme.smallRadius),
         border: hasRecord
-            ? Border.all(color: color.withOpacity(0.5), width: 1.5)
+            ? Border.all(color: color.withValues(alpha: 0.5), width: 1.5)
             : null,
       ),
       child: Column(

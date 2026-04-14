@@ -11,6 +11,7 @@ import 'stats_detail_screen.dart';
 import 'tags_classification_screen.dart';
 import 'emotion_stats_screen_v2.dart';
 import 'smart_recall_screen_v2.dart';
+import '../widgets/widgets.dart';
 
 class StatsScreen extends StatefulWidget {
   const StatsScreen({super.key});
@@ -384,79 +385,80 @@ class _StatsScreenState extends State<StatsScreen>
 
   Widget _buildStatsCard() {
     final scheme = AppTheme.schemeOf(context);
-    
-    return AnimatedBuilder(
-      animation: _numberAnimation,
-      builder: (context, child) => GestureDetector(
-          onTap: _showStatsDetail,
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: scheme.cardColor,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: AppTheme.cardShadow,
-            ),
-            child: Column(
-              children: [
-                // 第一行统计
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatItemWithIcon(
-                        _animateNumber(_totalDiaries),
-                        '日记',
-                        Icons.auto_stories_rounded,
-                        scheme.primaryColor,
-                      ),
+
+    return TiltCard(
+      maxTilt: 0.03,
+      onTap: _showStatsDetail,
+      child: AnimatedBuilder(
+        animation: _numberAnimation,
+        builder: (context, child) => Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: scheme.cardColor,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: AppTheme.cardShadow,
+          ),
+          child: Column(
+            children: [
+              // 第一行统计
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatItemWithIcon(
+                      _animateNumber(_totalDiaries),
+                      '日记',
+                      Icons.auto_stories_rounded,
+                      scheme.primaryColor,
                     ),
-                    Container(
-                      width: 1,
-                      height: 50,
-                      color: scheme.lightColor.withOpacity(0.4),
-                    ),
-                    Expanded(
-                      child: _buildStatItemWithIcon(
-                        _animateNumber(_uniqueDays),
-                        '记载天数',
-                        Icons.calendar_today_rounded,
-                        scheme.darkColor,
-                      ),
-                    ),
-                  ],
-                ),
-                
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: Divider(
-                    color: scheme.lightColor.withOpacity(0.3),
-                    height: 1,
                   ),
+                  Container(
+                    width: 1,
+                    height: 50,
+                    color: scheme.dividerColor,
+                  ),
+                  Expanded(
+                    child: _buildStatItemWithIcon(
+                      _animateNumber(_uniqueDays),
+                      '记载天数',
+                      Icons.calendar_today_rounded,
+                      scheme.darkColor,
+                    ),
+                  ),
+                ],
+              ),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Divider(
+                  color: scheme.dividerColor,
+                  height: 1,
                 ),
-                
-                // 第二行统计
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatItemWithIcon(
-                        _totalChars > 1000
-                            ? '${(_totalChars * _numberAnimation.value / 1000).toStringAsFixed(1)}K'
-                            : _animateNumber(_totalChars),
-                        '字符',
-                        Icons.edit_note_rounded,
-                        AppTheme.success,
-                      ),
+              ),
+
+              // 第二行统计
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatItemWithIcon(
+                      _totalChars > 1000
+                          ? '${(_totalChars * _numberAnimation.value / 1000).toStringAsFixed(1)}K'
+                          : _animateNumber(_totalChars),
+                      '字符',
+                      Icons.edit_note_rounded,
+                      AppTheme.success,
                     ),
-                    Container(
-                      width: 1,
-                      height: 50,
-                      color: scheme.lightColor.withOpacity(0.4),
-                    ),
-                    Expanded(
-                      child: _buildStatItemWithIcon(
-                        _startDate != null
-                            ? DateFormat('yyyy/M/d').format(_startDate!)
-                            : '-',
-                        '开始日期',
+                  ),
+                  Container(
+                    width: 1,
+                    height: 50,
+                    color: scheme.dividerColor,
+                  ),
+                  Expanded(
+                    child: _buildStatItemWithIcon(
+                      _startDate != null
+                          ? DateFormat('yyyy/M/d').format(_startDate!)
+                          : '-',
+                      '开始日期',
                         Icons.play_circle_outline_rounded,
                         AppTheme.warning,
                       ),
@@ -486,7 +488,7 @@ class _StatsScreenState extends State<StatsScreen>
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: iconColor.withOpacity(0.1),
+            color: iconColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
@@ -541,7 +543,7 @@ class _StatsScreenState extends State<StatsScreen>
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppTheme.selectedGreen.withOpacity(0.15),
+                      color: AppTheme.selectedGreen.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
@@ -571,12 +573,12 @@ class _StatsScreenState extends State<StatsScreen>
                         gradient: LinearGradient(
                           colors: _nextMilestone!.remainingDays <= 5
                               ? [
-                                  AppTheme.selectedGreen.withOpacity(0.2),
-                                  AppTheme.selectedGreen.withOpacity(0.1),
+                                  AppTheme.selectedGreen.withValues(alpha: 0.2),
+                                  AppTheme.selectedGreen.withValues(alpha: 0.1),
                                 ]
                               : [
-                                  scheme.lightColor.withOpacity(0.3),
-                                  scheme.lightColor.withOpacity(0.15),
+                                  scheme.lightColor.withValues(alpha: 0.3),
+                                  scheme.lightColor.withValues(alpha: 0.15),
                                 ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
@@ -599,10 +601,10 @@ class _StatsScreenState extends State<StatsScreen>
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: scheme.primaryColor.withOpacity(0.1),
+                      color: scheme.primaryColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: scheme.primaryColor.withOpacity(0.3),
+                        color: scheme.primaryColor.withValues(alpha: 0.3),
                       ),
                     ),
                     child: Text(
@@ -625,7 +627,7 @@ class _StatsScreenState extends State<StatsScreen>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: scheme.lightColor.withOpacity(0.1),
+              color: scheme.lightColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
@@ -650,47 +652,61 @@ class _StatsScreenState extends State<StatsScreen>
                       ),
                     ),
                     const SizedBox(height: 8),
-                    // 日期圆圈
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
+                    // 日期圆圈 - 带弹性入场
+                    TweenAnimationBuilder<double>(
+                      key: ValueKey('streak_$dateStr'),
+                      tween: Tween(begin: 0.6, end: 1.0),
+                      duration: Duration(milliseconds: 400 + index * 60),
                       curve: AppTheme.spring,
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        gradient: hasCheckIn
-                            ? LinearGradient(
-                                colors: [
-                                  AppTheme.selectedGreen,
-                                  AppTheme.selectedGreen.withOpacity(0.8),
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              )
-                            : isToday
-                                ? LinearGradient(
-                                    colors: [
-                                      scheme.lightColor.withOpacity(0.5),
-                                      scheme.lightColor.withOpacity(0.3),
-                                    ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  )
-                                : null,
-                        color: hasCheckIn || isToday ? null : scheme.lightColor.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: hasCheckIn
-                            ? [
-                                BoxShadow(
-                                  color: AppTheme.selectedGreen.withOpacity(0.3),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ]
-                            : null,
-                      ),
+                      builder: (context, scale, child) {
+                        return Transform.scale(
+                          scale: scale,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            curve: AppTheme.spring,
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              gradient: hasCheckIn
+                                  ? LinearGradient(
+                                      colors: [
+                                        AppTheme.selectedGreen,
+                                        AppTheme.selectedGreen.withValues(alpha: 0.8),
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    )
+                                  : isToday
+                                      ? LinearGradient(
+                                          colors: [
+                                            scheme.lightColor.withValues(alpha: 0.5),
+                                            scheme.lightColor.withValues(alpha: 0.3),
+                                          ],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        )
+                                      : null,
+                              color: hasCheckIn || isToday
+                                  ? null
+                                  : scheme.lightColor.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: hasCheckIn
+                                  ? [
+                                      BoxShadow(
+                                        color: AppTheme.selectedGreen.withValues(alpha: 0.35),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: child,
+                          ),
+                        );
+                      },
                       child: Center(
                         child: hasCheckIn
-                            ? Icon(
+                            ? const Icon(
                                 Icons.check_rounded,
                                 color: Colors.white,
                                 size: 22,
@@ -750,13 +766,14 @@ class _StatsScreenState extends State<StatsScreen>
   // 按标签分类入口卡片
   Widget _buildTagClassificationCard() {
     final scheme = AppTheme.schemeOf(context);
-    return GestureDetector(
-      onTap: () => Navigator.push(
+    return InteractiveButton(
+      onPressed: () => Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => const TagsClassificationScreen(),
         ),
       ),
+      padding: EdgeInsets.zero,
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -769,7 +786,14 @@ class _StatsScreenState extends State<StatsScreen>
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: scheme.primaryColor.withOpacity(0.15),
+                gradient: LinearGradient(
+                  colors: [
+                    scheme.primaryColor.withValues(alpha: 0.2),
+                    scheme.primaryColor.withValues(alpha: 0.05),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(
@@ -805,7 +829,7 @@ class _StatsScreenState extends State<StatsScreen>
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: scheme.lightColor.withOpacity(0.2),
+                color: scheme.lightColor.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -822,19 +846,20 @@ class _StatsScreenState extends State<StatsScreen>
 
   Widget _buildSmartRecallCard() {
     final scheme = AppTheme.schemeOf(context);
-    return GestureDetector(
-      onTap: () => Navigator.push(
+    return InteractiveButton(
+      onPressed: () => Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => const SmartRecallScreen(),
         ),
       ),
+      padding: EdgeInsets.zero,
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              AppTheme.warmYellow.withOpacity(0.15),
+              AppTheme.warmYellow.withValues(alpha: 0.15),
               scheme.cardColor,
             ],
             begin: Alignment.topLeft,
@@ -843,7 +868,7 @@ class _StatsScreenState extends State<StatsScreen>
           borderRadius: BorderRadius.circular(24),
           boxShadow: AppTheme.cardShadow,
           border: Border.all(
-            color: AppTheme.warmYellow.withOpacity(0.3),
+            color: AppTheme.warmYellow.withValues(alpha: 0.3),
           ),
         ),
         child: Row(
@@ -854,7 +879,7 @@ class _StatsScreenState extends State<StatsScreen>
                 gradient: LinearGradient(
                   colors: [
                     AppTheme.warmYellow,
-                    AppTheme.warmYellow.withOpacity(0.8),
+                    AppTheme.warmYellow.withValues(alpha: 0.8),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(16),
@@ -892,13 +917,13 @@ class _StatsScreenState extends State<StatsScreen>
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppTheme.warmYellow.withOpacity(0.15),
+                color: AppTheme.warmYellow.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 Icons.arrow_forward_ios_rounded,
                 size: 16,
-                color: AppTheme.warmYellow.withOpacity(0.8),
+                color: AppTheme.warmYellow.withValues(alpha: 0.8),
               ),
             ),
           ],
@@ -909,19 +934,20 @@ class _StatsScreenState extends State<StatsScreen>
 
   Widget _buildEmotionTrendCard() {
     final scheme = AppTheme.schemeOf(context);
-    return GestureDetector(
-      onTap: () => Navigator.push(
+    return InteractiveButton(
+      onPressed: () => Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => const EmotionStatsScreen(),
         ),
       ),
+      padding: EdgeInsets.zero,
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              AppTheme.warmPink.withOpacity(0.1),
+              AppTheme.warmPink.withValues(alpha: 0.1),
               scheme.cardColor,
             ],
             begin: Alignment.topLeft,
@@ -930,7 +956,7 @@ class _StatsScreenState extends State<StatsScreen>
           borderRadius: BorderRadius.circular(24),
           boxShadow: AppTheme.cardShadow,
           border: Border.all(
-            color: AppTheme.warmPink.withOpacity(0.2),
+            color: AppTheme.warmPink.withValues(alpha: 0.2),
           ),
         ),
         child: Row(
@@ -941,7 +967,7 @@ class _StatsScreenState extends State<StatsScreen>
                 gradient: LinearGradient(
                   colors: [
                     AppTheme.warmPink,
-                    AppTheme.warmPink.withOpacity(0.7),
+                    AppTheme.warmPink.withValues(alpha: 0.7),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(16),
@@ -979,7 +1005,7 @@ class _StatsScreenState extends State<StatsScreen>
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppTheme.warmPink.withOpacity(0.15),
+                color: AppTheme.warmPink.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -997,6 +1023,8 @@ class _StatsScreenState extends State<StatsScreen>
   Widget _buildMoodCard() {
     final scheme = AppTheme.schemeOf(context);
     final total = _moodDistribution.values.fold(0, (sum, count) => sum + count);
+    final entries = _moodDistribution.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -1013,7 +1041,7 @@ class _StatsScreenState extends State<StatsScreen>
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppTheme.info.withOpacity(0.15),
+                  color: AppTheme.info.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
@@ -1033,84 +1061,145 @@ class _StatsScreenState extends State<StatsScreen>
               ),
             ],
           ),
-          
+
           const SizedBox(height: 24),
-          
-          // 心情分布列表
-          ..._moodDistribution.entries.map((entry) {
+
+          // 心情分布列表 - 带 staggered 入场和交互反馈
+          ...entries.asMap().entries.map((mapEntry) {
+            final index = mapEntry.key;
+            final entry = mapEntry.value;
             final percentage =
                 total > 0 ? (entry.value / total * 100).toInt() : 0;
             final progress = total > 0 ? entry.value / total : 0.0;
-            
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Row(
-                children: [
-                  // 心情图标/文字
-                  Container(
-                    width: 44,
-                    height: 44,
+            final moodColor = _getMoodColor(entry.key);
+
+            return SlideInAnimation(
+              index: index,
+              delay: const Duration(milliseconds: 50),
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: InteractiveButton(
+                  onPressed: () {},
+                  padding: EdgeInsets.zero,
+                  scaleFactor: 0.98,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: _getMoodColor(entry.key).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      color: scheme.surfaceColor,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: scheme.dividerColor),
                     ),
-                    child: Center(
-                      child: Text(
-                        _getMoodEmoji(entry.key),
-                        style: const TextStyle(fontSize: 20),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              entry.key,
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: scheme.textDarkColor,
-                              ),
+                        // 心情图标
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                moodColor.withValues(alpha: 0.2),
+                                moodColor.withValues(alpha: 0.05),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             ),
-                            Text(
-                              '$percentage%',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: _getMoodColor(entry.key),
-                              ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Center(
+                            child: Text(
+                              _getMoodEmoji(entry.key),
+                              style: const TextStyle(fontSize: 22),
                             ),
-                          ],
+                          ),
                         ),
-                        const SizedBox(height: 8),
-                        // 进度条
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(6),
-                          child: AnimatedBuilder(
-                            animation: _numberAnimation,
-                            builder: (context, child) {
-                              return LinearProgressIndicator(
-                                value: progress * _numberAnimation.value,
-                                backgroundColor:
-                                    scheme.lightColor.withOpacity(0.3),
-                                valueColor: AlwaysStoppedAnimation(
-                                  _getMoodColor(entry.key),
-                                ),
-                                minHeight: 10,
-                              );
-                            },
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    entry.key,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: scheme.textDarkColor,
+                                    ),
+                                  ),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        '${entry.value}篇',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                          color: scheme.textLightColor,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        '$percentage%',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                          color: moodColor,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              // 自定义圆角进度条
+                              AnimatedBuilder(
+                                animation: _numberAnimation,
+                                builder: (context, child) {
+                                  return Container(
+                                    height: 10,
+                                    decoration: BoxDecoration(
+                                      color: scheme.lightColor
+                                          .withValues(alpha: 0.3),
+                                      borderRadius: BorderRadius.circular(5),
+                                    ),
+                                    child: FractionallySizedBox(
+                                      alignment: Alignment.centerLeft,
+                                      widthFactor:
+                                          progress * _numberAnimation.value,
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            colors: [
+                                              moodColor,
+                                              moodColor.withValues(alpha: 0.8),
+                                            ],
+                                          ),
+                                          borderRadius:
+                                              BorderRadius.circular(5),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: moodColor.withValues(
+                                                  alpha: 0.35),
+                                              blurRadius: 6,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
-                ],
+                ),
               ),
             );
           }),
@@ -1185,7 +1274,7 @@ class _StatsScreenState extends State<StatsScreen>
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: AppTheme.warning.withOpacity(0.15),
+                          color: AppTheme.warning.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Icon(
@@ -1211,8 +1300,8 @@ class _StatsScreenState extends State<StatsScreen>
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            scheme.lightColor.withOpacity(0.4),
-                            scheme.lightColor.withOpacity(0.2),
+                            scheme.lightColor.withValues(alpha: 0.4),
+                            scheme.lightColor.withValues(alpha: 0.2),
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
@@ -1239,7 +1328,7 @@ class _StatsScreenState extends State<StatsScreen>
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: scheme.lightColor.withOpacity(0.1),
+                    color: scheme.lightColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Column(
@@ -1262,7 +1351,7 @@ class _StatsScreenState extends State<StatsScreen>
                             snapshot.data!.content!,
                             style: TextStyle(
                               fontSize: 14,
-                              color: scheme.textMediumColor.withOpacity(0.8),
+                              color: scheme.textMediumColor.withValues(alpha: 0.8),
                               height: 1.5,
                             ),
                             maxLines: 2,
@@ -1287,7 +1376,7 @@ class _StatsScreenState extends State<StatsScreen>
                         '去年今日还没有写日记哦',
                         style: TextStyle(
                           fontSize: 14,
-                          color: scheme.textMediumColor.withOpacity(0.8),
+                          color: scheme.textMediumColor.withValues(alpha: 0.8),
                         ),
                       ),
                     ],
@@ -1315,7 +1404,7 @@ class _StatsScreenState extends State<StatsScreen>
                     borderRadius: BorderRadius.circular(26),
                     boxShadow: [
                       BoxShadow(
-                        color: scheme.primaryColor.withOpacity(0.3),
+                        color: scheme.primaryColor.withValues(alpha: 0.3),
                         blurRadius: 10,
                         offset: const Offset(0, 5),
                       ),

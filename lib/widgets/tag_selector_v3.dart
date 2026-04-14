@@ -93,7 +93,7 @@ class _TagSelectorV3State extends State<TagSelectorV3> {
       decoration: BoxDecoration(
         color: scheme.cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: scheme.primaryColor.withOpacity(0.2)),
+        border: Border.all(color: scheme.primaryColor.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
@@ -127,7 +127,7 @@ class _TagSelectorV3State extends State<TagSelectorV3> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: scheme.primaryColor.withOpacity(0.05),
+        color: scheme.primaryColor.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -165,8 +165,8 @@ class _TagSelectorV3State extends State<TagSelectorV3> {
                 label: Text(tag.name),
                 deleteIcon: const Icon(Icons.close, size: 16),
                 onDeleted: () => _toggleTag(tagId),
-                backgroundColor: scheme.primaryColor.withOpacity(0.1),
-                side: BorderSide(color: scheme.primaryColor.withOpacity(0.3)),
+                backgroundColor: scheme.primaryColor.withValues(alpha: 0.1),
+                side: BorderSide(color: scheme.primaryColor.withValues(alpha: 0.3)),
                 labelStyle: TextStyle(
                   color: scheme.primaryColor,
                   fontSize: 12,
@@ -192,7 +192,7 @@ class _TagSelectorV3State extends State<TagSelectorV3> {
         side: BorderSide(
           color: isExpanded 
               ? category.color 
-              : scheme.lightColor.withOpacity(0.1),
+              : scheme.lightColor.withValues(alpha: 0.1),
         ),
       ),
       child: ExpansionTile(
@@ -200,7 +200,7 @@ class _TagSelectorV3State extends State<TagSelectorV3> {
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            color: category.color.withOpacity(0.15),
+            color: category.color.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Center(
@@ -228,8 +228,8 @@ class _TagSelectorV3State extends State<TagSelectorV3> {
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
             color: isExpanded 
-                ? category.color.withOpacity(0.2)
-                : scheme.lightColor.withOpacity(0.2),
+                ? category.color.withValues(alpha: 0.2)
+                : scheme.lightColor.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
@@ -276,7 +276,7 @@ class _TagSelectorV3State extends State<TagSelectorV3> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: categoryColor.withOpacity(0.1),
+                  color: categoryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
@@ -319,8 +319,8 @@ class _TagSelectorV3State extends State<TagSelectorV3> {
       ),
       selected: isSelected,
       onSelected: (_) => _toggleTag(tag.id),
-      selectedColor: categoryColor.withOpacity(0.2),
-      backgroundColor: scheme.lightColor.withOpacity(0.3),
+      selectedColor: categoryColor.withValues(alpha: 0.2),
+      backgroundColor: scheme.lightColor.withValues(alpha: 0.3),
       checkmarkColor: categoryColor,
       side: BorderSide(
         color: isSelected ? categoryColor : Colors.transparent,
@@ -371,7 +371,7 @@ class _TagSelectorV3State extends State<TagSelectorV3> {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: result.category.color.withOpacity(0.15),
+          color: result.category.color.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Center(

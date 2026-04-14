@@ -336,7 +336,7 @@ class _PatternPainter extends CustomPainter {
     // 绘制连接线
     if (selectedIndices.length >= 2) {
       final linePaint = Paint()
-        ..color = activeColor.withOpacity(0.5)
+        ..color = activeColor.withValues(alpha: 0.5)
         ..strokeWidth = 4
         ..strokeCap = StrokeCap.round
         ..style = PaintingStyle.stroke;
@@ -358,7 +358,7 @@ class _PatternPainter extends CustomPainter {
     if (currentPosition != null && selectedIndices.isNotEmpty) {
       final lastDot = dotPositions[selectedIndices.last];
       final linePaint = Paint()
-        ..color = activeColor.withOpacity(0.3)
+        ..color = activeColor.withValues(alpha: 0.3)
         ..strokeWidth = 4
         ..strokeCap = StrokeCap.round;
 
@@ -367,7 +367,7 @@ class _PatternPainter extends CustomPainter {
 
     // 绘制圆点
     final normalPaint = Paint()
-      ..color = activeColor.withOpacity(0.2)
+      ..color = activeColor.withValues(alpha: 0.2)
       ..style = PaintingStyle.fill;
 
     final selectedPaint = Paint()
@@ -375,7 +375,7 @@ class _PatternPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
 
     final selectedRingPaint = Paint()
-      ..color = activeColor.withOpacity(0.3)
+      ..color = activeColor.withValues(alpha: 0.3)
       ..strokeWidth = 8
       ..style = PaintingStyle.stroke;
 
@@ -453,14 +453,14 @@ class PatternLockButton extends StatelessWidget {
         width: double.infinity,
         height: 50,
         decoration: BoxDecoration(
-          color: isEnabled ? themeColor : themeColor.withOpacity(0.3),
+          color: isEnabled ? themeColor : themeColor.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(12),
         ),
         alignment: Alignment.center,
         child: Text(
           text,
           style: TextStyle(
-            color: isEnabled ? Colors.white : Colors.white.withOpacity(0.5),
+            color: isEnabled ? Colors.white : Colors.white.withValues(alpha: 0.5),
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),

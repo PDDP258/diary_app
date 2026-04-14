@@ -265,7 +265,7 @@ class _CustomStickerScreenState extends State<CustomStickerScreen> {
                           child: Container(
                             width: 50,
                             height: 50,
-                            color: scheme.lightColor.withOpacity(0.2),
+                            color: scheme.lightColor.withValues(alpha: 0.2),
                             child: Center(
                               child: sticker.type == CustomStickerType.emoji
                                   ? Text(
@@ -406,7 +406,7 @@ class _StickerEditorScreenState extends State<StickerEditorScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: scheme.lightColor.withOpacity(0.3),
+                color: scheme.lightColor.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(

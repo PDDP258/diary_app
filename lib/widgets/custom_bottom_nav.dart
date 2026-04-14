@@ -32,7 +32,7 @@ class CustomBottomNav extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppTheme.xlRadius),
             boxShadow: [
               BoxShadow(
-                color: scheme.textDarkColor.withOpacity(0.04),
+                color: scheme.textDarkColor.withValues(alpha: 0.04),
                 blurRadius: 16,
                 offset: const Offset(0, 4),
                 spreadRadius: -2,
@@ -45,10 +45,10 @@ class CustomBottomNav extends StatelessWidget {
               filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
               child: Container(
                 decoration: BoxDecoration(
-                  color: scheme.cardColor.withOpacity(0.75),
+                  color: scheme.cardColor.withValues(alpha: 0.75),
                   borderRadius: BorderRadius.circular(AppTheme.xlRadius),
                   border: Border.all(
-                    color: scheme.lightColor.withOpacity(0.3),
+                    color: scheme.lightColor.withValues(alpha: 0.3),
                     width: 0.5,
                   ),
                 ),
@@ -88,13 +88,13 @@ class CustomBottomNav extends StatelessWidget {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: scheme.primaryColor.withOpacity(0.4),
+                    color: scheme.primaryColor.withValues(alpha: 0.4),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                     spreadRadius: 0,
                   ),
                   BoxShadow(
-                    color: scheme.primaryColor.withOpacity(0.2),
+                    color: scheme.primaryColor.withValues(alpha: 0.2),
                     blurRadius: 40,
                     offset: const Offset(0, 20),
                     spreadRadius: -5,
@@ -124,15 +124,15 @@ class CustomBottomNav extends StatelessWidget {
           child: InkWell(
             onTap: () => onTap(index),
             borderRadius: BorderRadius.circular(16),
-            splashColor: scheme.primaryColor.withOpacity(0.1),
-            highlightColor: scheme.primaryColor.withOpacity(0.05),
+            splashColor: scheme.primaryColor.withValues(alpha: 0.1),
+            highlightColor: scheme.primaryColor.withValues(alpha: 0.05),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               curve: AppTheme.spring,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? scheme.primaryColor.withOpacity(0.1)
+                    ? scheme.primaryColor.withValues(alpha: 0.1)
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -234,7 +234,7 @@ class _AnimatedFABState extends State<AnimatedFAB>
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                widget.backgroundColor.withOpacity(0.8),
+                widget.backgroundColor.withValues(alpha: 0.8),
                 widget.backgroundColor,
               ],
               begin: Alignment.topLeft,
@@ -243,7 +243,7 @@ class _AnimatedFABState extends State<AnimatedFAB>
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: widget.backgroundColor.withOpacity(0.4),
+                color: widget.backgroundColor.withValues(alpha: 0.4),
                 blurRadius: 16,
                 offset: const Offset(0, 8),
               ),

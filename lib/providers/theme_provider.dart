@@ -30,6 +30,28 @@ class ThemeScheme {
   /// 错误色 - 默认红色
   Color get errorColor => const Color(0xFFE53935);
 
+  /// 成功色
+  Color get successColor => const Color(0xFF81C995);
+
+  /// 警告色
+  Color get warningColor => const Color(0xFFFFB74D);
+
+  /// 表面色 - 用于底部弹窗、对话框等 elevated 表面
+  Color get surfaceColor {
+    if (isBackgroundLight) {
+      return const Color(0xFFFFFFFF);
+    }
+    return Color.lerp(cardColor, lightColor, 0.15) ?? cardColor;
+  }
+
+  /// 分割线颜色
+  Color get dividerColor => lightColor.withValues(alpha: 0.35);
+
+  /// 阴影颜色
+  Color get shadowColor => isBackgroundLight
+      ? const Color(0x1A5C4B51)
+      : const Color(0x66000000);
+
   /// 判断背景色是浅色还是深色
   /// 基于 luminance（亮度值），范围 0-1，0.5 为中间值
   bool get isBackgroundLight {
@@ -43,10 +65,10 @@ class ThemeScheme {
   Color getArrowButtonBackground({double opacity = 0.15}) {
     if (isBackgroundLight) {
       // 背景是浅色，使用深色版本的 lightColor，增加对比度
-      return lightColor.withOpacity(opacity + 0.25);
+      return lightColor.withValues(alpha: opacity + 0.25);
     } else {
       // 背景是深色，使用更浅的版本
-      return cardColor.withOpacity(opacity + 0.35);
+      return cardColor.withValues(alpha: opacity + 0.35);
     }
   }
 
@@ -54,10 +76,10 @@ class ThemeScheme {
   Color getArrowButtonIconColor({double opacity = 0.8}) {
     if (isBackgroundLight) {
       // 背景是浅色，使用更深的颜色
-      return textMediumColor.withOpacity(opacity + 0.1);
+      return textMediumColor.withValues(alpha: opacity + 0.1);
     } else {
       // 背景是深色，使用更浅的颜色
-      return textLightColor.withOpacity(opacity);
+      return textLightColor.withValues(alpha: opacity);
     }
   }
 
@@ -275,7 +297,8 @@ class ThemeProvider extends ChangeNotifier {
       colorScheme: ColorScheme.light(
         primary: scheme.primaryColor,
         secondary: scheme.darkColor,
-        surface: scheme.cardColor,
+        surface: scheme.surfaceColor,
+        surfaceContainerHighest: scheme.cardColor,
         onPrimary: Colors.white,
         onSecondary: Colors.white,
         onSurface: scheme.textDarkColor,
@@ -346,7 +369,7 @@ class ThemeProvider extends ChangeNotifier {
         color: scheme.iconColor ?? scheme.textMediumColor,
       ),
       dividerTheme: DividerThemeData(
-        color: scheme.lightColor.withValues(alpha: 0.5),
+        color: scheme.dividerColor,
         thickness: 1,
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(

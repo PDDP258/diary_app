@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart' hide Badge;
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -25,6 +26,10 @@ import '../services/tag_system_service.dart';
 import '../models/tag_system.dart';
 import '../widgets/tag_selector_v3.dart';
 import '../widgets/voice_recorder_button_v2.dart';
+import '../widgets/diary_interactions.dart';
+import '../widgets/animated_feedback.dart';
+import '../widgets/smart_notifications.dart';
+import '../utils/design_extensions.dart';
 import '../services/voice_diary_service.dart';
 import 'dart:io';
 
@@ -189,13 +194,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
       });
 
       // 显示提示已关闭的反馈
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('提示已关闭，可在设置中重新开启'),
-          duration: Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      _showSnackBar('提示已关闭，可在设置中重新开启');
     }
   }
 
@@ -220,6 +219,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
+    HapticFeedback.lightImpact();
     try {
       // 检查图片数量限制
       if (_images.length >= _maxImageCount) {
@@ -552,6 +552,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
       return;
     }
 
+    HapticFeedback.mediumImpact();
     setState(() => _isSaving = true);
 
     // 检查是否有相关的纪念日/倒数日，自动添加纪念文字
@@ -647,7 +648,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
     } else if (mounted) {
       // 播放错误音效
       SoundService.playError();
-      _showSnackBar(provider.error ?? '保存失败');
+      _showSnackBar(provider.error ?? '保存失败', type: ToastType.error);
     }
   }
 
@@ -881,22 +882,13 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
       if (success && mounted) {
         Navigator.pop(context, true);
       } else if (mounted) {
-        _showSnackBar('删除失败');
+        _showSnackBar('删除失败', type: ToastType.error);
       }
     }
   }
 
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppTheme.smallRadius),
-        ),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
+  void _showSnackBar(String message, {ToastType type = ToastType.info}) {
+    context.showToast(message, type: type);
   }
 
   @override
@@ -912,8 +904,9 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
               icon: const Icon(Icons.delete_outline, color: Colors.red),
               onPressed: _deleteDiary,
             ),
-          TextButton(
-            onPressed: _isSaving ? null : _saveDiary,
+          // 保存按钮 - 使用波纹效果
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
             child: _isSaving
                 ? SizedBox(
                     width: 20,
@@ -923,15 +916,22 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
                       valueColor: AlwaysStoppedAnimation(scheme.primaryColor),
                     ),
                   )
-                : Text(
-                    '保存',
-                    style: TextStyle(
-                      color: scheme.textMediumColor,
-                      fontWeight: FontWeight.w600,
+                : RippleButton(
+                    onTap: _saveDiary,
+                    backgroundColor: scheme.primaryColor,
+                    rippleColor: Colors.white.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(20),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Text(
+                      '保存',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
           ),
-          const SizedBox(width: 8),
         ],
       ),
       body: Stack(
@@ -946,8 +946,8 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
                 _buildDateCard(),
                 const SizedBox(height: 16),
 
-                // 心情选择
-                _buildMoodSelector(),
+                // 心情选择 - 使用新的动画选择器
+                _buildAnimatedMoodSelector(),
                 // 双心情按钮
                 _buildSecondMoodButton(AppTheme.schemeOf(context)),
                 const SizedBox(height: 16),
@@ -1026,7 +1026,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
         gradient: LinearGradient(
           colors: [
             scheme.cardColor,
-            scheme.cardColor.withOpacity(0.95),
+            scheme.cardColor.withValues(alpha: 0.95),
           ],
         ),
         borderRadius: BorderRadius.circular(AppTheme.largeRadius),
@@ -1095,7 +1095,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
             colors: [
               scheme.cardColor,
               scheme.cardColor.withAlpha(245),
-              scheme.lightColor.withOpacity(0.12),
+              scheme.lightColor.withValues(alpha: 0.12),
             ],
             stops: const [0.0, 0.6, 1.0],
             begin: Alignment.topLeft,
@@ -1105,7 +1105,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
           boxShadow: AppTheme.cardShadow,
           // 添加微妙的边框增强层次感
           border: Border.all(
-            color: scheme.lightColor.withOpacity(0.15),
+            color: scheme.lightColor.withValues(alpha: 0.15),
             width: 1,
           ),
         ),
@@ -1118,9 +1118,9 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
                 // 优化：使用更柔和的渐变角度和色彩过渡
                 gradient: LinearGradient(
                   colors: [
-                    scheme.primaryColor.withOpacity(0.9),
+                    scheme.primaryColor.withValues(alpha: 0.9),
                     scheme.primaryColor,
-                    scheme.darkColor.withOpacity(0.85),
+                    scheme.darkColor.withValues(alpha: 0.85),
                   ],
                   stops: const [0.0, 0.5, 1.0],
                   begin: Alignment.topLeft,
@@ -1129,7 +1129,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
                 borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                 boxShadow: [
                   BoxShadow(
-                    color: scheme.primaryColor.withOpacity(0.25),
+                    color: scheme.primaryColor.withValues(alpha: 0.25),
                     blurRadius: 16,
                     offset: const Offset(0, 6),
                     spreadRadius: -2,
@@ -1151,7 +1151,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
                     DateFormat('MMM', 'zh_CN').format(_selectedDate),
                     style: TextStyle(
                       fontSize: 11,
-                      color: Colors.white.withOpacity(0.8),
+                      color: Colors.white.withValues(alpha: 0.8),
                     ),
                   ),
                 ],
@@ -1178,7 +1178,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: scheme.lightColor.withOpacity(0.4),
+                          color: scheme.lightColor.withValues(alpha: 0.4),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
@@ -1213,7 +1213,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: scheme.lightColor.withOpacity(0.3),
+                color: scheme.lightColor.withValues(alpha: 0.3),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -1224,6 +1224,113 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// 使用动画组件的心情选择器
+  Widget _buildAnimatedMoodSelector() {
+    final scheme = AppTheme.schemeOf(context);
+    final provider = context.watch<DiaryProvider>();
+    
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: _selectedMood != null
+              ? [
+                  scheme.cardColor,
+                  scheme.cardColor.withAlpha(250),
+                  Color(int.parse(
+                          _selectedMood!.color.replaceFirst('#', '0xFF')))
+                      .withValues(alpha: 0.08),
+                ]
+              : [
+                  scheme.cardColor,
+                  scheme.cardColor.withAlpha(245),
+                  scheme.lightColor.withValues(alpha: 0.1),
+                ],
+          stops: const [0.0, 0.7, 1.0],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppTheme.xlRadius),
+        boxShadow: AppTheme.cardShadow,
+        border: Border.all(
+          color: _selectedMood != null
+              ? Color(int.parse(
+                      _selectedMood!.color.replaceFirst('#', '0xFF')))
+                  .withValues(alpha: 0.2)
+              : scheme.lightColor.withValues(alpha: 0.12),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: _selectedMood != null
+                      ? Color(int.parse(
+                              _selectedMood!.color.replaceFirst('#', '0xFF')))
+                          .withValues(alpha: 0.15)
+                      : scheme.lightColor.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.sentiment_satisfied_rounded,
+                  color: _selectedMood != null
+                      ? Color(int.parse(
+                          _selectedMood!.color.replaceFirst('#', '0xFF')))
+                      : scheme.textMediumColor.withValues(alpha: 0.6),
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '今天的心情',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: scheme.textLightColor,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _selectedMood != null
+                          ? '${_selectedMood!.emoji} ${_selectedMood!.name}'
+                          : '选择心情',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: _selectedMood != null
+                            ? scheme.textDarkColor
+                            : scheme.textLightColor.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // 使用新的 MoodSelector 组件
+          MoodSelector(
+            moods: provider.moods,
+            selectedMood: _selectedMood,
+            onMoodSelected: (mood) {
+              setState(() => _selectedMood = mood);
+              HapticFeedback.mediumImpact();
+            },
+          ),
+        ],
       ),
     );
   }
@@ -1243,12 +1350,12 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
                     scheme.cardColor.withAlpha(250),
                     Color(int.parse(
                             _selectedMood!.color.replaceFirst('#', '0xFF')))
-                        .withOpacity(0.08),
+                        .withValues(alpha: 0.08),
                   ]
                 : [
                     scheme.cardColor,
                     scheme.cardColor.withAlpha(245),
-                    scheme.lightColor.withOpacity(0.1),
+                    scheme.lightColor.withValues(alpha: 0.1),
                   ],
             stops: const [0.0, 0.7, 1.0],
             begin: Alignment.topLeft,
@@ -1261,8 +1368,8 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
             color: _selectedMood != null
                 ? Color(int.parse(
                         _selectedMood!.color.replaceFirst('#', '0xFF')))
-                    .withOpacity(0.2)
-                : scheme.lightColor.withOpacity(0.12),
+                    .withValues(alpha: 0.2)
+                : scheme.lightColor.withValues(alpha: 0.12),
             width: 1,
           ),
         ),
@@ -1274,8 +1381,8 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
                 color: _selectedMood != null
                     ? Color(int.parse(
                             _selectedMood!.color.replaceFirst('#', '0xFF')))
-                        .withOpacity(0.2)
-                    : scheme.lightColor.withOpacity(0.3),
+                        .withValues(alpha: 0.2)
+                    : scheme.lightColor.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(
@@ -1283,7 +1390,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
                 color: _selectedMood != null
                     ? Color(int.parse(
                         _selectedMood!.color.replaceFirst('#', '0xFF')))
-                    : scheme.textMediumColor.withOpacity(0.6),
+                    : scheme.textMediumColor.withValues(alpha: 0.6),
                 size: 24,
               ),
             ),
@@ -1312,7 +1419,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
                           fontWeight: FontWeight.w600,
                           color: _selectedMood != null
                               ? scheme.textDarkColor
-                              : scheme.textLightColor.withOpacity(0.6),
+                              : scheme.textLightColor.withValues(alpha: 0.6),
                         ),
                       ),
                       // 双心情显示
@@ -1345,7 +1452,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: scheme.lightColor.withOpacity(0.3),
+                color: scheme.lightColor.withValues(alpha: 0.3),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -1472,13 +1579,13 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
                                       style: const TextStyle(fontSize: 12))
                                   : null,
                               label: Text(tag.name),
-                              backgroundColor: tagColor.withOpacity(0.15),
+                              backgroundColor: tagColor.withValues(alpha: 0.15),
                               labelStyle: TextStyle(
                                 fontSize: 12,
                                 color: tagColor,
                               ),
                               side:
-                                  BorderSide(color: tagColor.withOpacity(0.3)),
+                                  BorderSide(color: tagColor.withValues(alpha: 0.3)),
                               materialTapTargetSize:
                                   MaterialTapTargetSize.shrinkWrap,
                               padding: EdgeInsets.zero,
@@ -1508,7 +1615,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
           colors: [
             scheme.cardColor,
             scheme.cardColor.withAlpha(248),
-            scheme.lightColor.withOpacity(0.08),
+            scheme.lightColor.withValues(alpha: 0.08),
           ],
           stops: const [0.0, 0.7, 1.0],
           begin: Alignment.topLeft,
@@ -1517,7 +1624,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
         borderRadius: BorderRadius.circular(AppTheme.xlRadius),
         boxShadow: AppTheme.cardShadow,
         border: Border.all(
-          color: scheme.lightColor.withOpacity(0.12),
+          color: scheme.lightColor.withValues(alpha: 0.12),
           width: 1,
         ),
       ),
@@ -1526,7 +1633,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
         decoration: InputDecoration(
           hintText: '给今天起个标题（可选）',
           hintStyle: TextStyle(
-            color: scheme.textLightColor.withOpacity(0.5),
+            color: scheme.textLightColor.withValues(alpha: 0.5),
             fontSize: 16,
             fontWeight: FontWeight.w500,
           ),
@@ -1536,7 +1643,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
             margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: scheme.lightColor.withOpacity(0.3),
+              color: scheme.lightColor.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
@@ -1565,7 +1672,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
           colors: [
             scheme.cardColor,
             scheme.cardColor.withAlpha(248),
-            scheme.lightColor.withOpacity(0.08),
+            scheme.lightColor.withValues(alpha: 0.08),
           ],
           stops: const [0.0, 0.7, 1.0],
           begin: Alignment.topLeft,
@@ -1574,7 +1681,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
         borderRadius: BorderRadius.circular(AppTheme.xlRadius),
         boxShadow: AppTheme.cardShadow,
         border: Border.all(
-          color: scheme.lightColor.withOpacity(0.12),
+          color: scheme.lightColor.withValues(alpha: 0.12),
           width: 1,
         ),
       ),
@@ -1588,7 +1695,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: scheme.lightColor.withOpacity(0.3),
+                    color: scheme.lightColor.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
@@ -1620,7 +1727,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
             decoration: InputDecoration(
               hintText: '今天发生了什么有趣的事情？\n记录下美好的瞬间，留住珍贵的回忆...',
               hintStyle: TextStyle(
-                color: scheme.textLightColor.withOpacity(0.5),
+                color: scheme.textLightColor.withValues(alpha: 0.5),
                 height: 1.6,
                 fontSize: 15,
               ),
@@ -1652,15 +1759,15 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Color(_sentimentResult!.color).withOpacity(0.15),
-            Color(_sentimentResult!.color).withOpacity(0.05),
+            Color(_sentimentResult!.color).withValues(alpha: 0.15),
+            Color(_sentimentResult!.color).withValues(alpha: 0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
         border: Border.all(
-          color: Color(_sentimentResult!.color).withOpacity(0.3),
+          color: Color(_sentimentResult!.color).withValues(alpha: 0.3),
         ),
       ),
       child: Row(
@@ -1672,7 +1779,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
               gradient: LinearGradient(
                 colors: [
                   Color(_sentimentResult!.color),
-                  Color(_sentimentResult!.color).withOpacity(0.7),
+                  Color(_sentimentResult!.color).withValues(alpha: 0.7),
                 ],
               ),
               shape: BoxShape.circle,
@@ -1722,7 +1829,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
           colors: [
             scheme.cardColor,
             scheme.cardColor.withAlpha(248),
-            scheme.lightColor.withOpacity(0.08),
+            scheme.lightColor.withValues(alpha: 0.08),
           ],
           stops: const [0.0, 0.7, 1.0],
           begin: Alignment.topLeft,
@@ -1731,7 +1838,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
         borderRadius: BorderRadius.circular(AppTheme.xlRadius),
         boxShadow: AppTheme.cardShadow,
         border: Border.all(
-          color: scheme.lightColor.withOpacity(0.12),
+          color: scheme.lightColor.withValues(alpha: 0.12),
           width: 1,
         ),
       ),
@@ -1744,7 +1851,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: scheme.lightColor.withOpacity(0.3),
+                  color: scheme.lightColor.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
@@ -1768,7 +1875,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: scheme.primaryColor.withOpacity(0.1),
+                    color: scheme.primaryColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -1794,15 +1901,15 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
                     // 优化：更柔和的渐变，与整体风格统一
                     gradient: LinearGradient(
                       colors: [
-                        scheme.lightColor.withOpacity(0.25),
-                        scheme.lightColor.withOpacity(0.12),
+                        scheme.lightColor.withValues(alpha: 0.25),
+                        scheme.lightColor.withValues(alpha: 0.12),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(AppTheme.largeRadius),
                     border: Border.all(
-                      color: scheme.lightColor.withOpacity(0.5),
+                      color: scheme.lightColor.withValues(alpha: 0.5),
                       width: 2,
                     ),
                   ),
@@ -1857,6 +1964,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
                             return Container(
                               margin: const EdgeInsets.only(right: 12),
                               child: MotionPhotoWidget(
+                                key: ValueKey(_images[index]), // 使用图片路径作为Key，确保每个图片独立
                                 imagePath: _images[index],
                                 width: 100,
                                 height: 100,
@@ -1896,9 +2004,9 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
               // 优化：更柔和的渐变，添加角度
               gradient: LinearGradient(
                 colors: [
-                  scheme.primaryColor.withOpacity(0.85),
-                  scheme.primaryColor.withOpacity(0.75),
-                  scheme.darkColor.withOpacity(0.8),
+                  scheme.primaryColor.withValues(alpha: 0.85),
+                  scheme.primaryColor.withValues(alpha: 0.75),
+                  scheme.darkColor.withValues(alpha: 0.8),
                 ],
                 stops: const [0.0, 0.5, 1.0],
                 begin: Alignment.topLeft,
@@ -1907,7 +2015,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: scheme.primaryColor.withOpacity(0.2),
+                  color: scheme.primaryColor.withValues(alpha: 0.2),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                   spreadRadius: -2,
@@ -2018,16 +2126,9 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
         _contentController.text = '$currentText\n\n💡 $prompt';
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('灵感已添加！跟随心声写下你的回答'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      _showSnackBar('灵感已添加！跟随心声写下你的回答', type: ToastType.success);
     } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('没有写作灵感了')),
-      );
+      _showSnackBar('没有写作灵感了');
     }
   }
 
@@ -2077,17 +2178,13 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
           // 没有解锁模板时显示提示
           return GestureDetector(
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('还没有解锁日记模板，去扭蛋机抽奖吧！'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
+              _showSnackBar('还没有解锁日记模板，去扭蛋机抽奖吧！',
+                  type: ToastType.warning);
             },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: scheme.lightColor.withOpacity(0.3),
+                color: scheme.lightColor.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -2118,10 +2215,10 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: scheme.primaryColor.withOpacity(0.1),
+              color: scheme.primaryColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: scheme.primaryColor.withOpacity(0.3),
+                color: scheme.primaryColor.withValues(alpha: 0.3),
               ),
             ),
             child: Row(
@@ -2198,7 +2295,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
                         height: 48,
                         decoration: BoxDecoration(
                           color: GachaService.getRarityColor(template.rarity)
-                              .withOpacity(0.2),
+                              .withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Center(
@@ -2241,12 +2338,8 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
 
                           Navigator.pop(context);
 
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('已插入模板：${template.name}'),
-                              duration: const Duration(seconds: 1),
-                            ),
-                          );
+                          _showSnackBar('已插入模板：${template.name}',
+                              type: ToastType.success);
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: scheme.primaryColor,
@@ -2385,11 +2478,11 @@ class _ImageViewerScreenState extends State<ImageViewerScreen> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.6),
+                        color: Colors.black.withValues(alpha: 0.6),
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.orange.withOpacity(0.5),
+                            color: Colors.orange.withValues(alpha: 0.5),
                             blurRadius: 8,
                             spreadRadius: 2,
                           ),
@@ -2427,7 +2520,7 @@ class _ImageViewerScreenState extends State<ImageViewerScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.5),
+                          color: Colors.black.withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: const Text(

@@ -68,7 +68,7 @@ class _SmartRecallScreenState extends State<SmartRecallScreen> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      scheme.primaryColor.withOpacity(0.2),
+                      scheme.primaryColor.withValues(alpha: 0.2),
                       scheme.backgroundColor,
                     ],
                     begin: Alignment.topCenter,
@@ -93,7 +93,7 @@ class _SmartRecallScreenState extends State<SmartRecallScreen> {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: scheme.primaryColor.withOpacity(0.3),
+                              color: scheme.primaryColor.withValues(alpha: 0.3),
                               blurRadius: 20,
                               spreadRadius: 5,
                             ),
@@ -227,13 +227,13 @@ class _SmartRecallScreenState extends State<SmartRecallScreen> {
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: scheme.lightColor.withOpacity(0.3),
+              color: scheme.lightColor.withValues(alpha: 0.3),
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.history,
               size: 60,
-              color: scheme.textLightColor.withOpacity(0.5),
+              color: scheme.textLightColor.withValues(alpha: 0.5),
             ),
           ),
           const SizedBox(height: 24),
@@ -302,7 +302,7 @@ class _SmartRecallScreenState extends State<SmartRecallScreen> {
             gradient: LinearGradient(
               colors: [
                 scheme.cardColor,
-                scheme.cardColor.withOpacity(0.95),
+                scheme.cardColor.withValues(alpha: 0.95),
               ],
             ),
             borderRadius: BorderRadius.circular(AppTheme.largeRadius),
@@ -320,8 +320,8 @@ class _SmartRecallScreenState extends State<SmartRecallScreen> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      color.withOpacity(0.15),
-                      color.withOpacity(0.05),
+                      color.withValues(alpha: 0.15),
+                      color.withValues(alpha: 0.05),
                     ],
                   ),
                   borderRadius: const BorderRadius.only(
@@ -351,14 +351,14 @@ class _SmartRecallScreenState extends State<SmartRecallScreen> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: color.withOpacity(0.1),
+                        color: color.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(AppTheme.chipRadius),
                       ),
                       child: Text(
                         recall.subtitle,
                         style: TextStyle(
                           fontSize: 12,
-                          color: color.withOpacity(0.8),
+                          color: color.withValues(alpha: 0.8),
                         ),
                       ),
                     ),
@@ -499,14 +499,14 @@ class _SmartRecallHomeCardState extends State<SmartRecallHomeCard> {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                color.withOpacity(0.15),
+                color.withValues(alpha: 0.15),
                 scheme.cardColor,
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(AppTheme.largeRadius),
-            border: Border.all(color: color.withOpacity(0.3)),
+            border: Border.all(color: color.withValues(alpha: 0.3)),
             boxShadow: AppTheme.cardShadow,
           ),
           child: Row(
@@ -516,7 +516,7 @@ class _SmartRecallHomeCardState extends State<SmartRecallHomeCard> {
                 height: 48,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [color, color.withOpacity(0.7)],
+                    colors: [color, color.withValues(alpha: 0.7)],
                   ),
                   shape: BoxShape.circle,
                 ),

@@ -64,6 +64,14 @@ class AppTheme {
   static const double buttonRadius = 24.0;   // 按钮专用圆角
   static const double chipRadius = 20.0;     // 标签芯片圆角
   static const double avatarRadius = 16.0;   // 头像圆角
+  // 明确命名别名（推荐在新代码中使用）
+  static const double radius12 = 12.0;
+  static const double radius16 = 16.0;
+  static const double radius20 = 20.0;
+  static const double radius24 = 24.0;
+  static const double radius28 = 28.0;
+  static const double radius32 = 32.0;
+  static const double radius36 = 36.0;
   
   // ========== 间距系统 - 更舒适 ==========
   static const double spacingXs = 4.0;
@@ -106,6 +114,12 @@ class AppTheme {
   static Color textDarkOf(BuildContext context) => schemeOf(context).textDarkColor;
   static Color textMediumOf(BuildContext context) => schemeOf(context).textMediumColor;
   static Color textLightOf(BuildContext context) => schemeOf(context).textLightColor;
+  static Color surfaceOf(BuildContext context) => schemeOf(context).surfaceColor;
+  static Color dividerOf(BuildContext context) => schemeOf(context).dividerColor;
+  static Color shadowColorOf(BuildContext context) => schemeOf(context).shadowColor;
+  static Color successOf(BuildContext context) => schemeOf(context).successColor;
+  static Color warningOf(BuildContext context) => schemeOf(context).warningColor;
+  static Color errorOf(BuildContext context) => schemeOf(context).errorColor;
 
   // ========== 温馨阴影系统 ==========
   
@@ -135,7 +149,7 @@ class AppTheme {
   /// 温馨 glow 效果
   static List<BoxShadow> get warmGlow => [
     BoxShadow(
-      color: warmPink.withOpacity(0.2),
+      color: warmPink.withValues(alpha: 0.2),
       blurRadius: 20,
       offset: const Offset(0, 4),
       spreadRadius: -5,
@@ -155,7 +169,7 @@ class AppTheme {
   /// 发光阴影 - 用于高亮元素
   static List<BoxShadow> glowShadow(Color color) => [
     BoxShadow(
-      color: color.withOpacity(0.4),
+      color: color.withValues(alpha: 0.4),
       blurRadius: 20,
       offset: const Offset(0, 4),
       spreadRadius: -4,
@@ -164,17 +178,17 @@ class AppTheme {
 
   // ========== 边框系统 - 柔和 ==========
   static BorderSide softBorder(Color color) => BorderSide(
-    color: color.withOpacity(0.2),
+    color: color.withValues(alpha: 0.2),
     width: 1,
   );
   
   static BorderSide mediumBorder(Color color) => BorderSide(
-    color: color.withOpacity(0.3),
+    color: color.withValues(alpha: 0.3),
     width: 1.5,
   );
   
   static BorderSide focusBorder(Color color) => BorderSide(
-    color: color.withOpacity(0.5),
+    color: color.withValues(alpha: 0.5),
     width: 2,
   );
   
@@ -182,7 +196,7 @@ class AppTheme {
   static BoxDecoration softDecoration(Color color) => BoxDecoration(
     color: color,
     borderRadius: BorderRadius.circular(mediumRadius),
-    border: Border.all(color: color.withOpacity(0.1)),
+    border: Border.all(color: color.withValues(alpha: 0.1)),
   );
   
   // 纸张纹理效果装饰
@@ -220,7 +234,7 @@ class AppTheme {
     return LinearGradient(
       colors: [
         scheme.cardColor,
-        scheme.cardColor.withOpacity(0.95),
+        scheme.cardColor.withValues(alpha: 0.95),
       ],
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
@@ -231,8 +245,8 @@ class AppTheme {
   static LinearGradient glassGradient(Color baseColor) {
     return LinearGradient(
       colors: [
-        baseColor.withOpacity(0.7),
-        baseColor.withOpacity(0.3),
+        baseColor.withValues(alpha: 0.7),
+        baseColor.withValues(alpha: 0.3),
       ],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
@@ -293,7 +307,7 @@ class AppTheme {
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(buttonRadius),
-        borderSide: BorderSide(color: lightMint.withOpacity(0.3)),
+        borderSide: BorderSide(color: lightMint.withValues(alpha: 0.3)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(buttonRadius),
@@ -301,7 +315,7 @@ class AppTheme {
       ),
       contentPadding: inputPadding,
       hintStyle: TextStyle(
-        color: textLight.withOpacity(0.5),
+        color: textLight.withValues(alpha: 0.5),
         fontSize: 15,
         fontWeight: FontWeight.w400,
       ),
@@ -341,7 +355,7 @@ class AppTheme {
       size: 24,
     ),
     dividerTheme: DividerThemeData(
-      color: lightMint.withOpacity(0.2),
+      color: lightMint.withValues(alpha: 0.2),
       thickness: 0.5,
       space: 1,
       indent: spacingMd,
@@ -349,7 +363,7 @@ class AppTheme {
     ),
     chipTheme: ChipThemeData(
       backgroundColor: Colors.white,
-      selectedColor: primaryMint.withOpacity(0.2),
+      selectedColor: primaryMint.withValues(alpha: 0.2),
       labelStyle: const TextStyle(
         fontSize: 13,
         fontWeight: FontWeight.w500,
@@ -358,7 +372,7 @@ class AppTheme {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(chipRadius),
       ),
-      side: BorderSide(color: lightMint.withOpacity(0.3)),
+      side: BorderSide(color: lightMint.withValues(alpha: 0.3)),
     ),
     listTileTheme: ListTileThemeData(
       shape: RoundedRectangleBorder(
@@ -370,7 +384,7 @@ class AppTheme {
     ),
     tooltipTheme: TooltipThemeData(
       decoration: BoxDecoration(
-        color: textDark.withOpacity(0.9),
+        color: textDark.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(smallRadius),
       ),
       textStyle: const TextStyle(
@@ -425,7 +439,7 @@ class AppTheme {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(buttonRadius),
       ),
-      backgroundColor: textDark.withOpacity(0.95),
+      backgroundColor: textDark.withValues(alpha: 0.95),
       contentTextStyle: const TextStyle(
         color: Colors.white,
         fontSize: 14,

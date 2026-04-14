@@ -125,7 +125,7 @@ class _SwipeableListItemState extends State<SwipeableListItem>
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(dragProgress * 0.8),
+                  color: Colors.red.withValues(alpha: dragProgress * 0.8),
                   borderRadius: BorderRadius.circular(AppTheme.largeRadius),
                 ),
                 alignment: Alignment.centerRight,
@@ -318,8 +318,8 @@ class AnimatedListItemContainer extends StatelessWidget {
           onTap: onTap,
           onLongPress: onLongPress,
           borderRadius: BorderRadius.circular(AppTheme.largeRadius),
-          splashColor: scheme.primaryColor.withOpacity(0.1),
-          highlightColor: scheme.primaryColor.withOpacity(0.05),
+          splashColor: scheme.primaryColor.withValues(alpha: 0.1),
+          highlightColor: scheme.primaryColor.withValues(alpha: 0.05),
           child: child,
         ),
       ),

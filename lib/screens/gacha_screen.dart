@@ -5,6 +5,8 @@ import '../services/gacha_service.dart';
 import '../services/sound_service.dart';
 import '../config/app_theme.dart';
 import '../providers/theme_provider.dart';
+import '../utils/design_extensions.dart';
+import '../widgets/widgets.dart';
 import 'main_screen.dart';
 
 class GachaScreen extends StatefulWidget {
@@ -117,9 +119,7 @@ class _GachaScreenState extends State<GachaScreen>
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('抽奖失败: $e')),
-        );
+        context.showError('抽奖失败: $e');
       }
     } finally {
       if (mounted) {
@@ -194,7 +194,7 @@ class _GachaScreenState extends State<GachaScreen>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -210,7 +210,7 @@ class _GachaScreenState extends State<GachaScreen>
                 '今日剩余',
                 style: TextStyle(
                   fontSize: 14,
-                  color: scheme.textMediumColor.withOpacity(0.7),
+                  color: scheme.textMediumColor.withValues(alpha: 0.7),
                 ),
               ),
               const SizedBox(height: 4),
@@ -218,7 +218,7 @@ class _GachaScreenState extends State<GachaScreen>
                 '写第一篇日记+1次，满3篇再+1次',
                 style: TextStyle(
                   fontSize: 12,
-                  color: scheme.textMediumColor.withOpacity(0.5),
+                  color: scheme.textMediumColor.withValues(alpha: 0.5),
                 ),
               ),
             ],
@@ -258,15 +258,15 @@ class _GachaScreenState extends State<GachaScreen>
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                Colors.amber.withOpacity(0.15),
-                scheme.primaryColor.withOpacity(0.1),
+                Colors.amber.withValues(alpha: 0.15),
+                scheme.primaryColor.withValues(alpha: 0.1),
               ],
             ),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: hasResources
-                  ? Colors.amber.withOpacity(0.5)
-                  : scheme.lightColor.withOpacity(0.5),
+                  ? Colors.amber.withValues(alpha: 0.5)
+                  : scheme.lightColor.withValues(alpha: 0.5),
             ),
           ),
           child: Row(
@@ -358,7 +358,7 @@ class _GachaScreenState extends State<GachaScreen>
             borderRadius: BorderRadius.circular(30),
             boxShadow: [
               BoxShadow(
-                color: scheme.lightColor.withOpacity(0.5),
+                color: scheme.lightColor.withValues(alpha: 0.5),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -405,7 +405,7 @@ class _GachaScreenState extends State<GachaScreen>
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.3),
+                          color: Colors.black.withValues(alpha: 0.3),
                           blurRadius: 5,
                           offset: const Offset(0, 3),
                         ),
@@ -440,13 +440,13 @@ class _GachaScreenState extends State<GachaScreen>
         shape: BoxShape.circle,
         gradient: RadialGradient(
           colors: [
-            color.withOpacity(0.9),
-            color.withOpacity(0.6),
+            color.withValues(alpha: 0.9),
+            color.withValues(alpha: 0.6),
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.5),
+            color: color.withValues(alpha: 0.5),
             blurRadius: 5,
             offset: const Offset(2, 2),
           ),
@@ -485,39 +485,78 @@ class _GachaScreenState extends State<GachaScreen>
     final rarityName = GachaService.getRarityName(reward.rarity);
     final description = _getRewardDescription(reward);
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOut,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: scheme.cardColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: rarityColor,
-          width: 3,
-        ),
-        boxShadow: [
+    // 根据稀有度构建光晕
+    final List<BoxShadow> glowShadows = switch (reward.rarity) {
+      GachaRarity.legendary => [
           BoxShadow(
-            color: rarityColor.withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
+            color: rarityColor.withValues(alpha: 0.55),
+            blurRadius: 28,
+            offset: const Offset(0, 8),
+            spreadRadius: 2,
+          ),
+          BoxShadow(
+            color: rarityColor.withValues(alpha: 0.25),
+            blurRadius: 60,
+            offset: const Offset(0, 12),
+            spreadRadius: 6,
           ),
         ],
+      GachaRarity.rare => [
+          BoxShadow(
+            color: rarityColor.withValues(alpha: 0.4),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+            spreadRadius: 0,
+          ),
+        ],
+      GachaRarity.uncommon => [
+          BoxShadow(
+            color: rarityColor.withValues(alpha: 0.25),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
+            spreadRadius: -1,
+          ),
+        ],
+      _ => [
+          BoxShadow(
+            color: rarityColor.withValues(alpha: 0.15),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+            spreadRadius: -2,
+          ),
+        ],
+    };
+
+    Widget cardContent = Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            scheme.cardColor,
+            scheme.surfaceColor,
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: rarityColor.withValues(alpha: 0.6),
+          width: reward.rarity == GachaRarity.legendary ? 3.5 : 2.5,
+        ),
+        boxShadow: glowShadows,
       ),
       child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: rarityColor.withOpacity(0.2),
-              shape: BoxShape.circle,
-            ),
-            child: Text(
-              reward.emoji,
-              style: const TextStyle(fontSize: 48),
-            ),
-          ),
-          const SizedBox(height: 16),
+          // 传说级脉冲光环
+          if (reward.rarity == GachaRarity.legendary)
+            PulseAnimation(
+              duration: const Duration(milliseconds: 1200),
+              pulseColor: rarityColor,
+              child: _buildRewardEmoji(reward.emoji, rarityColor),
+            )
+          else
+            _buildRewardEmoji(reward.emoji, rarityColor),
+          const SizedBox(height: 18),
           Text(
             reward.name,
             style: TextStyle(
@@ -528,10 +567,21 @@ class _GachaScreenState extends State<GachaScreen>
           ),
           const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
             decoration: BoxDecoration(
-              color: rarityColor.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
+              gradient: LinearGradient(
+                colors: [
+                  rarityColor.withValues(alpha: 0.25),
+                  rarityColor.withValues(alpha: 0.1),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: rarityColor.withValues(alpha: 0.4),
+                width: 1,
+              ),
             ),
             child: Text(
               rarityName,
@@ -546,20 +596,22 @@ class _GachaScreenState extends State<GachaScreen>
           Text(
             description,
             style: TextStyle(
-              fontSize: 16,
-              color: scheme.textMediumColor.withOpacity(0.7),
+              fontSize: 15,
+              color: scheme.textMediumColor.withValues(alpha: 0.85),
+              height: 1.4,
             ),
             textAlign: TextAlign.center,
           ),
           if (reward.effect != null && reward.effect!.isNotEmpty) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: scheme.primaryColor.withOpacity(0.1),
+                color: scheme.primaryColor.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: scheme.primaryColor.withOpacity(0.3),
+                  color: scheme.primaryColor.withValues(alpha: 0.25),
                 ),
               ),
               child: Row(
@@ -583,79 +635,102 @@ class _GachaScreenState extends State<GachaScreen>
               ),
             ),
           ],
-          // 货币奖励首次获得提示
           if (!result.isDuplicate &&
               reward.type == GachaRewardType.currency) ...[
             const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.green.withOpacity(0.5),
-                  width: 2,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.account_balance_wallet,
-                    color: Colors.green,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      '已累加到账户！',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.green,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            _buildRewardTag(
+              icon: Icons.account_balance_wallet,
+              text: '已累加到账户！',
+              color: Colors.green,
             ),
           ],
           if (result.isDuplicate && result.duplicateBonus != null) ...[
             const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.orange.withOpacity(0.5),
-                  width: 2,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.recycling,
-                    color: Colors.orange,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      result.duplicateBonus!,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.orange,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ],
-              ),
+            _buildRewardTag(
+              icon: Icons.recycling,
+              text: result.duplicateBonus!,
+              color: Colors.orange,
             ),
           ],
+        ],
+      ),
+    );
+
+    // 首次展示时添加弹性入场动画
+    return TweenAnimationBuilder<double>(
+      key: ValueKey('reward_${reward.id}_${result.isDuplicate}'),
+      tween: Tween<double>(begin: 0.85, end: 1.0),
+      duration: const Duration(milliseconds: 500),
+      curve: AppTheme.spring,
+      builder: (context, value, child) {
+        return Transform.scale(
+          scale: value,
+          child: Opacity(
+            opacity: value.clamp(0.0, 1.0),
+            child: child,
+          ),
+        );
+      },
+      child: cardContent,
+    );
+  }
+
+  Widget _buildRewardEmoji(String emoji, Color rarityColor) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: RadialGradient(
+          colors: [
+            rarityColor.withValues(alpha: 0.25),
+            rarityColor.withValues(alpha: 0.05),
+          ],
+        ),
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: rarityColor.withValues(alpha: 0.3),
+          width: 1.5,
+        ),
+      ),
+      child: Text(
+        emoji,
+        style: const TextStyle(fontSize: 52),
+      ),
+    );
+  }
+
+  Widget _buildRewardTag({
+    required IconData icon,
+    required String text,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            color.withValues(alpha: 0.12),
+            color.withValues(alpha: 0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: color.withValues(alpha: 0.45),
+          width: 1.5,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 10),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
         ],
       ),
     );
@@ -671,7 +746,7 @@ class _GachaScreenState extends State<GachaScreen>
             : _startDraw,
         style: ElevatedButton.styleFrom(
           backgroundColor: scheme.primaryColor,
-          disabledBackgroundColor: scheme.primaryColor.withOpacity(0.5),
+          disabledBackgroundColor: scheme.primaryColor.withValues(alpha: 0.5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -706,7 +781,7 @@ class _GachaScreenState extends State<GachaScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: scheme.lightColor.withOpacity(0.3),
+        color: scheme.lightColor.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -755,7 +830,7 @@ class _GachaScreenState extends State<GachaScreen>
           child: Container(
             height: 8,
             decoration: BoxDecoration(
-              color: scheme.textLightColor.withOpacity(0.3),
+              color: scheme.textLightColor.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(4),
             ),
             child: FractionallySizedBox(
@@ -910,7 +985,7 @@ class _GachaScreenState extends State<GachaScreen>
         color: scheme.cardColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: rarityColor.withOpacity(0.3),
+          color: rarityColor.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -920,7 +995,7 @@ class _GachaScreenState extends State<GachaScreen>
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: rarityColor.withOpacity(0.1),
+              color: rarityColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Center(
@@ -950,7 +1025,7 @@ class _GachaScreenState extends State<GachaScreen>
                       padding: const EdgeInsets.symmetric(
                           horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: rarityColor.withOpacity(0.2),
+                        color: rarityColor.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -1131,13 +1206,13 @@ class _GachaScreenState extends State<GachaScreen>
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
-                                scheme.primaryColor.withOpacity(0.1),
-                                scheme.primaryColor.withOpacity(0.05),
+                                scheme.primaryColor.withValues(alpha: 0.1),
+                                scheme.primaryColor.withValues(alpha: 0.05),
                               ],
                             ),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: scheme.primaryColor.withOpacity(0.2),
+                              color: scheme.primaryColor.withValues(alpha: 0.2),
                             ),
                           ),
                           child: Column(
@@ -1179,7 +1254,7 @@ class _GachaScreenState extends State<GachaScreen>
                                 child: LinearProgressIndicator(
                                   value: levelInfo['progress'] as double,
                                   backgroundColor:
-                                      scheme.lightColor.withOpacity(0.3),
+                                      scheme.lightColor.withValues(alpha: 0.3),
                                   valueColor: AlwaysStoppedAnimation<Color>(
                                       scheme.primaryColor),
                                   minHeight: 6,
@@ -1228,7 +1303,7 @@ class _GachaScreenState extends State<GachaScreen>
                                         backgroundColor: scheme.primaryColor,
                                         foregroundColor: Colors.white,
                                         disabledBackgroundColor:
-                                            scheme.lightColor.withOpacity(0.3),
+                                            scheme.lightColor.withValues(alpha: 0.3),
                                       ),
                                     ),
                                   ),
@@ -1248,7 +1323,7 @@ class _GachaScreenState extends State<GachaScreen>
                                         backgroundColor: Colors.amber,
                                         foregroundColor: Colors.white,
                                         disabledBackgroundColor:
-                                            Colors.amber.withOpacity(0.2),
+                                            Colors.amber.withValues(alpha: 0.2),
                                       ),
                                     ),
                                   ),
@@ -1346,7 +1421,7 @@ class _GachaScreenState extends State<GachaScreen>
         color: scheme.cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: color.withOpacity(0.3),
+          color: color.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
@@ -1354,7 +1429,7 @@ class _GachaScreenState extends State<GachaScreen>
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: color, size: 20),
@@ -1390,10 +1465,10 @@ class _GachaScreenState extends State<GachaScreen>
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: color.withOpacity(0.3),
+          color: color.withValues(alpha: 0.3),
         ),
       ),
       child: Column(
@@ -1430,12 +1505,12 @@ class _GachaScreenState extends State<GachaScreen>
         decoration: BoxDecoration(
           color: isCollected
               ? scheme.cardColor
-              : scheme.lightColor.withOpacity(0.3),
+              : scheme.lightColor.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isCollected
-                ? rarityColor.withOpacity(0.5)
-                : scheme.textLightColor.withOpacity(0.3),
+                ? rarityColor.withValues(alpha: 0.5)
+                : scheme.textLightColor.withValues(alpha: 0.3),
           ),
         ),
         child: Stack(
@@ -1471,7 +1546,7 @@ class _GachaScreenState extends State<GachaScreen>
                       padding: const EdgeInsets.symmetric(
                           horizontal: 6, vertical: 1),
                       decoration: BoxDecoration(
-                        color: rarityColor.withOpacity(0.2),
+                        color: rarityColor.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -1520,7 +1595,7 @@ class _GachaScreenState extends State<GachaScreen>
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: rarityColor.withOpacity(0.1),
+                color: rarityColor.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Center(
@@ -1546,7 +1621,7 @@ class _GachaScreenState extends State<GachaScreen>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
-                color: rarityColor.withOpacity(0.2),
+                color: rarityColor.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
@@ -1562,7 +1637,7 @@ class _GachaScreenState extends State<GachaScreen>
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: scheme.lightColor.withOpacity(0.3),
+                color: scheme.lightColor.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
@@ -1622,7 +1697,7 @@ class _GachaScreenState extends State<GachaScreen>
       decoration: BoxDecoration(
         color: scheme.cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: scheme.lightColor.withOpacity(0.5)),
+        border: Border.all(color: scheme.lightColor.withValues(alpha: 0.5)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1697,7 +1772,7 @@ class _GachaScreenState extends State<GachaScreen>
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: scheme.primaryColor.withOpacity(0.1),
+                          color: scheme.primaryColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
@@ -1841,7 +1916,7 @@ class _GachaScreenState extends State<GachaScreen>
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: scheme.primaryColor.withOpacity(0.3),
+                color: scheme.primaryColor.withValues(alpha: 0.3),
                 blurRadius: 20,
                 spreadRadius: 5,
               ),
@@ -1863,7 +1938,7 @@ class _GachaScreenState extends State<GachaScreen>
                         width: 80,
                         height: 80,
                         decoration: BoxDecoration(
-                          color: scheme.primaryColor.withOpacity(0.2),
+                          color: scheme.primaryColor.withValues(alpha: 0.2),
                           shape: BoxShape.circle,
                         ),
                         child: Center(
@@ -1899,7 +1974,7 @@ class _GachaScreenState extends State<GachaScreen>
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.amber.withOpacity(0.2),
+                  color: Colors.amber.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Text(
@@ -1973,7 +2048,7 @@ class _GachaScreenState extends State<GachaScreen>
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.amber.withOpacity(0.1),
+                          color: Colors.amber.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
@@ -2130,7 +2205,7 @@ class _GachaScreenState extends State<GachaScreen>
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.amber.withOpacity(0.3),
+                color: Colors.amber.withValues(alpha: 0.3),
                 blurRadius: 20,
                 spreadRadius: 5,
               ),
@@ -2152,8 +2227,8 @@ class _GachaScreenState extends State<GachaScreen>
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            Colors.amber.withOpacity(0.3),
-                            Colors.orange.withOpacity(0.3),
+                            Colors.amber.withValues(alpha: 0.3),
+                            Colors.orange.withValues(alpha: 0.3),
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
@@ -2192,7 +2267,7 @@ class _GachaScreenState extends State<GachaScreen>
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.amber.withOpacity(0.2),
+                  color: Colors.amber.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Text(

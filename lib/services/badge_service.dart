@@ -2351,7 +2351,7 @@ class BadgeUnlockDialog extends StatefulWidget {
     return showDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black.withOpacity(0.7), // 更深的背景遮罩
+      barrierColor: Colors.black.withValues(alpha: 0.7), // 更深的背景遮罩
       useSafeArea: true,
       builder: (context) => WillPopScope(
         // 禁止返回键关闭
@@ -2452,7 +2452,7 @@ class _BadgeUnlockDialogState extends State<BadgeUnlockDialog>
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: widget.badge.color.withOpacity(0.3),
+                  color: widget.badge.color.withValues(alpha: 0.3),
                   blurRadius: 30,
                   spreadRadius: -5,
                 ),
@@ -2474,14 +2474,14 @@ class _BadgeUnlockDialogState extends State<BadgeUnlockDialog>
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            widget.badge.color.withOpacity(0.9),
-                            widget.badge.color.withOpacity(0.5),
+                            widget.badge.color.withValues(alpha: 0.9),
+                            widget.badge.color.withValues(alpha: 0.5),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            color: widget.badge.color.withOpacity(0.4),
+                            color: widget.badge.color.withValues(alpha: 0.4),
                             blurRadius: 16,
                             offset: const Offset(0, 8),
                           ),
@@ -2570,7 +2570,7 @@ class BatchBadgeUnlockDialog extends StatefulWidget {
     return showDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black.withOpacity(0.7),
+      barrierColor: Colors.black.withValues(alpha: 0.7),
       useSafeArea: true,
       builder: (context) => WillPopScope(
         onWillPop: () async => false,
@@ -2634,7 +2634,7 @@ class _BatchBadgeUnlockDialogState extends State<BatchBadgeUnlockDialog>
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: primaryColor.withOpacity(0.3),
+                    color: primaryColor.withValues(alpha: 0.3),
                     blurRadius: 30,
                     spreadRadius: -5,
                   ),
@@ -2696,10 +2696,10 @@ class _BatchBadgeUnlockDialogState extends State<BatchBadgeUnlockDialog>
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: badge.color.withOpacity(0.1),
+        color: badge.color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: badge.color.withOpacity(0.3),
+          color: badge.color.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -2713,8 +2713,8 @@ class _BatchBadgeUnlockDialogState extends State<BatchBadgeUnlockDialog>
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  badge.color.withOpacity(0.9),
-                  badge.color.withOpacity(0.5),
+                  badge.color.withValues(alpha: 0.9),
+                  badge.color.withValues(alpha: 0.5),
                 ],
               ),
               borderRadius: BorderRadius.circular(12),

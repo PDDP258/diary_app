@@ -33,28 +33,28 @@ class GoalProgressCard extends StatelessWidget {
                     end: Alignment.bottomRight,
                     colors: [
                       Colors.green.shade50,
-                      Colors.green.shade100.withOpacity(0.5),
+                      Colors.green.shade100.withValues(alpha: 0.5),
                     ],
                   )
                 : LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      scheme.cardColor.withOpacity(0.9),
-                      scheme.cardColor.withOpacity(0.7),
+                      scheme.cardColor.withValues(alpha: 0.9),
+                      scheme.cardColor.withValues(alpha: 0.7),
                     ],
                   ),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: goal.isCompleted
-                  ? Colors.green.withOpacity(0.3)
-                  : scheme.primaryColor.withOpacity(0.1),
+                  ? Colors.green.withValues(alpha: 0.3)
+                  : scheme.primaryColor.withValues(alpha: 0.1),
               width: 1.5,
             ),
             boxShadow: [
               BoxShadow(
                 color: (goal.isCompleted ? Colors.green : scheme.primaryColor)
-                    .withOpacity(0.08),
+                    .withValues(alpha: 0.08),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
                 spreadRadius: -2,
@@ -134,7 +134,7 @@ class GoalProgressCard extends StatelessWidget {
                       child: LinearProgressIndicator(
                         value: goal.progress,
                         minHeight: 6,
-                        backgroundColor: scheme.lightColor.withOpacity(0.3),
+                        backgroundColor: scheme.lightColor.withValues(alpha: 0.3),
                         valueColor: AlwaysStoppedAnimation<Color>(
                           goal.isCompleted ? Colors.green : scheme.primaryColor,
                         ),
@@ -152,7 +152,7 @@ class GoalProgressCard extends StatelessWidget {
                               vertical: 3,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.orange.withOpacity(0.15),
+                              color: Colors.orange.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Row(
@@ -180,7 +180,7 @@ class GoalProgressCard extends StatelessWidget {
                               vertical: 3,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.green.withOpacity(0.15),
+                              color: Colors.green.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Row(
@@ -237,9 +237,9 @@ class GoalProgressCard extends StatelessWidget {
           CircularProgressIndicator(
             value: 1,
             strokeWidth: 8,
-            backgroundColor: scheme.lightColor.withOpacity(0.2),
+            backgroundColor: scheme.lightColor.withValues(alpha: 0.2),
             valueColor: AlwaysStoppedAnimation<Color>(
-              scheme.lightColor.withOpacity(0.1),
+              scheme.lightColor.withValues(alpha: 0.1),
             ),
           ),
           // 进度圆环
@@ -290,10 +290,10 @@ class GoalProgressCard extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: scheme.cardColor.withOpacity(0.5),
+        color: scheme.cardColor.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: scheme.primaryColor.withOpacity(0.1),
+          color: scheme.primaryColor.withValues(alpha: 0.1),
           width: 1,
         ),
       ),
@@ -303,12 +303,12 @@ class GoalProgressCard extends StatelessWidget {
             width: 72,
             height: 72,
             decoration: BoxDecoration(
-              color: scheme.lightColor.withOpacity(0.2),
+              color: scheme.lightColor.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.flag_outlined,
-              color: scheme.primaryColor.withOpacity(0.5),
+              color: scheme.primaryColor.withValues(alpha: 0.5),
               size: 32,
             ),
           ),
@@ -515,7 +515,7 @@ class _GoalSettingSheetState extends State<GoalSettingSheet> {
                         });
                       }
                     },
-                    selectedColor: scheme.primaryColor.withOpacity(0.15),
+                    selectedColor: scheme.primaryColor.withValues(alpha: 0.15),
                     backgroundColor: scheme.cardColor,
                     labelStyle: TextStyle(
                       color: isSelected ? scheme.primaryColor : scheme.textDarkColor,
@@ -536,7 +536,7 @@ class _GoalSettingSheetState extends State<GoalSettingSheet> {
                       setState(() => _isCustomTarget = true);
                     }
                   },
-                  selectedColor: scheme.primaryColor.withOpacity(0.15),
+                  selectedColor: scheme.primaryColor.withValues(alpha: 0.15),
                   backgroundColor: scheme.cardColor,
                   labelStyle: TextStyle(
                     color: _isCustomTarget ? scheme.primaryColor : scheme.textDarkColor,
@@ -558,7 +558,7 @@ class _GoalSettingSheetState extends State<GoalSettingSheet> {
                   color: scheme.cardColor,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: scheme.primaryColor.withOpacity(0.3),
+                    color: scheme.primaryColor.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Row(
@@ -692,7 +692,7 @@ class _GoalCelebrationState extends State<GoalCelebration>
     return FadeTransition(
       opacity: Tween<double>(begin: 1, end: 0).animate(_fadeController),
       child: Container(
-        color: Colors.black.withOpacity(0.5),
+        color: Colors.black.withValues(alpha: 0.5),
         child: Center(
           child: ScaleTransition(
             scale: Tween<double>(begin: 0.5, end: 1).animate(
@@ -709,7 +709,7 @@ class _GoalCelebrationState extends State<GoalCelebration>
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 20,
                     spreadRadius: 5,
                   ),

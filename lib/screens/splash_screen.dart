@@ -43,7 +43,7 @@ class _CoverOutlinePainter extends CustomPainter {
       Rect.fromLTWH(left + spineWidth * 0.5, top + bookHeight * 0.05, spineWidth, bookHeight * 0.9),
       Radius.circular(size.width * 0.01),
     );
-    canvas.drawRRect(spineRect, paint..color = color.withOpacity(0.7));
+    canvas.drawRRect(spineRect, paint..color = color.withValues(alpha: 0.7));
 
     // 绘制顶部装饰区域（模拟图片区域）
     final headerHeight = bookHeight * 0.35;
@@ -51,13 +51,13 @@ class _CoverOutlinePainter extends CustomPainter {
       Rect.fromLTWH(left + spineWidth * 2, top + bookHeight * 0.08, bookWidth - spineWidth * 3, headerHeight),
       Radius.circular(size.width * 0.02),
     );
-    canvas.drawRRect(headerRect, paint..color = color.withOpacity(0.6));
+    canvas.drawRRect(headerRect, paint..color = color.withValues(alpha: 0.6));
 
     // 绘制中部装饰线条
     final lineY = top + headerHeight + bookHeight * 0.15;
     canvas.drawRect(
       Rect.fromLTWH(left + spineWidth * 2, lineY, bookWidth * 0.3, bookHeight * 0.015),
-      paint..color = color.withOpacity(0.5),
+      paint..color = color.withValues(alpha: 0.5),
     );
 
     // 绘制底部装饰条（模拟作者信息区域）
@@ -65,14 +65,14 @@ class _CoverOutlinePainter extends CustomPainter {
       Rect.fromLTWH(left + bookWidth * 0.15, top + bookHeight * 0.65, bookWidth * 0.7, bookHeight * 0.25),
       Radius.circular(size.width * 0.015),
     );
-    canvas.drawRRect(footerRect, paint..color = color.withOpacity(0.4));
+    canvas.drawRRect(footerRect, paint..color = color.withValues(alpha: 0.4));
 
     // 绘制右下角装饰点
     final decorationSize = bookWidth * 0.12;
     canvas.drawCircle(
       Offset(left + bookWidth - decorationSize, top + bookHeight - decorationSize),
       decorationSize * 0.5,
-      paint..color = color.withOpacity(0.5),
+      paint..color = color.withValues(alpha: 0.5),
     );
   }
 
@@ -204,7 +204,7 @@ class _SplashScreenState extends State<SplashScreen> {
     
     // 使用主题背景色，轮廓颜色为主题浅色
     final backgroundColor = scheme.backgroundColor;
-    final outlineColor = scheme.lightColor.withOpacity(0.3); // 主题浅色
+    final outlineColor = scheme.lightColor.withValues(alpha: 0.3); // 主题浅色
     
     return Container(
       width: screenSize.width,
@@ -265,7 +265,7 @@ class _SplashScreenState extends State<SplashScreen> {
                       settings.userSignature,
                       style: TextStyle(
                         fontSize: signatureFontSize,
-                        color: textColor.withOpacity(0.85),
+                        color: textColor.withValues(alpha: 0.85),
                         fontWeight: FontWeight.w400,
                         fontStyle: FontStyle.italic,
                         height: 1.2,
@@ -294,7 +294,7 @@ class _SplashScreenState extends State<SplashScreen> {
             Icon(
               Icons.auto_stories,
               size: 80,
-              color: scheme.primaryColor.withOpacity(0.5),
+              color: scheme.primaryColor.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 20),
             Text(
@@ -302,7 +302,7 @@ class _SplashScreenState extends State<SplashScreen> {
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
-                color: scheme.primaryColor.withOpacity(0.7),
+                color: scheme.primaryColor.withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(height: 10),
@@ -410,7 +410,7 @@ class _SimpleSplashAnimationState extends State<_SimpleSplashAnimation>
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: widget.scheme.primaryColor.withOpacity(0.2),
+                    color: widget.scheme.primaryColor.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Icon(

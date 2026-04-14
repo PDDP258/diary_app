@@ -170,7 +170,7 @@ class _VoiceRecorderButtonState extends State<VoiceRecorderButton>
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: isRecording ? Colors.red.withOpacity(0.3) : scheme.lightColor,
+          color: isRecording ? Colors.red.withValues(alpha: 0.3) : scheme.lightColor,
           width: 2,
         ),
       ),
@@ -232,7 +232,7 @@ class _VoiceRecorderButtonState extends State<VoiceRecorderButton>
         width: 48,
         height: 48,
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           shape: BoxShape.circle,
         ),
         child: Icon(icon, color: color, size: 24),
@@ -257,7 +257,7 @@ class _VoiceRecorderButtonState extends State<VoiceRecorderButton>
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: (isRecording ? Colors.red : scheme.primaryColor).withOpacity(0.3),
+              color: (isRecording ? Colors.red : scheme.primaryColor).withValues(alpha: 0.3),
               blurRadius: 16,
               spreadRadius: 4,
             ),
@@ -336,7 +336,7 @@ class _VoicePlayerWidgetState extends State<VoicePlayerWidget> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: scheme.lightColor.withOpacity(0.5)),
+        side: BorderSide(color: scheme.lightColor.withValues(alpha: 0.5)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -378,7 +378,7 @@ class _VoicePlayerWidgetState extends State<VoicePlayerWidget> {
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
                       value: progress,
-                      backgroundColor: scheme.lightColor.withOpacity(0.3),
+                      backgroundColor: scheme.lightColor.withValues(alpha: 0.3),
                       valueColor: AlwaysStoppedAnimation(scheme.primaryColor),
                       minHeight: 4,
                     ),

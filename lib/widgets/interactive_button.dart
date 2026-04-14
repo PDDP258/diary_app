@@ -127,7 +127,7 @@ class _InteractiveButtonState extends State<InteractiveButton>
                   const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
               decoration: BoxDecoration(
                 color: widget.onPressed == null
-                    ? (widget.backgroundColor ?? scheme.primaryColor).withOpacity(0.3)
+                    ? (widget.backgroundColor ?? scheme.primaryColor).withValues(alpha: 0.3)
                     : (widget.backgroundColor ?? scheme.primaryColor),
                 borderRadius: widget.borderRadius ?? 
                     BorderRadius.circular(AppTheme.largeRadius),
@@ -136,7 +136,7 @@ class _InteractiveButtonState extends State<InteractiveButton>
                     : [
                         BoxShadow(
                           color: (widget.backgroundColor ?? scheme.primaryColor)
-                              .withOpacity(0.3),
+                              .withValues(alpha: 0.3),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                           spreadRadius: -2,
@@ -245,7 +245,7 @@ class _InteractiveIconButtonState extends State<InteractiveIconButton>
                 child: Icon(
                   widget.icon,
                   color: widget.onPressed == null
-                      ? (widget.color ?? scheme.textLightColor).withOpacity(0.3)
+                      ? (widget.color ?? scheme.textLightColor).withValues(alpha: 0.3)
                       : (widget.color ?? scheme.primaryColor),
                   size: widget.size,
                 ),
