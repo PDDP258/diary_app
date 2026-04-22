@@ -44,6 +44,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _appLockEnabled = false;
   bool _biometricEnabled = false;
   bool _biometricAvailable = false;
+  bool _quickNoteFabEnabled = true;
   List<Mood> _moods = [];
 
   @override
@@ -52,6 +53,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadBadges();
     _loadAppLockStatus();
     _loadBiometricStatus();
+    _loadQuickNoteFabStatus();
   }
 
   Future<void> _loadBadges() async {
@@ -84,6 +86,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() {
         _biometricEnabled = BiometricAuthService.isEnabled;
         _biometricAvailable = available;
+      });
+    }
+  }
+
+  Future<void> _loadQuickNoteFabStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _quickNoteFabEnabled = prefs.getBool('quick_note_fab_enabled') ?? true;
       });
     }
   }
@@ -175,6 +186,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             const SizedBox(height: 16),
 
+            // 速记设置
+            _buildMenuGroup([
+              _MenuItem(
+                icon: Icons.lightbulb_outline,
+                title: '速记悬浮按钮',
+                subtitle: _quickNoteFabEnabled ? '已显示' : '已隐藏',
+                trailing: _buildQuickNoteFabToggle(),
+                onTap: () => _toggleQuickNoteFab(),
+              ),
+            ], scheme),
+
+            const SizedBox(height: 16),
+
             // 应用锁
             _buildMenuGroup([
               _MenuItem(
@@ -236,7 +260,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _MenuItem(
                 icon: Icons.info_outline,
                 title: '关于日记',
-                subtitle: '版本 1.1.5',
+                subtitle: '版本 1.20.0',
                 onTap: () => _showAboutWithEasterEgg(context),
               ),
               _MenuItem(
@@ -1360,6 +1384,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Widget _buildQuickNoteFabToggle() {
+    return GestureDetector(
+      onTap: () => _toggleQuickNoteFab(),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 50,
+        height: 28,
+        decoration: BoxDecoration(
+          color: _quickNoteFabEnabled
+              ? Colors.black
+              : Colors.grey.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        padding: const EdgeInsets.all(2),
+        child: AnimatedAlign(
+          duration: const Duration(milliseconds: 200),
+          alignment:
+              _quickNoteFabEnabled ? Alignment.centerRight : Alignment.centerLeft,
+          child: Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 4,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _toggleQuickNoteFab() async {
+    HapticFeedback.mediumImpact();
+    final prefs = await SharedPreferences.getInstance();
+    final newValue = !_quickNoteFabEnabled;
+    await prefs.setBool('quick_note_fab_enabled', newValue);
+    setState(() {
+      _quickNoteFabEnabled = newValue;
+    });
+  }
+
   // 主题选择弹窗
   void _showThemePicker(BuildContext context) async {
     final themeProvider = context.read<ThemeProvider>();
@@ -1942,7 +2013,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '版本 1.1.5',
+                            '版本 1.20.0',
                             style: TextStyle(
                               fontSize: 14,
                               color: scheme.textLightColor,
@@ -2255,7 +2326,7 @@ class _AboutEasterEgg {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  '版本 1.1.5',
+                                  '版本 1.20.0',
                                   style: TextStyle(
                                     fontSize: 14,
                                     color: scheme.textLightColor,
@@ -2280,7 +2351,7 @@ class _AboutEasterEgg {
                         ),
                         const SizedBox(height: 12),
                         _buildVersionItem(
-                          'v1.1.5',
+                          'v1.20.0',
                           '☁️ 云备份重构 + 🎨 UI优化',
                           [
                             '云备份按密钥分文件夹存储，支持多设备共存',
@@ -2734,7 +2805,7 @@ class DebugScreen extends StatelessWidget {
             ListTile(
               title: Text('版本号', style: TextStyle(color: scheme.textDarkColor)),
               trailing:
-                  Text('1.1.5', style: TextStyle(color: scheme.textLightColor)),
+                  Text('1.20.0', style: TextStyle(color: scheme.textLightColor)),
             ),
             Divider(
                 height: 1,

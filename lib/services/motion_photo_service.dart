@@ -46,13 +46,16 @@ class MotionPhotoService {
         await videoDir.create(recursive: true);
       }
 
-      // 生成视频文件名
+      // 生成唯一视频文件名（避免同名文件冲突 + 路径复用问题）
+      final imageFile = File(imagePath);
+      final stat = await imageFile.stat();
       final imageName = path.basenameWithoutExtension(imagePath);
-      final videoPath = '${videoDir.path}/${imageName}_video.mp4';
+      final uniqueId = '${imageName}_${stat.size}_${stat.modified.millisecondsSinceEpoch}';
+      final videoPath = '${videoDir.path}/${uniqueId}_video.mp4';
 
       // 检查是否已提取过
       final existingVideo = File(videoPath);
-      if (await existingVideo.exists()) {
+      if (await existingVideo.exists() && await existingVideo.length() > 0) {
         print('MotionPhoto: 使用已缓存的视频: $videoPath');
         return videoPath;
       }

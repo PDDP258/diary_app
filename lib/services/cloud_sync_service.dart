@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'dart:isolate';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
@@ -220,6 +221,24 @@ class _EncryptMessage {
   _EncryptMessage({
     required this.archive,
     required this.sendPort,
+  });
+}
+
+class _ExtractMessage {
+  final List<int> zipBytes;
+  final SendPort sendPort;
+
+  _ExtractMessage(this.zipBytes, this.sendPort);
+}
+
+/// Isolate消息 - 恢复图片
+class _RestoreMessage {
+  final List<int> decryptedBytes;
+  final String imagesDirPath;
+
+  _RestoreMessage({
+    required this.decryptedBytes,
+    required this.imagesDirPath,
   });
 }
 
@@ -1290,7 +1309,63 @@ class WebDAVSyncService extends CloudSyncService {
     }
   }
 
-  /// 解密并解压图片
+  /// 在Isolate中解压并写入图片（静态方法）
+  static int? _restoreArchive(_RestoreMessage message) {
+    try {
+      final archive = ZipDecoder().decodeBytes(message.decryptedBytes);
+      final dir = Directory(message.imagesDirPath);
+      if (!dir.existsSync()) {
+        dir.createSync(recursive: true);
+      }
+      int successCount = 0;
+      for (final file in archive.files) {
+        if (file.isFile) {
+          final outputFile = File('${message.imagesDirPath}/${file.name}');
+          outputFile.writeAsBytesSync(file.content as List<int>);
+          successCount++;
+        }
+      }
+      return successCount;
+    } catch (e) {
+      debugPrint('Isolate恢复图片失败: $e');
+      return null;
+    }
+  }
+
+  /// 在Isolate中解压ZIP
+  static Future<Map<String, List<int>>?> _extractZipInIsolate(List<int> zipBytes) async {
+    try {
+      final receivePort = ReceivePort();
+      await Isolate.spawn(
+        _extractIsolate,
+        _ExtractMessage(zipBytes, receivePort.sendPort),
+      );
+      final result = await receivePort.first as Map<String, List<int>>?;
+      return result;
+    } catch (e) {
+      debugPrint('Isolate解压失败: $e');
+      return null;
+    }
+  }
+
+  /// Isolate入口函数 - 解压ZIP
+  static void _extractIsolate(_ExtractMessage message) {
+    try {
+      final archive = ZipDecoder().decodeBytes(message.zipBytes);
+      final files = <String, List<int>>{};
+      for (final file in archive.files) {
+        if (file.isFile) {
+          files[file.name] = file.content as List<int>;
+        }
+      }
+      message.sendPort.send(files);
+    } catch (e) {
+      debugPrint('Isolate解压异常: $e');
+      message.sendPort.send(null);
+    }
+  }
+
+  /// 解密并解压图片（Isolate 版本，避免主线程阻塞）
   Future<bool> _restoreEncryptedImageArchive(List<int> encryptedBytes) async {
     try {
       _debugPrint('开始解密恢复图片...');
@@ -1303,29 +1378,55 @@ class WebDAVSyncService extends CloudSyncService {
         return false;
       }
 
-      // 解压ZIP
-      final archive = ZipDecoder().decodeBytes(decrypted);
-
       // 获取图片保存目录
       final appDir = await getApplicationDocumentsDirectory();
-      final imagesDir = Directory('${appDir.path}/images');
-      if (!await imagesDir.exists()) {
-        await imagesDir.create(recursive: true);
+      final imagesDirPath = '${appDir.path}/images';
+
+      // 优先使用 compute 在 Isolate 中解压并写入图片
+      int? successCount;
+      try {
+        successCount = await compute(
+          _restoreArchive,
+          _RestoreMessage(
+            decryptedBytes: decrypted,
+            imagesDirPath: imagesDirPath,
+          ),
+        );
+      } catch (e) {
+        _debugPrint('compute恢复失败，降级处理: $e', level: 'WARN');
       }
 
-      // 保存图片
-      int successCount = 0;
-      for (final file in archive.files) {
-        if (file.isFile) {
-          final filePath = '${imagesDir.path}/${file.name}';
-          final outputFile = File(filePath);
-          await outputFile.writeAsBytes(file.content as List<int>);
-          successCount++;
+      // Fallback：在主线程解压并分批写入
+      if (successCount == null) {
+        final files = await _extractZipInIsolate(decrypted);
+        if (files == null) {
+          _debugPrint('解压ZIP失败', level: 'ERROR');
+          return false;
         }
+        final imagesDir = Directory(imagesDirPath);
+        if (!await imagesDir.exists()) {
+          await imagesDir.create(recursive: true);
+        }
+        var localCount = 0;
+        const batchSize = 20;
+        final entries = files.entries.toList();
+        for (int i = 0; i < entries.length; i += batchSize) {
+          final batch = entries.skip(i).take(batchSize);
+          for (final entry in batch) {
+            final filePath = '$imagesDirPath/${entry.key}';
+            final outputFile = File(filePath);
+            await outputFile.writeAsBytes(entry.value);
+            localCount++;
+          }
+          if (i + batchSize < entries.length) {
+            await Future.delayed(Duration.zero);
+          }
+        }
+        successCount = localCount;
       }
 
       _debugPrint('成功恢复 $successCount 张图片');
-      return true;
+      return successCount > 0;
     } catch (e) {
       _debugPrint('解密恢复图片失败: $e', level: 'ERROR');
       return false;
@@ -1357,7 +1458,7 @@ class WebDAVSyncService extends CloudSyncService {
       _debugPrint('  - 日记标签关联: ${diaryTags.length} 个');
 
       final backupData = {
-        'version': '1.1.5',
+        'version': '1.20.0',
         'syncTime': DateTime.now().toIso8601String(),
         'diaries': diaries.map((d) => d.toMap()).toList(),
         'moods': moods.map((m) => m.toMap()).toList(),
@@ -1622,25 +1723,30 @@ class WebDAVSyncService extends CloudSyncService {
             continue;
           }
           
-          // 解压ZIP
-          final archive = ZipDecoder().decodeBytes(decryptedBytes);
-          if (archive == null) {
+          // 在 Isolate 中解压ZIP，避免阻塞UI
+          final files = await _extractZipInIsolate(decryptedBytes);
+          if (files == null) {
             _debugPrint('解压图片包失败: $archiveName', level: 'ERROR');
             continue;
           }
           
-          // 保存图片
-          for (final file in archive) {
-            if (file.isFile) {
-              final fileName = file.name;
-              final filePath = '${imagesDir.path}/$fileName';
+          // 分批保存图片，避免一次性写太多阻塞 UI
+          const batchSize = 20;
+          final entries = files.entries.toList();
+          for (int i = 0; i < entries.length; i += batchSize) {
+            final batch = entries.skip(i).take(batchSize);
+            for (final entry in batch) {
+              final filePath = '${imagesDir.path}/${entry.key}';
               final outputFile = File(filePath);
-              await outputFile.writeAsBytes(file.content as List<int>);
+              await outputFile.writeAsBytes(entry.value);
               restoredCount++;
+            }
+            if (i + batchSize < entries.length) {
+              await Future.delayed(Duration.zero);
             }
           }
           
-          _debugPrint('图片包 $archiveName 恢复完成，共 ${archive.length} 张图片');
+          _debugPrint('图片包 $archiveName 恢复完成，共 ${files.length} 张图片');
         } catch (e) {
           _debugPrint('恢复图片包 $archiveName 失败: $e', level: 'ERROR');
         }

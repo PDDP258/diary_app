@@ -31,6 +31,7 @@ import '../widgets/animated_feedback.dart';
 import '../widgets/smart_notifications.dart';
 import '../utils/design_extensions.dart';
 import '../services/voice_diary_service.dart';
+import '../services/image_persistence_service.dart';
 import 'dart:io';
 
 class WriteDiaryScreen extends StatefulWidget {
@@ -90,7 +91,8 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
 
     if (widget.diary != null) {
       _isEditing = true;
-      _titleController.text = widget.diary!.title ?? '';
+      _titleController.text =
+          (widget.diary!.title == '🗣️ 自言自语') ? '' : (widget.diary!.title ?? '');
       _contentController.text = widget.diary!.content ?? '';
       if (widget.diary!.images != null && widget.diary!.images!.isNotEmpty) {
         _images = widget.diary!.images!.split(',');
@@ -234,14 +236,17 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
           limit: remainingSlots,
         );
         if (images.isNotEmpty) {
-          setState(() {
-            for (final image in images) {
-              if (_images.length < _maxImageCount) {
-                _images.add(image.path);
-              }
+          final persistedPaths = <String>[];
+          for (final image in images) {
+            if (persistedPaths.length < remainingSlots) {
+              final path = await ImagePersistenceService.persistImage(image.path);
+              persistedPaths.add(path);
             }
+          }
+          setState(() {
+            _images.addAll(persistedPaths);
           });
-          if (images.length >= remainingSlots && images.length > remainingSlots) {
+          if (images.length > remainingSlots) {
             _showSnackBar('已达到最大图片数量限制 ($_maxImageCount 张)');
           }
         }
@@ -249,8 +254,9 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
         // 拍照：单选
         final XFile? image = await _imagePicker.pickImage(source: source);
         if (image != null) {
+          final path = await ImagePersistenceService.persistImage(image.path);
           setState(() {
-            _images.add(image.path);
+            _images.add(path);
           });
         }
       }
@@ -2474,38 +2480,41 @@ class _ImageViewerScreenState extends State<ImageViewerScreen> {
                   Positioned(
                     top: 40,
                     right: 20,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.6),
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.orange.withValues(alpha: 0.5),
-                            blurRadius: 8,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.play_circle_outline,
-                            color: Colors.orange.shade300,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            '实况',
-                            style: TextStyle(
-                              color: Colors.orange.shade300,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
+                    child: GestureDetector(
+                      onTap: () => _playMotionPhoto(index),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.6),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.orange.withValues(alpha: 0.5),
+                              blurRadius: 8,
+                              spreadRadius: 2,
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.play_circle_outline,
+                              color: Colors.orange.shade300,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '实况',
+                              style: TextStyle(
+                                color: Colors.orange.shade300,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),

@@ -124,6 +124,7 @@ class TiltCard extends StatefulWidget {
   final double maxTilt;
   final Duration duration;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
 
   const TiltCard({
     super.key,
@@ -131,6 +132,7 @@ class TiltCard extends StatefulWidget {
     this.maxTilt = 0.1,
     this.duration = PrimitiveAnimation.fast,
     this.onTap,
+    this.onLongPress,
   });
 
   @override
@@ -183,6 +185,7 @@ class _TiltCardState extends State<TiltCard> {
           onTapDown: _onTapDown,
           onTapUp: _onTapUp,
           onTapCancel: _onTapCancel,
+          onLongPress: widget.onLongPress,
           child: AnimatedContainer(
             duration: widget.duration,
             curve: PrimitiveAnimation.spring,

@@ -260,7 +260,9 @@ class _RecallCard extends StatelessWidget {
 
 
 class SmartRecallHomeCard extends StatefulWidget {
-  const SmartRecallHomeCard({super.key});
+  final EdgeInsets padding;
+
+  const SmartRecallHomeCard({super.key, this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 6)});
 
   @override
   State<SmartRecallHomeCard> createState() => _SmartRecallHomeCardState();
@@ -348,7 +350,7 @@ class _SmartRecallHomeCardState extends State<SmartRecallHomeCard>
       curve: Curves.easeInOut,
       alignment: Alignment.topCenter,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        padding: widget.padding,
         child: Container(
           decoration: BoxDecoration(
             color: scheme.cardColor,

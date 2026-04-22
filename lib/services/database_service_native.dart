@@ -5,6 +5,9 @@ import '../models/anniversary.dart';
 import '../models/diary.dart';
 import '../models/mood.dart';
 import '../models/tag.dart';
+import '../models/self_talk_message.dart';
+import '../models/quick_note.dart';
+import '../models/self_talk_task.dart';
 import 'encryption_service.dart';
 
 /// Native 版本数据库服务（使用 SQLite）
@@ -12,7 +15,7 @@ import 'encryption_service.dart';
 class DatabaseService {
   static Database? _database;
   static const String _databaseName = 'diary_app.db';
-  static const int _databaseVersion = 3; // 版本3：添加三级标签系统V3支持
+  static const int _databaseVersion = 10; // 版本10：新增速记功能
 
   // 表名
   static const String tableDiaries = 'diaries';
@@ -20,6 +23,9 @@ class DatabaseService {
   static const String tableTags = 'tags';
   static const String tableDiaryTags = 'diary_tags';
   static const String tableAnniversaries = 'anniversaries';
+  static const String tableSelfTalkMessages = 'self_talk_messages';
+  static const String tableSelfTalkTasks = 'self_talk_tasks';
+  static const String tableQuickNotes = 'quick_notes';
 
   // 获取数据库实例
   static Future<Database> get database async {
@@ -120,6 +126,45 @@ class DatabaseService {
       )
     ''');
 
+    // 自言自语消息表
+    await db.execute('''
+      CREATE TABLE $tableSelfTalkMessages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        diary_id INTEGER,
+        date TEXT NOT NULL,
+        content TEXT,
+        is_user INTEGER DEFAULT 1,
+        sender_type INTEGER DEFAULT 0,
+        created_at TEXT
+      )
+    ''');
+
+    // 自言自语任务表
+    await db.execute('''
+      CREATE TABLE $tableSelfTalkTasks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        message_id INTEGER,
+        diary_id INTEGER,
+        date TEXT NOT NULL,
+        content TEXT,
+        deadline TEXT,
+        is_completed INTEGER DEFAULT 0,
+        created_at TEXT
+      )
+    ''');
+
+    // 速记表
+    await db.execute('''
+      CREATE TABLE $tableQuickNotes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        content TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT,
+        is_pinned INTEGER DEFAULT 0,
+        tag TEXT
+      )
+    ''');
+
     // 插入默认心情
     await _insertDefaultMoods(db);
   }
@@ -155,6 +200,93 @@ class DatabaseService {
           tag_id TEXT NOT NULL,
           created_at TEXT,
           FOREIGN KEY (diary_id) REFERENCES $tableDiaries (id) ON DELETE CASCADE
+        )
+      ''');
+    }
+    if (oldVersion < 4) {
+      // 版本4添加自言自语消息支持
+      await db.execute('''
+        CREATE TABLE $tableSelfTalkMessages (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          diary_id INTEGER,
+          date TEXT NOT NULL,
+          content TEXT,
+          is_user INTEGER DEFAULT 1,
+          created_at TEXT
+        )
+      ''');
+    }
+    if (oldVersion < 5) {
+      // 版本5添加自言自语任务支持
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS $tableSelfTalkTasks (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          message_id INTEGER,
+          diary_id INTEGER,
+          date TEXT NOT NULL,
+          content TEXT,
+          deadline TEXT,
+          is_completed INTEGER DEFAULT 0,
+          created_at TEXT
+        )
+      ''');
+    }
+    if (oldVersion < 6) {
+      // 版本6：为已有用户补建可能缺失的自言自语表
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS $tableSelfTalkMessages (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          diary_id INTEGER,
+          date TEXT NOT NULL,
+          content TEXT,
+          is_user INTEGER DEFAULT 1,
+          created_at TEXT
+        )
+      ''');
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS $tableSelfTalkTasks (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          message_id INTEGER,
+          diary_id INTEGER,
+          date TEXT NOT NULL,
+          content TEXT,
+          deadline TEXT,
+          is_completed INTEGER DEFAULT 0,
+          created_at TEXT
+        )
+      ''');
+    }
+    if (oldVersion < 7) {
+      // 版本7：为自言自语消息表添加 sender_type 字段
+      try {
+        await db.execute('ALTER TABLE $tableSelfTalkMessages ADD COLUMN sender_type INTEGER DEFAULT 0');
+      } catch (e) {
+        // 列已存在时忽略错误
+      }
+    }
+    if (oldVersion < 8) {
+      // 版本8：修复 sender_type 字段可能缺失的问题（确保列存在）
+      try {
+        await db.execute('ALTER TABLE $tableSelfTalkMessages ADD COLUMN sender_type INTEGER DEFAULT 0');
+      } catch (e) {
+        // 列已存在时忽略错误
+      }
+    }
+    if (oldVersion < 9) {
+      // 版本9：自言自语重构，完全独立于日记系统
+      // 表结构不变（diary_id 列保留以兼容旧数据），但逻辑上不再关联日记
+      // 新消息不再写入 diary_id，删除消息不再修改日记正文
+    }
+    if (oldVersion < 10) {
+      // 版本10：新增速记功能
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS $tableQuickNotes (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          content TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          updated_at TEXT,
+          is_pinned INTEGER DEFAULT 0,
+          tag TEXT
         )
       ''');
     }
@@ -690,5 +822,155 @@ class DatabaseService {
       }
     }
     return count;
+  }
+
+  // ==================== 自言自语消息操作 ====================
+
+  static Future<int> insertSelfTalkMessage(SelfTalkMessage message) async {
+    final db = await database;
+    return await db.insert(tableSelfTalkMessages, message.toMap());
+  }
+
+  static Future<List<SelfTalkMessage>> getSelfTalkMessagesByDate(String date) async {
+    final db = await database;
+    final maps = await db.query(
+      tableSelfTalkMessages,
+      where: 'date = ?',
+      whereArgs: [date],
+      orderBy: 'created_at ASC',
+    );
+    return maps.map((map) => SelfTalkMessage.fromMap(map)).toList();
+  }
+
+  static Future<int> deleteSelfTalkMessage(int id) async {
+    final db = await database;
+    return await db.delete(
+      tableSelfTalkMessages,
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  // ==================== 自言自语任务操作 ====================
+
+  static Future<int> insertSelfTalkTask(SelfTalkTask task) async {
+    final db = await database;
+    return await db.insert(tableSelfTalkTasks, task.toMap());
+  }
+
+  static Future<List<SelfTalkTask>> getSelfTalkTasksByDate(String date) async {
+    final db = await database;
+    final maps = await db.query(
+      tableSelfTalkTasks,
+      where: 'date = ?',
+      whereArgs: [date],
+      orderBy: 'created_at ASC',
+    );
+    return maps.map((map) => SelfTalkTask.fromMap(map)).toList();
+  }
+
+  static Future<List<SelfTalkTask>> getSelfTalkTasksByMessageId(int messageId) async {
+    final db = await database;
+    final maps = await db.query(
+      tableSelfTalkTasks,
+      where: 'message_id = ?',
+      whereArgs: [messageId],
+      orderBy: 'created_at ASC',
+    );
+    return maps.map((map) => SelfTalkTask.fromMap(map)).toList();
+  }
+
+  static Future<int> updateSelfTalkTask(SelfTalkTask task) async {
+    final db = await database;
+    return await db.update(
+      tableSelfTalkTasks,
+      task.toMap(),
+      where: 'id = ?',
+      whereArgs: [task.id],
+    );
+  }
+
+  static Future<int> deleteSelfTalkTask(int id) async {
+    final db = await database;
+    return await db.delete(
+      tableSelfTalkTasks,
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  // ==================== 速记操作 ====================
+
+  static Future<int> insertQuickNote(QuickNote note) async {
+    final db = await database;
+    return await db.insert(tableQuickNotes, note.toMap());
+  }
+
+  static Future<List<QuickNote>> getAllQuickNotes() async {
+    final db = await database;
+    final maps = await db.query(
+      tableQuickNotes,
+      orderBy: 'is_pinned DESC, created_at DESC',
+    );
+    return maps.map((map) => QuickNote.fromMap(map)).toList();
+  }
+
+  static Future<List<QuickNote>> getQuickNotesByTag(String tag) async {
+    final db = await database;
+    final maps = await db.query(
+      tableQuickNotes,
+      where: 'tag = ?',
+      whereArgs: [tag],
+      orderBy: 'is_pinned DESC, created_at DESC',
+    );
+    return maps.map((map) => QuickNote.fromMap(map)).toList();
+  }
+
+  static Future<List<QuickNote>> searchQuickNotes(String keyword) async {
+    final db = await database;
+    final maps = await db.query(
+      tableQuickNotes,
+      where: 'content LIKE ?',
+      whereArgs: ['%$keyword%'],
+      orderBy: 'is_pinned DESC, created_at DESC',
+    );
+    return maps.map((map) => QuickNote.fromMap(map)).toList();
+  }
+
+  static Future<QuickNote?> getQuickNoteById(int id) async {
+    final db = await database;
+    final maps = await db.query(
+      tableQuickNotes,
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+    if (maps.isEmpty) return null;
+    return QuickNote.fromMap(maps.first);
+  }
+
+  static Future<int> updateQuickNote(QuickNote note) async {
+    final db = await database;
+    return await db.update(
+      tableQuickNotes,
+      note.toMap(),
+      where: 'id = ?',
+      whereArgs: [note.id],
+    );
+  }
+
+  static Future<int> deleteQuickNote(int id) async {
+    final db = await database;
+    return await db.delete(
+      tableQuickNotes,
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  static Future<int> getQuickNoteCount() async {
+    final db = await database;
+    final result = await db.rawQuery('SELECT COUNT(*) FROM $tableQuickNotes');
+    return Sqflite.firstIntValue(result) ?? 0;
   }
 }

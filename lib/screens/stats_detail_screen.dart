@@ -5,6 +5,7 @@ import '../config/app_theme.dart';
 import '../providers/diary_provider.dart';
 import '../services/text_analysis_service.dart';
 import '../utils/platform_helpers.dart';
+import '../services/image_cache_service.dart';
 import 'diary_cinema_screen.dart';
 import 'tags_classification_screen.dart';
 
@@ -1154,7 +1155,7 @@ class _StatsDetailScreenState extends State<StatsDetailScreen> {
           ),
           const SizedBox(height: 24),
           Text(
-            '小记日记 v1.1.5',
+            '小记日记 v1.20.0',
             style: TextStyle(fontSize: 14, color: scheme.textLightColor),
           ),
         ],
@@ -1239,9 +1240,10 @@ class _PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                 minScale: 0.5,
                 maxScale: 4.0,
                 child: Center(
-                  child: PlatformImage(
+                  child: PreviewImage(
                     path: widget.photoPaths[index],
                     fit: BoxFit.contain,
+                    useOriginal: true,
                   ),
                 ),
               );

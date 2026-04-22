@@ -232,12 +232,15 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
                   if (_tags.isNotEmpty) _buildTags(),
                   if (_tags.isNotEmpty) const SizedBox(height: 20),
 
-                  // 标题
+                  // 标题（过滤自言自语占位标题）
+                  // 标题（过滤自言自语占位标题）
                   if (_currentDiary.title != null &&
-                      _currentDiary.title!.isNotEmpty)
+                      _currentDiary.title!.isNotEmpty &&
+                      _currentDiary.title != '🗣️ 自言自语')
                     _buildTitle(),
                   if (_currentDiary.title != null &&
-                      _currentDiary.title!.isNotEmpty)
+                      _currentDiary.title!.isNotEmpty &&
+                      _currentDiary.title != '🗣️ 自言自语')
                     const SizedBox(height: 20),
 
                   // 内容
@@ -1233,38 +1236,41 @@ class _ImageViewerScreenState extends State<ImageViewerScreen> {
                   Positioned(
                     top: 40,
                     right: 20,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.6),
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.orange.withValues(alpha: 0.5),
-                            blurRadius: 8,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.play_circle_outline,
-                            color: Colors.orange.shade300,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            '实况',
-                            style: TextStyle(
-                              color: Colors.orange.shade300,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
+                    child: GestureDetector(
+                      onTap: () => _playMotionPhoto(index),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.6),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.orange.withValues(alpha: 0.5),
+                              blurRadius: 8,
+                              spreadRadius: 2,
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.play_circle_outline,
+                              color: Colors.orange.shade300,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '实况',
+                              style: TextStyle(
+                                color: Colors.orange.shade300,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),

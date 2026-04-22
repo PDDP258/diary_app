@@ -36,6 +36,9 @@ class ThemeScheme {
   /// 警告色
   Color get warningColor => const Color(0xFFFFB74D);
 
+  /// 次色 - 用于 Alter Ego 等辅助身份标识（默认紫色）
+  Color get secondaryColor => const Color(0xFF9C27B0);
+
   /// 表面色 - 用于底部弹窗、对话框等 elevated 表面
   Color get surfaceColor {
     if (isBackgroundLight) {

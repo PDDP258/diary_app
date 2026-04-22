@@ -564,6 +564,7 @@ class MotionPhotoGrid extends StatelessWidget {
       runSpacing: 8,
       children: List.generate(imagePaths.length, (index) {
         return MotionPhotoWidget(
+          key: ValueKey(imagePaths[index]),
           imagePath: imagePaths[index],
           width: 100,
           height: 100,

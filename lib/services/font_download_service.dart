@@ -16,14 +16,14 @@ class FontDownloadService {
   /// 字体已打包到APK，路径：assets/fonts/
   static const Map<String, FontConfig> _fonts = {
     'NotoSerifCJKsc-Regular': FontConfig(
-      name: 'NotoSerifCJKsc-Regular.otf',
+      name: 'NotoSerifCJKsc-VF.ttf',
       url: '', // 已打包到APK，无需下载
-      size: 24 * 1024 * 1024, // 约24MB
+      size: 25 * 1024 * 1024, // 约25MB
       version: '2.004',
     ),
     'NotoSerifCJKsc-Bold': FontConfig(
-      name: 'NotoSerifCJKsc-Bold.otf',
-      url: '', // 已打包到APK，无需下载
+      name: 'NotoSerifCJKsc-VF.ttf',
+      url: '', // 已打包到APK，无需下载（可变字体，通过fontWeight控制粗细）
       size: 25 * 1024 * 1024,
       version: '2.004',
     ),

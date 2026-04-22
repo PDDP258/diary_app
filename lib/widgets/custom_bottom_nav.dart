@@ -7,12 +7,14 @@ class CustomBottomNav extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;
   final VoidCallback onAddTap;
+  final VoidCallback? onAddLongPress;
 
   const CustomBottomNav({
     super.key,
     required this.currentIndex,
     required this.onTap,
     required this.onAddTap,
+    this.onAddLongPress,
   });
 
   @override
@@ -71,6 +73,7 @@ class CustomBottomNav extends StatelessWidget {
           bottom: 12, // 导航栏高度80/2 + margin 8 - 按钮高度72/2 = 40 + 8 - 36 = 12
           child: GestureDetector(
             onTap: onAddTap,
+            onLongPress: onAddLongPress,
             child: Container(
               width: 72,
               height: 72,

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart' hide Badge;
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import '../providers/diary_provider.dart';
 import '../providers/theme_provider.dart';
@@ -9,12 +10,17 @@ import '../services/badge_service.dart';
 import '../services/milestone_service.dart';
 import '../services/image_cache_service.dart';
 import '../services/sound_service.dart';
+// import '../services/quick_note_service.dart';
+import '../config/app_theme.dart';
 import '../widgets/custom_bottom_nav.dart';
 import 'timeline_screen.dart';
 import 'calendar_screen.dart';
 import 'stats_screen.dart';
 import 'profile_screen.dart';
 import 'write_diary_screen.dart';
+import 'quick_note_editor_screen.dart';
+import 'quick_notes_screen.dart';
+import 'self_talk_screen.dart';
 
 /// 全局路由观察者，用于监听页面导航
 class MainScreenRouteObserver extends NavigatorObserver {
@@ -65,8 +71,15 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   // 标记是否刚处理过点击，防止点击触发的微滚动干扰
   bool _justTapped = false;
 
+  // 长按空白区3秒启动速记的计时器
+  Timer? _longPressTimer;
+  bool _longPressTriggered = false;
+
   // 标记是否强制显示导航栏（用于页面切换时立即显示，无动画）
   bool _forceShowNav = false;
+
+  // 速记悬浮按钮显示设置
+  bool _quickNoteFabEnabled = true;
 
   // 标记是否正在切换页面（禁用滚动通知处理，防止导航栏闪烁）
   bool _isPageChanging = false;
@@ -102,6 +115,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     // 延迟加载数据，避免在构建过程中调用 setState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadData();
+      _loadQuickNoteFabSetting();
       // 启动无操作计时器
       _resetInactivityTimer();
     });
@@ -111,6 +125,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   void dispose() {
     _inactivityTimer?.cancel();
     _pageChangeTimer?.cancel();
+    _longPressTimer?.cancel();
     _pageController.dispose();
     // 移除生命周期监听
     WidgetsBinding.instance.removeObserver(this);
@@ -171,6 +186,50 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         _hideNavBar();
       }
     });
+  }
+
+  /// 加载速记悬浮按钮显示设置
+  Future<void> _loadQuickNoteFabSetting() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _quickNoteFabEnabled = prefs.getBool('quick_note_fab_enabled') ?? true;
+      });
+    }
+  }
+
+  /// 打开速记编辑器
+  Future<void> _openQuickNoteEditor() async {
+    _longPressTimer?.cancel();
+    _inactivityTimer?.cancel();
+    _showNavBarImmediately();
+
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const QuickNoteEditorScreen()),
+    );
+
+    _longPressTriggered = false;
+    if (mounted) {
+      _showNavBarImmediately();
+      _resetInactivityTimer();
+    }
+  }
+
+  /// 打开速记列表
+  Future<void> _openQuickNotesList() async {
+    _inactivityTimer?.cancel();
+    _showNavBarImmediately();
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const QuickNotesScreen()),
+    );
+
+    if (mounted) {
+      _showNavBarImmediately();
+      _resetInactivityTimer();
+    }
   }
 
   Future<void> _loadData() async {
@@ -404,6 +463,75 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       context.read<DiaryProvider>().loadDiaries();
     }
   }
+
+  void _onAddLongPress() {
+    HapticFeedback.mediumImpact();
+    final scheme = AppTheme.schemeOf(context);
+    final RenderBox? box = context.findRenderObject() as RenderBox?;
+    final Offset center = box != null
+        ? box.localToGlobal(box.size.center(Offset.zero))
+        : Offset(MediaQuery.of(context).size.width / 2, MediaQuery.of(context).size.height - 120);
+
+    showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        center.dx - 60,
+        center.dy - 100,
+        center.dx + 60,
+        center.dy,
+      ),
+      color: scheme.cardColor,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      items: [
+        PopupMenuItem(
+          value: 'diary',
+          child: Row(
+            children: [
+              Icon(Icons.edit_outlined, color: scheme.primaryColor, size: 20),
+              const SizedBox(width: 10),
+              Text('写日记', style: TextStyle(color: scheme.textDarkColor)),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'selftalk',
+          child: Row(
+            children: [
+              Icon(Icons.chat_bubble_outline, color: scheme.primaryColor, size: 20),
+              const SizedBox(width: 10),
+              Text('自言自语', style: TextStyle(color: scheme.textDarkColor)),
+            ],
+          ),
+        ),
+      ],
+    ).then((value) {
+      if (value == 'diary') {
+        _onAddTap();
+      } else if (value == 'selftalk') {
+        _navigateToSelfTalk();
+      }
+    });
+  }
+
+  void _navigateToSelfTalk() async {
+    _inactivityTimer?.cancel();
+    _showNavBarImmediately();
+
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const SelfTalkScreen(),
+      ),
+    );
+
+    if (mounted) {
+      _showNavBarImmediately();
+      _resetInactivityTimer();
+    }
+    if (result == true && mounted) {
+      context.read<DiaryProvider>().loadDiaries();
+    }
+  }
   
   /// 公共方法：供子页面调用，返回时重置导航栏状态
   void resetNavBarState() {
@@ -464,6 +592,20 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                 Future.delayed(const Duration(milliseconds: 300), () {
                   if (mounted) _justTapped = false;
                 });
+                // 启动3秒长按计时器（长按空白区打开速记）
+                _longPressTriggered = false;
+                _longPressTimer?.cancel();
+                _longPressTimer = Timer(const Duration(seconds: 3), () {
+                  _longPressTriggered = true;
+                  HapticFeedback.heavyImpact();
+                  _openQuickNoteEditor();
+                });
+              },
+              onTapUp: (_) {
+                _longPressTimer?.cancel();
+              },
+              onTapCancel: () {
+                _longPressTimer?.cancel();
               },
               behavior: HitTestBehavior.translucent,
               child: NotificationListener<ScrollNotification>(
@@ -483,6 +625,39 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               ),
             ),
           ),
+          // 速记悬浮按钮（右上角）
+          if (_quickNoteFabEnabled)
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 8,
+              right: 16,
+              child: GestureDetector(
+                onTap: _openQuickNoteEditor,
+                onLongPress: _openQuickNotesList,
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: themeProvider.currentScheme.cardColor.withValues(alpha: 0.85),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: themeProvider.currentScheme.dividerColor.withValues(alpha: 0.5),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: themeProvider.currentScheme.shadowColor.withValues(alpha: 0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.lightbulb_outline,
+                    size: 22,
+                    color: themeProvider.currentScheme.primaryColor,
+                  ),
+                ),
+              ),
+            ),
           // 软件导航栏 - 悬浮在页面内容上方（放在Stack顶层，避免被GestureDetector包裹）
           Positioned(
             left: 0,
@@ -500,6 +675,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                   currentIndex: _currentIndex,
                   onTap: _onNavTap,
                   onAddTap: _onAddTap,
+                  onAddLongPress: _onAddLongPress,
                 ),
               ),
             ),

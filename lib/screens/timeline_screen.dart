@@ -10,9 +10,12 @@ import '../providers/settings_provider.dart';
 import '../providers/theme_provider.dart';
 import '../utils/platform_helpers.dart';
 import '../widgets/widgets.dart';
+import '../services/database_service.dart';
 import 'diary_detail_screen.dart';
+import 'write_diary_screen.dart';
 import 'gacha_screen.dart';
 import 'smart_recall_screen_v2.dart';
+import 'self_talk_screen.dart';
 
 class TimelineScreen extends StatefulWidget {
   const TimelineScreen({super.key});
@@ -55,6 +58,111 @@ class _TimelineScreenState extends State<TimelineScreen>
     }
   }
 
+  /// 长按日记卡片：显示编辑/删除菜单
+  void _onDiaryLongPress(Diary diary) {
+    HapticFeedback.mediumImpact();
+    final scheme = AppTheme.schemeOf(context);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: scheme.cardColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                decoration: BoxDecoration(
+                  color: scheme.dividerColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              ListTile(
+                leading: Icon(Icons.edit_outlined, color: scheme.primaryColor),
+                title: Text('编辑日记', style: TextStyle(color: scheme.textDarkColor)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _editDiary(diary);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.delete_outline, color: scheme.errorColor),
+                title: Text('删除日记', style: TextStyle(color: scheme.errorColor)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _confirmDeleteDiary(diary);
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// 编辑日记
+  void _editDiary(Diary diary) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => WriteDiaryScreen(
+          diary: diary,
+          selectedDate: DateFormat('yyyy-MM-dd').parse(diary.date),
+        ),
+      ),
+    );
+    if (result == true && mounted) {
+      context.read<DiaryProvider>().loadDiaries();
+    }
+  }
+
+  /// 确认删除日记
+  void _confirmDeleteDiary(Diary diary) async {
+    final scheme = AppTheme.schemeOf(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: scheme.cardColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('删除日记？', style: TextStyle(color: scheme.textDarkColor)),
+        content: Text(
+          '此操作不可恢复，确定要删除 ${DateFormat('M月d日', 'zh_CN').format(DateFormat('yyyy-MM-dd').parse(diary.date))} 的日记吗？',
+          style: TextStyle(color: scheme.textMediumColor),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('取消', style: TextStyle(color: scheme.textLightColor)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('删除', style: TextStyle(color: scheme.errorColor, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      try {
+        await DatabaseService.deleteDiary(diary.id!);
+        if (mounted) {
+          context.read<DiaryProvider>().loadDiaries();
+          ToastManager().show(context, message: '日记已删除', type: ToastType.success);
+        }
+      } catch (e) {
+        if (mounted) {
+          ToastManager().show(context, message: '删除失败：$e', type: ToastType.error);
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = AppTheme.schemeOf(context);
@@ -73,8 +181,7 @@ class _TimelineScreenState extends State<TimelineScreen>
                 // 顶部标题栏 - 玻璃态效果
                 _buildHeader(scheme, diaries.length),
 
-                // 智能回忆卡片
-                if (diaries.isNotEmpty) const SmartRecallHomeCard(),
+                // 智能回忆卡片已整合到顶部header中
 
                 // 日记列表
                 Expanded(
@@ -179,174 +286,227 @@ class _TimelineScreenState extends State<TimelineScreen>
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // 左侧：头像 + 昵称/签名
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // 头像（优先使用自定义头像，否则使用emoji）
-                Container(
-                  width: 62,
-                  height: 62,
+          // 第一行：头像信息 + 篇数
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 左侧：头像 + 昵称/签名
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // 头像（优先使用自定义头像，否则使用emoji）
+                    Container(
+                      width: 62,
+                      height: 62,
+                      decoration: BoxDecoration(
+                        color: scheme.primaryColor.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: scheme.primaryColor.withValues(alpha: 0.3),
+                          width: 2,
+                        ),
+                      ),
+                      child: customAvatarPath != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.file(
+                              File(customAvatarPath),
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Center(
+                                  child: Text(
+                                    userEmoji,
+                                    style: const TextStyle(fontSize: 28),
+                                  ),
+                                );
+                              },
+                            ),
+                          )
+                        : Center(
+                            child: Text(
+                              userEmoji,
+                              style: const TextStyle(fontSize: 28),
+                            ),
+                          ),
+                    ),
+                    const SizedBox(width: 14),
+                    // 昵称和签名（上下关系）
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // 昵称
+                          Text(
+                            '$userName的日记',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: scheme.textDarkColor,
+                              letterSpacing: -0.5,
+                              height: 1.2,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          // 签名
+                          Text(
+                            userSignature,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: scheme.textMediumColor,
+                              height: 1.3,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // 右上：已移到底部入口区域
+            ],
+          ),
+          const SizedBox(height: 12),
+          // 第二行：四个等宽入口整齐排列
+          Row(
+            children: [
+              // 1. 自言自语
+              Expanded(
+                child: _buildHeaderActionButton(
+                  icon: Icons.chat_bubble_outline,
+                  label: '自言自语',
+                  scheme: scheme,
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SelfTalkScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              // 2. 扭蛋
+              Expanded(
+                child: _buildHeaderActionButton(
+                  icon: Icons.casino_outlined,
+                  label: '扭蛋',
+                  scheme: scheme,
+                  isPrimary: true,
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const GachaScreen()),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              // 3. 珍贵的回忆
+              Expanded(
+                child: _buildHeaderActionButton(
+                  icon: Icons.auto_awesome,
+                  label: '回忆',
+                  scheme: scheme,
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SmartRecallScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              // 4. 篇数
+              Expanded(
+                child: Container(
+                  height: 36,
+                  alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: scheme.primaryColor.withValues(alpha: 0.15),
+                    color: scheme.primaryColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: scheme.primaryColor.withValues(alpha: 0.3),
-                      width: 2,
                     ),
-                  ),
-                  child: customAvatarPath != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.file(
-                          File(customAvatarPath),
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Center(
-                              child: Text(
-                                userEmoji,
-                                style: const TextStyle(fontSize: 28),
-                              ),
-                            );
-                          },
-                        ),
-                      )
-                    : Center(
-                        child: Text(
-                          userEmoji,
-                          style: const TextStyle(fontSize: 28),
-                        ),
-                      ),
-                ),
-                const SizedBox(width: 14),
-                // 昵称和签名（上下关系）
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // 昵称
-                      Text(
-                        '$userName的日记',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: scheme.textDarkColor,
-                          letterSpacing: -0.5,
-                          height: 1.2,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      // 签名
-                      Text(
-                        userSignature,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: scheme.textMediumColor,
-                          height: 1.3,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-              // 右侧：篇数 + 扭蛋（上下排列）
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              // 篇数（在上）
-              if (diaryCount > 0)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [scheme.primaryColor, scheme.darkColor],
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: scheme.primaryColor.withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
                   ),
                   child: Text(
                     '$diaryCount 篇',
-                    style: const TextStyle(
-                      fontSize: 13,
+                    style: TextStyle(
+                      fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      color: scheme.primaryColor,
                     ),
-                  ),
-                ),
-              const SizedBox(height: 8),
-              InteractiveButton(
-                onPressed: () {
-                  HapticFeedback.lightImpact();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const GachaScreen()),
-                  );
-                },
-                padding: EdgeInsets.zero,
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        scheme.primaryColor.withValues(alpha: 0.85),
-                        scheme.primaryColor.withValues(alpha: 0.55),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: scheme.primaryColor.withValues(alpha: 0.25),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        '🎰',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '扭蛋',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: scheme.textDarkColor,
-                        ),
-                      ),
-                    ],
                   ),
                 ),
               ),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildHeaderActionButton({
+    required IconData icon,
+    required String label,
+    required ThemeScheme scheme,
+    required VoidCallback onTap,
+    bool isPrimary = false,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          height: 36,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isPrimary
+                ? scheme.primaryColor.withValues(alpha: 0.15)
+                : scheme.surfaceColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isPrimary
+                  ? scheme.primaryColor.withValues(alpha: 0.4)
+                  : scheme.dividerColor,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon,
+                  size: 14,
+                  color: isPrimary ? scheme.primaryColor : scheme.textMediumColor),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: isPrimary ? scheme.primaryColor : scheme.textDarkColor,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -521,6 +681,7 @@ class _TimelineScreenState extends State<TimelineScreen>
               context.read<DiaryProvider>().loadDiaries();
             }
           },
+          onLongPress: () => _onDiaryLongPress(diary),
           child: Container(
             margin: const EdgeInsets.only(bottom: 16),
             decoration: BoxDecoration(

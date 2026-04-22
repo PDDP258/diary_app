@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../config/app_theme.dart';
 import '../models/diary.dart';
 import '../services/database_service.dart';
 import '../utils/platform_helpers.dart';
 import '../screens/diary_detail_screen.dart';
+import '../screens/write_diary_screen.dart';
+import '../widgets/smart_notifications.dart';
 import '../providers/theme_provider.dart';
 import '../widgets/diary_interactions.dart';
 import '../widgets/skeleton_loading.dart';
@@ -135,6 +138,108 @@ class _PagedDiaryListState extends State<PagedDiaryList> {
         builder: (context) => DiaryDetailScreen(diary: diary),
       ),
     );
+  }
+
+  void _editDiary(Diary diary) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => WriteDiaryScreen(
+          diary: diary,
+          selectedDate: DateTime.parse(diary.date),
+        ),
+      ),
+    );
+    if (result == true && mounted) {
+      _refresh();
+    }
+  }
+
+  void _onDiaryLongPress(Diary diary) {
+    HapticFeedback.mediumImpact();
+    final scheme = AppTheme.schemeOf(context);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: scheme.cardColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                decoration: BoxDecoration(
+                  color: scheme.dividerColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              ListTile(
+                leading: Icon(Icons.edit_outlined, color: scheme.primaryColor),
+                title: Text('编辑日记', style: TextStyle(color: scheme.textDarkColor)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _editDiary(diary);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.delete_outline, color: scheme.errorColor),
+                title: Text('删除日记', style: TextStyle(color: scheme.errorColor)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _confirmDeleteDiary(diary);
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _confirmDeleteDiary(Diary diary) async {
+    final scheme = AppTheme.schemeOf(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: scheme.cardColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('删除日记？', style: TextStyle(color: scheme.textDarkColor)),
+        content: Text(
+          '此操作不可恢复，确定要删除这篇日记吗？',
+          style: TextStyle(color: scheme.textMediumColor),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('取消', style: TextStyle(color: scheme.textLightColor)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('删除', style: TextStyle(color: scheme.errorColor, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      try {
+        await DatabaseService.deleteDiary(diary.id!);
+        if (mounted) {
+          _refresh();
+          ToastManager().show(context, message: '日记已删除', type: ToastType.success);
+        }
+      } catch (e) {
+        if (mounted) {
+          ToastManager().show(context, message: '删除失败：$e', type: ToastType.error);
+        }
+      }
+    }
   }
 
   @override
@@ -280,6 +385,7 @@ class _PagedDiaryListState extends State<PagedDiaryList> {
     return TiltCard(
       maxTilt: 0.05,
       onTap: () => _viewDiary(diary),
+      onLongPress: () => _onDiaryLongPress(diary),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
@@ -540,6 +646,108 @@ class _PagedDiaryGridState extends State<PagedDiaryGrid> {
     );
   }
 
+  void _editDiary(Diary diary) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => WriteDiaryScreen(
+          diary: diary,
+          selectedDate: DateTime.parse(diary.date),
+        ),
+      ),
+    );
+    if (result == true && mounted) {
+      _refresh();
+    }
+  }
+
+  void _onDiaryLongPress(Diary diary) {
+    HapticFeedback.mediumImpact();
+    final scheme = AppTheme.schemeOf(context);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: scheme.cardColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                decoration: BoxDecoration(
+                  color: scheme.dividerColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              ListTile(
+                leading: Icon(Icons.edit_outlined, color: scheme.primaryColor),
+                title: Text('编辑日记', style: TextStyle(color: scheme.textDarkColor)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _editDiary(diary);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.delete_outline, color: scheme.errorColor),
+                title: Text('删除日记', style: TextStyle(color: scheme.errorColor)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _confirmDeleteDiary(diary);
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _confirmDeleteDiary(Diary diary) async {
+    final scheme = AppTheme.schemeOf(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: scheme.cardColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('删除日记？', style: TextStyle(color: scheme.textDarkColor)),
+        content: Text(
+          '此操作不可恢复，确定要删除这篇日记吗？',
+          style: TextStyle(color: scheme.textMediumColor),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('取消', style: TextStyle(color: scheme.textLightColor)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('删除', style: TextStyle(color: scheme.errorColor, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      try {
+        await DatabaseService.deleteDiary(diary.id!);
+        if (mounted) {
+          _refresh();
+          ToastManager().show(context, message: '日记已删除', type: ToastType.success);
+        }
+      } catch (e) {
+        if (mounted) {
+          ToastManager().show(context, message: '删除失败：$e', type: ToastType.error);
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = AppTheme.schemeOf(context);
@@ -602,6 +810,7 @@ class _PagedDiaryGridState extends State<PagedDiaryGrid> {
     return TiltCard(
       maxTilt: 0.08,
       onTap: () => _viewDiary(diary),
+      onLongPress: () => _onDiaryLongPress(diary),
       child: Container(
         decoration: BoxDecoration(
           color: scheme.cardColor,

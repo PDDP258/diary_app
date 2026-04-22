@@ -17,10 +17,12 @@ class CustomGoalProvider extends ChangeNotifier {
   bool get hasGoals => _goals.isNotEmpty;
   bool get hasActiveGoal => _activeGoal != null;
   
-  /// 加载所有目标
+  /// 加载所有目标（自动按周期重置过期进度）
   Future<void> loadGoals() async {
     _setLoading(true);
     try {
+      // 先执行周期重置，再加载数据
+      await CustomGoalService.resetDailyProgress();
       _goals = await CustomGoalService.getAllGoals();
       _activeGoal = await CustomGoalService.getActiveGoal();
       _error = null;

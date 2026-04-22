@@ -2,7 +2,7 @@
 
 版本
 
-: 1.1.6 (2026-03-28) 📦 徽章系统修复 + PDF字体打包方案 |   技术栈  : Flutter 3.x + Provider + SQLite
+: 1.20.0 (2026-04-10) 🗣️ 自言自语 + 全局设计升级 |   技术栈  : Flutter 3.x + Provider + SQLite
 
 > **注意**：本文档版本号仅用于 AI 协作记录，软件实际版本号以 `pubspec.yaml` 和软件内显示为准。
 
@@ -321,6 +321,8 @@ SkeletonLoading(
 | 目标提醒    | `goal_service.dart`                 | 进度提醒、即将完成提醒、连续记录中断提醒、目标达成奖励                  |
 | 三级标签    | `tag_system_service.dart`           | 分类→子分类→标签三级结构，智能迁移，同步支持                      |
 | 标签搜索    | `tag_selector_v3.dart`              | 按名称搜索标签，支持三级结构浏览                             |
+| 自言自语    | `self_talk_screen.dart`             | 聊天式快速记录，自动同步到日记，支持任务识别                   |
+| 任务识别    | `self_talk_task_parser.dart`        | 本地规则解析DDL/提醒/待办，无AI                               |
 
 ## 开屏动画说明
 
@@ -774,6 +776,87 @@ with open('lib/screens/profile_screen.dart', 'w', encoding='utf-8') as f:
   4. 不要尝试手动修复乱码  （信息已丢失，不可逆）
 
 ## 版本记录
+
+- v1.21.0   (2026-04-22) - PDF导出修复 + 自言自语重构 + 速记功能:
+  - PDF 导出修复（根因定位 + 修复）
+    - `assets/fonts/` 下实际只有 `NotoSerifCJKsc-VF.ttf`（可变字体）
+    - 但 `pdf_export_service.dart` 和 `font_download_service.dart` 中代码找的是 `.otf` 文件
+    - **文件名完全不匹配**导致字体加载永远失败，PDF 无法导出中文
+    - 修复：`pdf_export_service.dart` 中 `_loadChineseFont()` / `_loadChineseBoldFont()` 均改为加载 `.ttf`
+    - 修复：`font_download_service.dart` 中字体配置名同步改为 `.ttf`
+    - 可变字体通过 `fontWeight` 参数控制粗细，一个文件同时支持 Regular + Bold
+  - 自言自语完全重构（与日记系统零耦合）
+    - **核心原则**：自言自语是完全独立模块，不再关联日记
+    - `SelfTalkService.sendMessage()`：不再读写 `Diary` 表，不再追加到日记正文
+    - `SelfTalkService.deleteMessage()`：只删除消息和级联任务，不碰日记
+    - `SelfTalkTask`：移除 `diaryId` 依赖，仅通过 `messageId` 关联
+    - 移除废弃方法：`updateSelfTalkMessageDiaryId()`、`getSelfTalkMessagesByDiaryId()`
+    - 数据库升级到 **v10**（v9 标记自言自语独立逻辑，v10 新增速记表）
+    - 删除对话框文案更新：去掉"同时也会从当天日记中移除"
+    - 任务解析逻辑不变：仅在 `senderType == me && aiEnabled` 时触发
+  - 新增「速记」功能（Quick Note）
+    - **定位**：快速捕捉一闪而过的想法，与日记完全隔离
+    - 数据模型：`QuickNote`（content, created_at, updated_at, is_pinned, tag）
+    - 数据库新增 `quick_notes` 表（native + web 双端支持）
+    - 服务层：`QuickNoteService`（CRUD + 搜索 + 标签筛选 + 置顶）
+    - **速记编辑页**（`QuickNoteEditorScreen`）：极简设计，只有多行文本框 + 可选标签
+    - **速记列表页**（`QuickNotesScreen`）：搜索框、标签筛选、置顶优先、左滑删除/右滑置顶
+    - 预设标签：灵感、待办、备忘、读书、想法
+    - 时间显示：相对时间（刚刚、5分钟前、2小时前、3天前）
+    - **入口设计**：
+      - 常规入口：右上角悬浮按钮（💡 图标），点击新建，长按打开列表
+      - 快捷启动：长按屏幕空白区 **3秒** 自动打开速记编辑器
+      - 关闭入口："我的"页 → "速记悬浮按钮"开关，可永久关闭
+    - 新增文件：
+      - `lib/models/quick_note.dart`
+      - `lib/services/quick_note_service.dart`
+      - `lib/screens/quick_notes_screen.dart`
+      - `lib/screens/quick_note_editor_screen.dart`
+  - 构建验证
+    - `flutter analyze` 无 error
+    - Release APK：88.3MB（`build/app/outputs/flutter-apk/app-release.apk`）
+
+- v1.20.0   (2026-04-10) - 自言自语 + 设计系统全面升级 + 自定义头像修复:
+  - 新增「自言自语」聊天式快速记录
+    - 新建 `SelfTalkScreen`：类IM聊天界面，右侧用户气泡 + 左侧系统气泡
+    - 每条用户消息自动追加到当天 `Diary.content`，系统回复仅存在于聊天页
+    - 本地规则模板回复（无AI）：关键词匹配 + 记录条数反馈 + 兜底正向短句
+    - 支持日期切换、长按删除消息、同步清理日记正文
+    - 数据库新增 `self_talk_messages` 表（native + web 双端支持）
+    - 双入口设计：时间轴顶部快捷胶囊 + 长按底部「+」按钮弹出菜单
+    - 新增文件：`lib/models/self_talk_message.dart`、`lib/services/self_talk_service.dart`、`lib/screens/self_talk_screen.dart`
+  - 全局设计系统升级
+    - 替换所有 `withOpacity` 为 `withValues(alpha: ...)`，适配 Flutter 3.29+
+    - 扩展 `ThemeScheme`：新增 `surfaceColor`、`dividerColor`、`shadowColor` 等语义化颜色
+    - ProfileScreen 沉浸式重构：呼吸动画头像卡片、渐变图标菜单、Toast反馈
+    - TimelineScreen 升级：日记卡片 `TiltCard` 3D倾斜、统一阴影语义色
+    - CalendarScreen 节气动画：`BreathingAnimation` 彩色光晕效果
+    - GachaScreen 奖励展示升级：稀有度光晕层、传说奖励脉冲动画
+    - StatsScreen 数据可视化：统计卡片 `TiltCard`、情绪分布圆角渐变进度条
+    - `SmartRecallHomeCard` 重新设计：自动收缩悬浮胶囊（4秒后折叠）
+  - 自定义头像持久化修复
+    - `setCustomAvatar()` 自动复制图片到 `getApplicationDocumentsDirectory()/avatars/`
+    - 应用更新/系统清理缓存后头像不再丢失
+    - 启动时自检头像文件存在性，自动清理无效记录
+  - 版本号统一升级至 1.20.0
+    - `pubspec.yaml`、`android/app/build.gradle.kts`、软件内所有版本显示同步更新
+    - APK版本号：`versionCode = 120`
+  - 自言自语任务识别（DDL / 提醒 / 待办）
+    - 新增 `SelfTalkTaskParser` 本地规则解析：支持"明天下午3点提醒我交报告"、"周五前完成PPT"、"记得买牛奶"等
+    - 自动提取任务内容 + 截止时间，无 AI、不上云
+    - 聊天界面显示任务卡片（橙色未完成 / 绿色已完成），点击即可标记完成
+    - 数据库新增 `self_talk_tasks` 表（native + web）
+    - 删除消息时级联删除关联任务
+    - 新增文件：`lib/models/self_talk_task.dart`、`lib/services/self_talk_task_parser.dart`
+  - 照片持久化修复
+    - `ImagePersistenceService` 自动将相册/拍照图片复制到应用私有目录
+    - 解决用户移动/删除相册原图后，App 内图片显示空白的问题
+  - 自定义头像持久化修复
+    - `SettingsProvider.setCustomAvatar()` 自动复制到 `getApplicationDocumentsDirectory()/avatars/`
+    - 应用更新/系统清理缓存后头像不再丢失
+    - 启动时自检头像文件存在性，自动清理无效记录
+  - 构建信息
+    - 最终APK大小：84.1MB
 
 - v1.1.6   (2026-03-28) - 徽章系统修复 + PDF字体打包方案 + 彩蛋优化:
   - 徽章系统全面检查与修复

@@ -47,7 +47,7 @@ class PdfExportService {
     
     // 1. 测试从assets加载
     try {
-      final fontData = await rootBundle.load('assets/fonts/NotoSerifCJKsc-Regular.otf');
+      final fontData = await rootBundle.load('assets/fonts/NotoSerifCJKsc-VF.ttf');
       results['assets_load'] = {
         'success': true,
         'size_mb': (fontData.lengthInBytes / 1024 / 1024).toStringAsFixed(2),
@@ -95,7 +95,7 @@ class PdfExportService {
     // 1. 优先尝试加载assets中的字体（最可靠，无需网络）
     try {
       print('PDF: 尝试加载assets字体...');
-      final fontData = await rootBundle.load('assets/fonts/NotoSerifCJKsc-Regular.otf');
+      final fontData = await rootBundle.load('assets/fonts/NotoSerifCJKsc-VF.ttf');
       if (fontData.lengthInBytes > 1000000) { // 验证字体大小（应大于1MB）
         _chineseFont = pw.Font.ttf(fontData);
         print('PDF: ✓ 加载assets字体成功 (${(fontData.lengthInBytes/1024/1024).toStringAsFixed(2)}MB)');
@@ -184,7 +184,7 @@ class PdfExportService {
     // 1. 尝试加载assets中的粗体字体
     try {
       print('PDF: 尝试加载assets粗体字体...');
-      final fontData = await rootBundle.load('assets/fonts/NotoSerifCJKsc-Bold.otf');
+      final fontData = await rootBundle.load('assets/fonts/NotoSerifCJKsc-VF.ttf');
       if (fontData.lengthInBytes > 1000000) {
         // 将 ByteData 转换为 Uint8List
         _chineseBoldFont = pw.Font.ttf(fontData);

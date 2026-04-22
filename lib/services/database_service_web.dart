@@ -5,6 +5,9 @@ import '../models/anniversary.dart';
 import '../models/diary.dart';
 import '../models/mood.dart';
 import '../models/tag.dart';
+import '../models/self_talk_message.dart';
+import '../models/quick_note.dart';
+import '../models/self_talk_task.dart';
 import 'encryption_service.dart';
 
 /// Web 版本数据库服务（使用 SharedPreferences 持久化存储）
@@ -22,6 +25,9 @@ class DatabaseService {
   static const String _diaryTagsV3Key = 'diary_tags_v3_data';  // 三级标签系统
   static const String _metadataKey = 'diaries_metadata';
   static const String _anniversariesKey = 'anniversaries_data';
+  static const String _selfTalkMessagesKey = 'self_talk_messages_data';
+  static const String _selfTalkTasksKey = 'self_talk_tasks_data';
+  static const String _quickNotesKey = 'quick_notes_data';
 
   static List<Diary> _diaries = [];
   static List<Mood> _moods = [];
@@ -29,10 +35,16 @@ class DatabaseService {
   static List<Anniversary> _anniversaries = [];
   static List<Map<String, dynamic>> _diaryTags = [];
   static List<Map<String, dynamic>> _diaryTagsV3 = [];  // 三级标签关联
+  static List<SelfTalkMessage> _selfTalkMessages = [];
+  static List<SelfTalkTask> _selfTalkTasks = [];
+  static List<QuickNote> _quickNotes = [];
   static int _diaryIdCounter = 1;
   static int _moodIdCounter = 1;
   static int _tagIdCounter = 1;
   static int _anniversaryIdCounter = 1;
+  static int _selfTalkMessageIdCounter = 1;
+  static int _selfTalkTaskIdCounter = 1;
+  static int _quickNoteIdCounter = 1;
   static bool _initialized = false;
   static SharedPreferences? _prefs;
 
@@ -138,6 +150,45 @@ class DatabaseService {
               1;
         }
       }
+
+      // 加载自言自语消息
+      final selfTalkMessagesJson = _prefs?.getString(_selfTalkMessagesKey);
+      if (selfTalkMessagesJson != null) {
+        final List<dynamic> selfTalkMessagesList = jsonDecode(selfTalkMessagesJson);
+        _selfTalkMessages = selfTalkMessagesList.map((e) => SelfTalkMessage.fromMap(e)).toList();
+        if (_selfTalkMessages.isNotEmpty) {
+          _selfTalkMessageIdCounter = _selfTalkMessages
+                  .map((m) => m.id ?? 0)
+                  .reduce((a, b) => a > b ? a : b) +
+              1;
+        }
+      }
+
+      // 加载自言自语任务
+      final selfTalkTasksJson = _prefs?.getString(_selfTalkTasksKey);
+      if (selfTalkTasksJson != null) {
+        final List<dynamic> selfTalkTasksList = jsonDecode(selfTalkTasksJson);
+        _selfTalkTasks = selfTalkTasksList.map((e) => SelfTalkTask.fromMap(e)).toList();
+        if (_selfTalkTasks.isNotEmpty) {
+          _selfTalkTaskIdCounter = _selfTalkTasks
+                  .map((t) => t.id ?? 0)
+                  .reduce((a, b) => a > b ? a : b) +
+              1;
+        }
+      }
+
+      // 加载速记
+      final quickNotesJson = _prefs?.getString(_quickNotesKey);
+      if (quickNotesJson != null) {
+        final List<dynamic> quickNotesList = jsonDecode(quickNotesJson);
+        _quickNotes = quickNotesList.map((e) => QuickNote.fromMap(e)).toList();
+        if (_quickNotes.isNotEmpty) {
+          _quickNoteIdCounter = _quickNotes
+                  .map((n) => n.id ?? 0)
+                  .reduce((a, b) => a > b ? a : b) +
+              1;
+        }
+      }
     } catch (e) {
       print('加载数据失败: $e');
     }
@@ -219,6 +270,24 @@ class DatabaseService {
   static Future<void> _saveAnniversaries() async {
     final anniversariesJson = jsonEncode(_anniversaries.map((a) => a.toMap()).toList());
     await _prefs?.setString(_anniversariesKey, anniversariesJson);
+  }
+
+  /// 保存自言自语消息到 SharedPreferences
+  static Future<void> _saveSelfTalkMessages() async {
+    final selfTalkJson = jsonEncode(_selfTalkMessages.map((m) => m.toMap()).toList());
+    await _prefs?.setString(_selfTalkMessagesKey, selfTalkJson);
+  }
+
+  /// 保存自言自语任务到 SharedPreferences
+  static Future<void> _saveSelfTalkTasks() async {
+    final selfTalkTasksJson = jsonEncode(_selfTalkTasks.map((t) => t.toMap()).toList());
+    await _prefs?.setString(_selfTalkTasksKey, selfTalkTasksJson);
+  }
+
+  /// 保存速记到 SharedPreferences
+  static Future<void> _saveQuickNotes() async {
+    final quickNotesJson = jsonEncode(_quickNotes.map((n) => n.toMap()).toList());
+    await _prefs?.setString(_quickNotesKey, quickNotesJson);
   }
 
   /// 更新元数据缓存
@@ -886,5 +955,176 @@ class DatabaseService {
     }
     
     await _saveDiaryTags();
+  }
+
+  // ==================== 自言自语消息操作 ====================
+
+  static Future<int> insertSelfTalkMessage(SelfTalkMessage message) async {
+    await _ensureInitialized();
+    final newMessage = SelfTalkMessage(
+      id: _selfTalkMessageIdCounter++,
+      diaryId: message.diaryId,
+      date: message.date,
+      content: message.content,
+      isUser: message.isUser,
+      createdAt: message.createdAt,
+    );
+    _selfTalkMessages.add(newMessage);
+    await _saveSelfTalkMessages();
+    return newMessage.id!;
+  }
+
+  static Future<List<SelfTalkMessage>> getSelfTalkMessagesByDate(String date) async {
+    await _ensureInitialized();
+    return _selfTalkMessages
+        .where((m) => m.date == date)
+        .toList()
+      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+  }
+
+  static Future<int> deleteSelfTalkMessage(int id) async {
+    await _ensureInitialized();
+    _selfTalkMessages.removeWhere((m) => m.id == id);
+    await _saveSelfTalkMessages();
+    return 1;
+  }
+
+  // ==================== 自言自语任务操作 ====================
+
+  static Future<int> insertSelfTalkTask(SelfTalkTask task) async {
+    await _ensureInitialized();
+    final newTask = SelfTalkTask(
+      id: _selfTalkTaskIdCounter++,
+      messageId: task.messageId,
+      diaryId: task.diaryId,
+      date: task.date,
+      content: task.content,
+      deadline: task.deadline,
+      isCompleted: task.isCompleted,
+      createdAt: task.createdAt,
+    );
+    _selfTalkTasks.add(newTask);
+    await _saveSelfTalkTasks();
+    return newTask.id!;
+  }
+
+  static Future<List<SelfTalkTask>> getSelfTalkTasksByDate(String date) async {
+    await _ensureInitialized();
+    return _selfTalkTasks
+        .where((t) => t.date == date)
+        .toList()
+      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+  }
+
+  static Future<List<SelfTalkTask>> getSelfTalkTasksByMessageId(int messageId) async {
+    await _ensureInitialized();
+    return _selfTalkTasks
+        .where((t) => t.messageId == messageId)
+        .toList()
+      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+  }
+
+  static Future<int> updateSelfTalkTask(SelfTalkTask task) async {
+    await _ensureInitialized();
+    final index = _selfTalkTasks.indexWhere((t) => t.id == task.id);
+    if (index >= 0) {
+      _selfTalkTasks[index] = task;
+      await _saveSelfTalkTasks();
+      return 1;
+    }
+    return 0;
+  }
+
+  static Future<int> deleteSelfTalkTask(int id) async {
+    await _ensureInitialized();
+    _selfTalkTasks.removeWhere((t) => t.id == id);
+    await _saveSelfTalkTasks();
+    return 1;
+  }
+
+  // ==================== 速记操作 ====================
+
+  static Future<int> insertQuickNote(QuickNote note) async {
+    await _ensureInitialized();
+    final newNote = QuickNote(
+      id: _quickNoteIdCounter++,
+      content: note.content,
+      createdAt: note.createdAt,
+      updatedAt: note.updatedAt,
+      isPinned: note.isPinned,
+      tag: note.tag,
+    );
+    _quickNotes.add(newNote);
+    await _saveQuickNotes();
+    return newNote.id!;
+  }
+
+  static Future<List<QuickNote>> getAllQuickNotes() async {
+    await _ensureInitialized();
+    return _quickNotes.toList()
+      ..sort((a, b) {
+        if (a.isPinned != b.isPinned) {
+          return a.isPinned ? -1 : 1;
+        }
+        return b.createdAt.compareTo(a.createdAt);
+      });
+  }
+
+  static Future<List<QuickNote>> getQuickNotesByTag(String tag) async {
+    await _ensureInitialized();
+    return _quickNotes
+        .where((n) => n.tag == tag)
+        .toList()
+      ..sort((a, b) {
+        if (a.isPinned != b.isPinned) {
+          return a.isPinned ? -1 : 1;
+        }
+        return b.createdAt.compareTo(a.createdAt);
+      });
+  }
+
+  static Future<List<QuickNote>> searchQuickNotes(String keyword) async {
+    await _ensureInitialized();
+    return _quickNotes
+        .where((n) => n.content.toLowerCase().contains(keyword.toLowerCase()))
+        .toList()
+      ..sort((a, b) {
+        if (a.isPinned != b.isPinned) {
+          return a.isPinned ? -1 : 1;
+        }
+        return b.createdAt.compareTo(a.createdAt);
+      });
+  }
+
+  static Future<QuickNote?> getQuickNoteById(int id) async {
+    await _ensureInitialized();
+    try {
+      return _quickNotes.firstWhere((n) => n.id == id);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  static Future<int> updateQuickNote(QuickNote note) async {
+    await _ensureInitialized();
+    final index = _quickNotes.indexWhere((n) => n.id == note.id);
+    if (index >= 0) {
+      _quickNotes[index] = note;
+      await _saveQuickNotes();
+      return 1;
+    }
+    return 0;
+  }
+
+  static Future<int> deleteQuickNote(int id) async {
+    await _ensureInitialized();
+    _quickNotes.removeWhere((n) => n.id == id);
+    await _saveQuickNotes();
+    return 1;
+  }
+
+  static Future<int> getQuickNoteCount() async {
+    await _ensureInitialized();
+    return _quickNotes.length;
   }
 }
