@@ -595,7 +595,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                 // 启动3秒长按计时器（长按空白区打开速记）
                 _longPressTriggered = false;
                 _longPressTimer?.cancel();
-                _longPressTimer = Timer(const Duration(seconds: 3), () {
+                _longPressTimer = Timer(const Duration(seconds: 2), () {
                   _longPressTriggered = true;
                   HapticFeedback.heavyImpact();
                   _openQuickNoteEditor();

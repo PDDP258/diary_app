@@ -16,6 +16,16 @@
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <uses-permission android:name="android.permission.USE_FINGERPRINT" />
     
+    <!-- 悬浮窗权限（速记浮窗） -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- 通知权限（Android 13+） -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- 前台服务（保持应用运行） -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <!-- 唤醒锁（防止休眠） -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    
     <application
         android:label="小记日记"
         android:name="${applicationName}"
@@ -99,6 +109,12 @@
         
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
+        <!-- 浮窗前台服务（flutter_overlay_window） -->
+        <service
+            android:name="flutter.overlay.window.flutter_overlay_window.OverlayService"
+            android:foregroundServiceType="specialUse"
+            android:exported="false" />
+        
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />

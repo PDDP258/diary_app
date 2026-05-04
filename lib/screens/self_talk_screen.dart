@@ -2,15 +2,24 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_theme.dart';
 import '../providers/theme_provider.dart';
 import '../models/self_talk_message.dart';
 import '../models/self_talk_task.dart';
 import '../services/self_talk_service.dart';
 import '../services/sound_service.dart';
-import '../widgets/animated_feedback.dart';
 import '../widgets/smart_notifications.dart';
 
+/// 自言自语页面
+/// 
+/// 交互规则：
+/// - "我"发送 → 消息在右边，主色气泡
+/// - "另一个我"发送 → 消息在左边，紫色气泡，带 🧠 头像
+/// - 系统回复 → 在发送者的反方向
+///   - 回复"我" → 左边
+///   - 回复"另一个我" → 右边
+/// - AI 开关 → 控制之后是否生成新的系统回复，不影响已有历史
 class SelfTalkScreen extends StatefulWidget {
   final String? initialDate;
 
@@ -32,6 +41,7 @@ class _SelfTalkScreenState extends State<SelfTalkScreen> {
   bool _isSending = false;
   bool _aiEnabled = true;
   SelfTalkSenderType _senderType = SelfTalkSenderType.me;
+  static const String _senderTypeKey = 'self_talk_sender_type';
 
   @override
   void initState() {
@@ -40,7 +50,25 @@ class _SelfTalkScreenState extends State<SelfTalkScreen> {
         ? DateTime.parse(widget.initialDate!)
         : DateTime.now();
     _loadAiSetting();
+    _loadPersistedSenderType();
     _loadMessages();
+  }
+
+  Future<void> _loadPersistedSenderType() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedIndex = prefs.getInt(_senderTypeKey);
+    if (savedIndex != null &&
+        savedIndex >= 0 &&
+        savedIndex < SelfTalkSenderType.values.length) {
+      if (mounted) {
+        setState(() => _senderType = SelfTalkSenderType.values[savedIndex]);
+      }
+    }
+  }
+
+  Future<void> _persistSenderType(SelfTalkSenderType type) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_senderTypeKey, type.index);
   }
 
   @override
@@ -93,15 +121,31 @@ class _SelfTalkScreenState extends State<SelfTalkScreen> {
     });
   }
 
-  Future<void> _sendMessage() async {
+  Future<void> _sendMessage({SelfTalkSenderType? explicitSenderType}) async {
     final text = _inputController.text.trim();
     if (text.isEmpty || _isSending) return;
 
     setState(() => _isSending = true);
     HapticFeedback.lightImpact();
 
-    // 强制捕获当前 senderType，避免任何异步状态漂移
-    final currentSenderType = _senderType;
+    // 三重保障：
+    // 1. 优先使用显式传入的 senderType（按钮闭包捕获）
+    // 2. 回退到持久化的 senderType（SharedPreferences）
+    // 3. 最后回退到实例变量
+    SelfTalkSenderType currentSenderType;
+    if (explicitSenderType != null) {
+      currentSenderType = explicitSenderType;
+    } else {
+      final prefs = await SharedPreferences.getInstance();
+      final savedIndex = prefs.getInt(_senderTypeKey);
+      if (savedIndex != null &&
+          savedIndex >= 0 &&
+          savedIndex < SelfTalkSenderType.values.length) {
+        currentSenderType = SelfTalkSenderType.values[savedIndex];
+      } else {
+        currentSenderType = _senderType;
+      }
+    }
 
     final sentMessage = await SelfTalkService.sendMessage(
       text,
@@ -112,9 +156,12 @@ class _SelfTalkScreenState extends State<SelfTalkScreen> {
 
     await _loadMessages();
 
-    // 增强通知：如果是我发的消息且检测到了任务，播放成功音效+强震动+Toast
-    if (_senderType == SelfTalkSenderType.me && _aiEnabled && sentMessage.id != null) {
-      final detectedTasks = _tasks.where((t) => t.messageId == sentMessage.id).toList();
+    // 任务检测通知（"我"和"另一个我"都能触发）
+    if (sentMessage.senderType != SelfTalkSenderType.system &&
+        _aiEnabled &&
+        sentMessage.id != null) {
+      final detectedTasks =
+          _tasks.where((t) => t.messageId == sentMessage.id).toList();
       if (detectedTasks.isNotEmpty) {
         await SoundService.playSuccess();
         await HapticFeedback.heavyImpact();
@@ -208,6 +255,16 @@ class _SelfTalkScreenState extends State<SelfTalkScreen> {
     }
   }
 
+  /// 找到系统回复前最近的一条用户消息，用于判断回复位置
+  SelfTalkMessage? _findRepliedUserMessage(int systemIndex) {
+    for (int i = systemIndex - 1; i >= 0; i--) {
+      if (_messages[i].senderType != SelfTalkSenderType.system) {
+        return _messages[i];
+      }
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = AppTheme.schemeOf(context);
@@ -251,7 +308,6 @@ class _SelfTalkScreenState extends State<SelfTalkScreen> {
           ],
         ),
         actions: [
-          // AI 对话开关
           _buildAiToggle(scheme),
           const SizedBox(width: 8),
         ],
@@ -259,6 +315,43 @@ class _SelfTalkScreenState extends State<SelfTalkScreen> {
       ),
       body: Column(
         children: [
+          // 当前身份状态指示器
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            color: _senderType == SelfTalkSenderType.me
+                ? scheme.primaryColor.withValues(alpha: 0.08)
+                : const Color(0xFF7C4DFF).withValues(alpha: 0.08),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      _senderType == SelfTalkSenderType.me
+                          ? Icons.person_outline
+                          : Icons.psychology_outlined,
+                      size: 14,
+                      color: _senderType == SelfTalkSenderType.me
+                          ? scheme.primaryColor
+                          : const Color(0xFF7C4DFF),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      _senderType == SelfTalkSenderType.me ? '当前身份：我（消息在右边）' : '当前身份：另一个我（消息在左边）',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: _senderType == SelfTalkSenderType.me
+                            ? scheme.primaryColor
+                            : const Color(0xFF7C4DFF),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
           Expanded(
             child: _isLoading
                 ? Center(
@@ -269,14 +362,14 @@ class _SelfTalkScreenState extends State<SelfTalkScreen> {
                     itemCount: _messages.length,
                     itemBuilder: (context, index) {
                       final msg = _messages[index];
-                      final msgTasks = msg.senderType == SelfTalkSenderType.me && msg.id != null
+                      final msgTasks = msg.id != null
                           ? _tasks.where((t) => t.messageId == msg.id).toList()
                           : <SelfTalkTask>[];
                       return Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          _buildMessageBubble(msg, scheme),
-                          ...msgTasks.map((task) => _buildTaskCard(task, scheme)),
+                          _buildMessageBubble(index, msg, scheme),
+                          ...msgTasks.map((task) => _buildTaskCard(task, scheme, msg.senderType)),
                         ],
                       );
                     },
@@ -288,7 +381,6 @@ class _SelfTalkScreenState extends State<SelfTalkScreen> {
     );
   }
 
-  /// AI 开关按钮
   Widget _buildAiToggle(ThemeScheme scheme) {
     return GestureDetector(
       onTap: _toggleAi,
@@ -312,7 +404,8 @@ class _SelfTalkScreenState extends State<SelfTalkScreen> {
           children: [
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 200),
-              transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
+              transitionBuilder: (child, animation) =>
+                  ScaleTransition(scale: animation, child: child),
               child: Icon(
                 _aiEnabled ? Icons.auto_awesome : Icons.auto_awesome_outlined,
                 key: ValueKey(_aiEnabled),
@@ -335,210 +428,158 @@ class _SelfTalkScreenState extends State<SelfTalkScreen> {
     );
   }
 
-  Widget _buildMessageBubble(SelfTalkMessage message, ThemeScheme scheme) {
+  /// 核心：消息气泡构建
+  /// 规则：
+  /// - me → 右边，主色
+  /// - alterEgo → 左边，紫色，带 🧠 头像和标签
+  /// - system → 反方向（回复 me 在左边，回复 alterEgo 在右边），灰色
+  Widget _buildMessageBubble(int index, SelfTalkMessage message, ThemeScheme scheme) {
     final time = DateFormat('HH:mm').format(DateTime.parse(message.createdAt));
 
-    // 使用 if-else 替代 switch，确保 senderType 判断不会被编译器优化出错
-    if (message.senderType == SelfTalkSenderType.me) {
-      return _buildRightBubble(
-        content: message.content,
-        time: time,
-        scheme: scheme,
-        onLongPress: () => _deleteMessage(message),
-      );
-    } else if (message.senderType == SelfTalkSenderType.alterEgo) {
-      return _buildLeftBubble(
-        content: message.content,
-        time: time,
-        scheme: scheme,
-        avatarEmoji: '🧠',
-        senderLabel: '另一个我',
-        textColor: const Color(0xFF7C4DFF),
-        gradientColors: [
-          const Color(0xFF7C4DFF).withValues(alpha: 0.18),
-          const Color(0xFF651FFF).withValues(alpha: 0.10),
-        ],
-        borderColor: const Color(0xFF7C4DFF).withValues(alpha: 0.50),
-        onLongPress: () => _deleteMessage(message),
-      );
-    } else {
-      // system
-      return _buildLeftBubble(
-        content: message.content,
-        time: time,
-        scheme: scheme,
-        avatarEmoji: '📝',
-        senderLabel: null,
-        textColor: scheme.textDarkColor,
-        gradientColors: [
-          scheme.surfaceColor,
-          scheme.cardColor,
-        ],
-        borderColor: scheme.dividerColor,
-      );
+    // 判断对齐方向
+    final bool isRight;
+    final Color bgColor;
+    final Color borderColor;
+    final String? label;
+    final String? avatar;
+
+    switch (message.senderType) {
+      case SelfTalkSenderType.me:
+        isRight = true;
+        bgColor = scheme.primaryColor.withValues(alpha: 0.15);
+        borderColor = scheme.primaryColor.withValues(alpha: 0.35);
+        label = null;
+        avatar = null;
+        break;
+      case SelfTalkSenderType.alterEgo:
+        isRight = false;
+        bgColor = const Color(0xFF7C4DFF).withValues(alpha: 0.12);
+        borderColor = const Color(0xFF7C4DFF).withValues(alpha: 0.40);
+        label = '另一个我';
+        avatar = '🧠';
+        break;
+      case SelfTalkSenderType.system:
+        // 系统回复在发送者的反方向
+        // 优先使用 repliedToSenderType（可靠），回退到回溯查找
+        final repliedType = message.repliedToSenderType ?? _findRepliedUserMessage(index)?.senderType;
+        if (repliedType == SelfTalkSenderType.alterEgo) {
+          isRight = true; // 回复 alterEgo → 显示在右边
+        } else {
+          isRight = false; // 回复 me 或找不到 → 显示在左边
+        }
+        bgColor = scheme.surfaceColor;
+        borderColor = scheme.dividerColor;
+        label = null;
+        avatar = '📝';
+        break;
     }
-  }
 
-  /// "我"的消息：右对齐主色气泡
-  Widget _buildRightBubble({
-    required String content,
-    required String time,
-    required ThemeScheme scheme,
-    VoidCallback? onLongPress,
-  }) {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: Padding(
-        padding: const EdgeInsets.only(left: 48, top: 4, bottom: 4),
-        child: GestureDetector(
-          onLongPress: onLongPress,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  scheme.primaryColor.withValues(alpha: 0.20),
-                  scheme.primaryColor.withValues(alpha: 0.12),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
-                bottomLeft: Radius.circular(20),
-                bottomRight: Radius.circular(4),
-              ),
-              border: Border.all(
-                color: scheme.primaryColor.withValues(alpha: 0.30),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  content,
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: scheme.textDarkColor,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  time,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: scheme.textMediumColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
+    final bubbleContent = GestureDetector(
+      onLongPress: message.isUser ? () => _deleteMessage(message) : null,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.75,
         ),
-      ),
-    );
-  }
-
-  /// 左侧气泡：Alter Ego / 系统
-  Widget _buildLeftBubble({
-    required String content,
-    required String time,
-    required ThemeScheme scheme,
-    required String avatarEmoji,
-    String? senderLabel,
-    required Color textColor,
-    required List<Color> gradientColors,
-    required Color borderColor,
-    VoidCallback? onLongPress,
-  }) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Padding(
-        padding: const EdgeInsets.only(right: 48, top: 4, bottom: 4),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          mainAxisSize: MainAxisSize.min,
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(16),
+            topRight: const Radius.circular(16),
+            bottomLeft: Radius.circular(isRight ? 16 : 4),
+            bottomRight: Radius.circular(isRight ? 4 : 16),
+          ),
+          border: Border.all(color: borderColor),
+        ),
+        child: Column(
+          crossAxisAlignment:
+              isRight ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 36,
-              height: 36,
-              margin: const EdgeInsets.only(right: 8),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: gradientColors,
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+            if (label != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF7C4DFF),
+                  ),
                 ),
-                shape: BoxShape.circle,
-                border: Border.all(color: borderColor),
               ),
-              child: Center(
-                child: Text(avatarEmoji, style: const TextStyle(fontSize: 18)),
+            Text(
+              message.content,
+              style: TextStyle(
+                fontSize: 15,
+                color: scheme.textDarkColor,
+                height: 1.4,
               ),
             ),
-            Flexible(
-              child: GestureDetector(
-                onLongPress: onLongPress,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: gradientColors,
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(20),
-                      topRight: Radius.circular(20),
-                      bottomLeft: Radius.circular(4),
-                      bottomRight: Radius.circular(20),
-                    ),
-                    border: Border.all(color: borderColor),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (senderLabel != null)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: Text(
-                            senderLabel,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: textColor,
-                            ),
-                          ),
-                        ),
-                      Text(
-                        content,
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: scheme.textDarkColor,
-                          height: 1.4,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        time,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: scheme.textLightColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+            const SizedBox(height: 2),
+            Text(
+              time,
+              style: TextStyle(
+                fontSize: 11,
+                color: scheme.textMediumColor,
               ),
             ),
           ],
         ),
       ),
     );
+
+    if (avatar != null) {
+      // 带头像的消息：使用 Row 精确控制对齐
+      final avatarWidget = Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: bgColor,
+          shape: BoxShape.circle,
+          border: Border.all(color: borderColor),
+        ),
+        child: Center(
+          child: Text(avatar, style: const TextStyle(fontSize: 16)),
+        ),
+      );
+
+      return Padding(
+        padding: const EdgeInsets.only(top: 4, bottom: 4),
+        child: Row(
+          mainAxisAlignment: isRight ? MainAxisAlignment.end : MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: isRight
+              ? [
+                  Flexible(child: bubbleContent),
+                  const SizedBox(width: 8),
+                  avatarWidget,
+                  const SizedBox(width: 48),
+                ]
+              : [
+                  const SizedBox(width: 8),
+                  avatarWidget,
+                  const SizedBox(width: 8),
+                  Flexible(child: bubbleContent),
+                  const SizedBox(width: 48),
+                ],
+        ),
+      );
+    } else {
+      // 无头像的消息（me）：直接用 Row 推到右边
+      return Padding(
+        padding: const EdgeInsets.only(top: 4, bottom: 4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Flexible(child: bubbleContent),
+            const SizedBox(width: 8),
+          ],
+        ),
+      );
+    }
   }
 
-  Widget _buildTaskCard(SelfTalkTask task, ThemeScheme scheme) {
+  Widget _buildTaskCard(SelfTalkTask task, ThemeScheme scheme, SelfTalkSenderType messageSenderType) {
     final hasDeadline = task.deadline != null;
     final deadlineText = hasDeadline
         ? DateFormat('MM/dd HH:mm').format(DateTime.parse(task.deadline!))
@@ -546,11 +587,12 @@ class _SelfTalkScreenState extends State<SelfTalkScreen> {
     final accentColor = task.isCompleted
         ? scheme.successColor
         : (hasDeadline ? scheme.warningColor : scheme.primaryColor);
+    final isLeftAligned = messageSenderType == SelfTalkSenderType.alterEgo;
 
     return Align(
-      alignment: Alignment.centerRight,
+      alignment: isLeftAligned ? Alignment.centerLeft : Alignment.centerRight,
       child: Padding(
-        padding: const EdgeInsets.only(right: 8, bottom: 8, top: 2),
+        padding: EdgeInsets.only(left: isLeftAligned ? 48 : 0, right: isLeftAligned ? 0 : 8, bottom: 8, top: 2),
         child: GestureDetector(
           onTap: () async {
             HapticFeedback.lightImpact();
@@ -570,7 +612,9 @@ class _SelfTalkScreenState extends State<SelfTalkScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  task.isCompleted ? Icons.check_circle : (hasDeadline ? Icons.access_time : Icons.sticky_note_2_outlined),
+                  task.isCompleted
+                      ? Icons.check_circle
+                      : (hasDeadline ? Icons.access_time : Icons.sticky_note_2_outlined),
                   size: 16,
                   color: accentColor,
                 ),
@@ -650,6 +694,7 @@ class _SelfTalkScreenState extends State<SelfTalkScreen> {
                             onTap: () {
                               HapticFeedback.selectionClick();
                               setState(() => _senderType = SelfTalkSenderType.me);
+                              _persistSenderType(SelfTalkSenderType.me);
                             },
                           ),
                         ),
@@ -662,6 +707,7 @@ class _SelfTalkScreenState extends State<SelfTalkScreen> {
                             onTap: () {
                               HapticFeedback.selectionClick();
                               setState(() => _senderType = SelfTalkSenderType.alterEgo);
+                              _persistSenderType(SelfTalkSenderType.alterEgo);
                             },
                           ),
                         ),
@@ -709,8 +755,9 @@ class _SelfTalkScreenState extends State<SelfTalkScreen> {
                       focusNode: _focusNode,
                       maxLines: 5,
                       minLines: 1,
+                      key: ValueKey('input_$_senderType'),
                       textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _sendMessage(),
+                      onSubmitted: (_) => _sendMessage(explicitSenderType: _senderType),
                       style: TextStyle(fontSize: 15, color: scheme.textDarkColor),
                       decoration: InputDecoration(
                         hintText: isAlterEgo
@@ -724,7 +771,7 @@ class _SelfTalkScreenState extends State<SelfTalkScreen> {
                   ),
                 ),
                 const SizedBox(width: 10),
-                _buildSendButton(isAlterEgo, scheme),
+                _buildSendButton(scheme),
               ],
             ),
           ],
@@ -777,11 +824,12 @@ class _SelfTalkScreenState extends State<SelfTalkScreen> {
     );
   }
 
-  Widget _buildSendButton(bool isAlterEgo, ThemeScheme scheme) {
+  Widget _buildSendButton(ThemeScheme scheme) {
+    final isAlterEgo = _senderType == SelfTalkSenderType.alterEgo;
     final color = isAlterEgo ? const Color(0xFF7C4DFF) : scheme.primaryColor;
 
     return GestureDetector(
-      onTap: _isSending ? null : _sendMessage,
+      onTap: _isSending ? null : () => _sendMessage(explicitSenderType: _senderType),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         width: 48,

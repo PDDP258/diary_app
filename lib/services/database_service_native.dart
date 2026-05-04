@@ -15,7 +15,7 @@ import 'encryption_service.dart';
 class DatabaseService {
   static Database? _database;
   static const String _databaseName = 'diary_app.db';
-  static const int _databaseVersion = 10; // 版本10：新增速记功能
+  static const int _databaseVersion = 13; // 版本13：自言自语表添加 replied_to_sender_type 实现系统回复精确定位
 
   // 表名
   static const String tableDiaries = 'diaries';
@@ -126,25 +126,24 @@ class DatabaseService {
       )
     ''');
 
-    // 自言自语消息表
+    // 自言自语消息表（v12：彻底移除 diary_id，与日记系统物理独立）
     await db.execute('''
       CREATE TABLE $tableSelfTalkMessages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        diary_id INTEGER,
         date TEXT NOT NULL,
         content TEXT,
         is_user INTEGER DEFAULT 1,
         sender_type INTEGER DEFAULT 0,
+        replied_to_sender_type INTEGER,
         created_at TEXT
       )
     ''');
 
-    // 自言自语任务表
+    // 自言自语任务表（v12：彻底移除 diary_id，与日记系统物理独立）
     await db.execute('''
       CREATE TABLE $tableSelfTalkTasks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         message_id INTEGER,
-        diary_id INTEGER,
         date TEXT NOT NULL,
         content TEXT,
         deadline TEXT,
@@ -205,6 +204,7 @@ class DatabaseService {
     }
     if (oldVersion < 4) {
       // 版本4添加自言自语消息支持
+      // v12 重构：此处保留历史结构，最终由 v12 迁移统一处理
       await db.execute('''
         CREATE TABLE $tableSelfTalkMessages (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -218,6 +218,7 @@ class DatabaseService {
     }
     if (oldVersion < 5) {
       // 版本5添加自言自语任务支持
+      // v12 重构：此处保留历史结构，最终由 v12 迁移统一处理
       await db.execute('''
         CREATE TABLE IF NOT EXISTS $tableSelfTalkTasks (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -233,6 +234,7 @@ class DatabaseService {
     }
     if (oldVersion < 6) {
       // 版本6：为已有用户补建可能缺失的自言自语表
+      // v12 重构：此处保留历史结构，最终由 v12 迁移统一处理
       await db.execute('''
         CREATE TABLE IF NOT EXISTS $tableSelfTalkMessages (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -290,6 +292,74 @@ class DatabaseService {
         )
       ''');
     }
+    if (oldVersion < 11) {
+      // 版本11：确保速记表存在（修复部分用户 v10 表未创建的问题）
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS $tableQuickNotes (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          content TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          updated_at TEXT,
+          is_pinned INTEGER DEFAULT 0,
+          tag TEXT
+        )
+      ''');
+    }
+    if (oldVersion < 12) {
+      // 版本12：彻底移除自言自语表中的 diary_id 列，实现与日记系统物理独立
+      await _migrateSelfTalkTablesRemoveDiaryId(db);
+    }
+    if (oldVersion < 13) {
+      // 版本13：添加 replied_to_sender_type 字段，实现系统回复精确定位
+      try {
+        await db.execute('ALTER TABLE $tableSelfTalkMessages ADD COLUMN replied_to_sender_type INTEGER');
+      } catch (e) {
+        // 列已存在时忽略错误
+      }
+    }
+  }
+
+  /// v12 迁移：移除 self_talk_messages / self_talk_tasks 中的 diary_id 列
+  static Future<void> _migrateSelfTalkTablesRemoveDiaryId(Database db) async {
+    // 迁移 self_talk_messages 表
+    await db.execute('''
+      CREATE TABLE ${tableSelfTalkMessages}_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT NOT NULL,
+        content TEXT,
+        is_user INTEGER DEFAULT 1,
+        sender_type INTEGER DEFAULT 0,
+        replied_to_sender_type INTEGER,
+        created_at TEXT
+      )
+    ''');
+    await db.execute('''
+      INSERT INTO ${tableSelfTalkMessages}_new (id, date, content, is_user, sender_type, replied_to_sender_type, created_at)
+      SELECT id, date, content, is_user, sender_type, NULL, created_at
+      FROM $tableSelfTalkMessages
+    ''');
+    await db.execute('DROP TABLE $tableSelfTalkMessages');
+    await db.execute('ALTER TABLE ${tableSelfTalkMessages}_new RENAME TO $tableSelfTalkMessages');
+
+    // 迁移 self_talk_tasks 表
+    await db.execute('''
+      CREATE TABLE ${tableSelfTalkTasks}_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        message_id INTEGER,
+        date TEXT NOT NULL,
+        content TEXT,
+        deadline TEXT,
+        is_completed INTEGER DEFAULT 0,
+        created_at TEXT
+      )
+    ''');
+    await db.execute('''
+      INSERT INTO ${tableSelfTalkTasks}_new (id, message_id, date, content, deadline, is_completed, created_at)
+      SELECT id, message_id, date, content, deadline, is_completed, created_at
+      FROM $tableSelfTalkTasks
+    ''');
+    await db.execute('DROP TABLE $tableSelfTalkTasks');
+    await db.execute('ALTER TABLE ${tableSelfTalkTasks}_new RENAME TO $tableSelfTalkTasks');
   }
 
   // ==================== 日记操作 ====================
@@ -837,7 +907,7 @@ class DatabaseService {
       tableSelfTalkMessages,
       where: 'date = ?',
       whereArgs: [date],
-      orderBy: 'created_at ASC',
+      orderBy: 'created_at ASC, id ASC',
     );
     return maps.map((map) => SelfTalkMessage.fromMap(map)).toList();
   }
@@ -897,6 +967,120 @@ class DatabaseService {
       where: 'id = ?',
       whereArgs: [id],
     );
+  }
+
+  // ==================== 自言自语搜索操作 ====================
+
+  /// 搜索自言自语消息
+  ///
+  /// [keyword] 内容关键词（模糊匹配）
+  /// [dateFrom] 日期范围开始（yyyy-MM-dd，包含）
+  /// [dateTo] 日期范围结束（yyyy-MM-dd，包含）
+  /// [senderType] 发送者类型筛选（0=me, 1=alterEgo, 2=system）
+  static Future<List<SelfTalkMessage>> searchSelfTalkMessages({
+    String? keyword,
+    String? dateFrom,
+    String? dateTo,
+    int? senderType,
+  }) async {
+    final db = await database;
+    final conditions = <String>[];
+    final args = <dynamic>[];
+
+    if (keyword != null && keyword.isNotEmpty) {
+      conditions.add('content LIKE ?');
+      args.add('%$keyword%');
+    }
+    if (dateFrom != null && dateFrom.isNotEmpty) {
+      conditions.add('date >= ?');
+      args.add(dateFrom);
+    }
+    if (dateTo != null && dateTo.isNotEmpty) {
+      conditions.add('date <= ?');
+      args.add(dateTo);
+    }
+    if (senderType != null) {
+      conditions.add('sender_type = ?');
+      args.add(senderType);
+    }
+
+    final whereClause = conditions.isEmpty ? null : conditions.join(' AND ');
+
+    final maps = await db.query(
+      tableSelfTalkMessages,
+      where: whereClause,
+      whereArgs: args.isEmpty ? null : args,
+      orderBy: 'created_at DESC, id DESC',
+    );
+    return maps.map((map) => SelfTalkMessage.fromMap(map)).toList();
+  }
+
+  /// 按日期范围获取自言自语消息
+  static Future<List<SelfTalkMessage>> getSelfTalkMessagesByDateRange(
+    String dateFrom,
+    String dateTo,
+  ) async {
+    final db = await database;
+    final maps = await db.query(
+      tableSelfTalkMessages,
+      where: 'date >= ? AND date <= ?',
+      whereArgs: [dateFrom, dateTo],
+      orderBy: 'created_at ASC, id ASC',
+    );
+    return maps.map((map) => SelfTalkMessage.fromMap(map)).toList();
+  }
+
+  /// 获取所有有自言自语记录的日期（去重，降序）
+  static Future<List<String>> getSelfTalkDates() async {
+    final db = await database;
+    final maps = await db.rawQuery(
+      'SELECT DISTINCT date FROM $tableSelfTalkMessages ORDER BY date DESC',
+    );
+    return maps.map((m) => m['date'] as String).toList();
+  }
+
+  /// 搜索自言自语任务
+  ///
+  /// [keyword] 内容关键词（模糊匹配）
+  /// [dateFrom] 日期范围开始（yyyy-MM-dd，包含）
+  /// [dateTo] 日期范围结束（yyyy-MM-dd，包含）
+  /// [isCompleted] 完成状态筛选
+  static Future<List<SelfTalkTask>> searchSelfTalkTasks({
+    String? keyword,
+    String? dateFrom,
+    String? dateTo,
+    bool? isCompleted,
+  }) async {
+    final db = await database;
+    final conditions = <String>[];
+    final args = <dynamic>[];
+
+    if (keyword != null && keyword.isNotEmpty) {
+      conditions.add('content LIKE ?');
+      args.add('%$keyword%');
+    }
+    if (dateFrom != null && dateFrom.isNotEmpty) {
+      conditions.add('date >= ?');
+      args.add(dateFrom);
+    }
+    if (dateTo != null && dateTo.isNotEmpty) {
+      conditions.add('date <= ?');
+      args.add(dateTo);
+    }
+    if (isCompleted != null) {
+      conditions.add('is_completed = ?');
+      args.add(isCompleted ? 1 : 0);
+    }
+
+    final whereClause = conditions.isEmpty ? null : conditions.join(' AND ');
+
+    final maps = await db.query(
+      tableSelfTalkTasks,
+      where: whereClause,
+      whereArgs: args.isEmpty ? null : args,
+      orderBy: 'created_at DESC, id DESC',
+    );
+    return maps.map((map) => SelfTalkTask.fromMap(map)).toList();
   }
 
   // ==================== 速记操作 ====================

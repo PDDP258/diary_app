@@ -28,8 +28,13 @@ import 'custom_sticker_screen.dart';
 import 'data_management_screen.dart';
 import 'icon_theme_screen.dart';
 import 'main_screen.dart';
+import 'quick_notes_screen.dart';
 import 'tag_management_screen_v3.dart';
 import 'time_capsule_list_screen_v2.dart';
+import '../services/floating_settings_service.dart';
+import '../services/floating_window_service.dart';
+import '../services/floating_permission_service.dart';
+import '../services/quick_note_backup_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -45,6 +50,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _biometricEnabled = false;
   bool _biometricAvailable = false;
   bool _quickNoteFabEnabled = true;
+  bool _floatingWindowEnabled = false;
   List<Mood> _moods = [];
 
   @override
@@ -54,6 +60,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadAppLockStatus();
     _loadBiometricStatus();
     _loadQuickNoteFabStatus();
+    _loadFloatingWindowStatus();
   }
 
   Future<void> _loadBadges() async {
@@ -96,6 +103,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() {
         _quickNoteFabEnabled = prefs.getBool('quick_note_fab_enabled') ?? true;
       });
+    }
+  }
+
+  Future<void> _loadFloatingWindowStatus() async {
+    final enabled = await FloatingSettingsService.getEnabled();
+    if (mounted) {
+      setState(() {
+        _floatingWindowEnabled = enabled;
+      });
+    }
+  }
+
+  Future<void> _toggleFloatingWindow() async {
+    HapticFeedback.selectionClick();
+    final newValue = !_floatingWindowEnabled;
+    await FloatingSettingsService.setEnabled(newValue);
+    setState(() => _floatingWindowEnabled = newValue);
+
+    if (newValue) {
+      // 请求权限并显示浮窗
+      final hasOverlay = await FloatingPermissionService.checkOverlayPermission();
+      if (hasOverlay) {
+        await FloatingWindowService.showFloatingButton();
+      } else {
+        await FloatingPermissionService.openOverlaySettings();
+      }
+    } else {
+      await FloatingWindowService.closeFloatingWindow();
+    }
+  }
+
+  Future<void> _exportQuickNoteBackup() async {
+    HapticFeedback.heavyImpact();
+    final hasStorage = await FloatingPermissionService.checkStoragePermission();
+    if (!hasStorage) {
+      await FloatingPermissionService.requestStoragePermission();
+      return;
+    }
+    try {
+      final paths = await QuickNoteBackupService.exportAll();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('备份完成：${paths.length} 个文件')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('备份失败：$e')),
+        );
+      }
     }
   }
 
@@ -190,10 +248,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _buildMenuGroup([
               _MenuItem(
                 icon: Icons.lightbulb_outline,
+                title: '我的速记',
+                subtitle: '查看所有速记',
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const QuickNotesScreen(),
+                    ),
+                  );
+                },
+              ),
+              _MenuItem(
+                icon: Icons.touch_app_outlined,
                 title: '速记悬浮按钮',
                 subtitle: _quickNoteFabEnabled ? '已显示' : '已隐藏',
                 trailing: _buildQuickNoteFabToggle(),
                 onTap: () => _toggleQuickNoteFab(),
+              ),
+              _MenuItem(
+                icon: Icons.picture_in_picture_alt_outlined,
+                title: '速记浮窗',
+                subtitle: _floatingWindowEnabled ? '已启用' : '未启用（需悬浮窗权限）',
+                trailing: Switch(
+                  value: _floatingWindowEnabled,
+                  onChanged: (_) => _toggleFloatingWindow(),
+                  activeTrackColor: scheme.primaryColor,
+                ),
+                onTap: () => _toggleFloatingWindow(),
+              ),
+              _MenuItem(
+                icon: Icons.backup_outlined,
+                title: '速记与自言自语备份',
+                subtitle: '导出到外部存储',
+                onTap: () => _exportQuickNoteBackup(),
               ),
             ], scheme),
 

@@ -15,6 +15,7 @@ import 'diary_detail_screen.dart';
 import 'write_diary_screen.dart';
 import 'gacha_screen.dart';
 import 'smart_recall_screen_v2.dart';
+import 'quick_notes_screen.dart';
 import 'self_talk_screen.dart';
 
 class TimelineScreen extends StatefulWidget {
@@ -340,9 +341,9 @@ class _TimelineScreenState extends State<TimelineScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // 昵称
+                          // 昵称 + 篇数
                           Text(
-                            '$userName的日记',
+                            '$userName的日记 · $diaryCount 篇',
                             style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
@@ -432,26 +433,21 @@ class _TimelineScreenState extends State<TimelineScreen>
                 ),
               ),
               const SizedBox(width: 8),
-              // 4. 篇数
+              // 4. 速记
               Expanded(
-                child: Container(
-                  height: 36,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: scheme.primaryColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: scheme.primaryColor.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Text(
-                    '$diaryCount 篇',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: scheme.primaryColor,
-                    ),
-                  ),
+                child: _buildHeaderActionButton(
+                  icon: Icons.lightbulb_outline,
+                  label: '速记',
+                  scheme: scheme,
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const QuickNotesScreen(),
+                      ),
+                    );
+                  },
                 ),
               ),
             ],

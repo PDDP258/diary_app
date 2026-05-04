@@ -4,6 +4,7 @@ import '../config/app_theme.dart';
 import '../providers/theme_provider.dart';
 import '../models/quick_note.dart';
 import '../services/quick_note_service.dart';
+import 'quick_notes_screen.dart';
 
 /// 速记编辑页 - 极简设计，只有一个多行文本框
 class QuickNoteEditorScreen extends StatefulWidget {
@@ -63,7 +64,26 @@ class _QuickNoteEditorScreenState extends State<QuickNoteEditorScreen> {
       } else {
         await QuickNoteService.insert(text, tag: _selectedTag);
       }
-      if (mounted) Navigator.pop(context, true);
+      if (mounted) {
+        // 保存成功后提示用户去哪里查看
+        final count = await QuickNoteService.getCount();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('已保存，共 $count 条速记'),
+            action: SnackBarAction(
+              label: '查看全部',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const QuickNotesScreen()),
+                );
+              },
+            ),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        Navigator.pop(context, true);
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

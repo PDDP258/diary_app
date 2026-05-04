@@ -38,6 +38,9 @@ dependencies:
   url_launcher: ^6.3.0  # URL启动器
   local_auth: ^3.0.1
   record: ^6.2.0
+  flutter_local_notifications: ^17.0.0  # 本地通知
+  flutter_overlay_window: ^0.4.4        # 系统悬浮窗
+  device_info_plus: ^10.0.0            # 设备信息（获取Android SDK版本）
 
 dev_dependencies:
   flutter_test:

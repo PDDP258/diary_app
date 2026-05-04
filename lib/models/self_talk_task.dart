@@ -2,7 +2,6 @@
 class SelfTalkTask {
   final int? id;
   final int? messageId; // 关联的消息ID
-  final int? diaryId;   // 关联的日记ID
   final String date;    // yyyy-MM-dd
   final String content; // 任务内容
   final String? deadline; // 截止时间 ISO8601，可能为null
@@ -12,7 +11,6 @@ class SelfTalkTask {
   SelfTalkTask({
     this.id,
     this.messageId,
-    this.diaryId,
     required this.date,
     required this.content,
     this.deadline,
@@ -24,7 +22,6 @@ class SelfTalkTask {
     return {
       'id': id,
       'message_id': messageId,
-      'diary_id': diaryId,
       'date': date,
       'content': content,
       'deadline': deadline,
@@ -37,7 +34,6 @@ class SelfTalkTask {
     return SelfTalkTask(
       id: map['id'] as int?,
       messageId: map['message_id'] as int?,
-      diaryId: map['diary_id'] as int?,
       date: map['date'] as String,
       content: map['content'] as String,
       deadline: map['deadline'] as String?,
@@ -49,7 +45,6 @@ class SelfTalkTask {
   SelfTalkTask copyWith({
     int? id,
     int? messageId,
-    int? diaryId,
     String? date,
     String? content,
     String? deadline,
@@ -59,7 +54,6 @@ class SelfTalkTask {
     return SelfTalkTask(
       id: id ?? this.id,
       messageId: messageId ?? this.messageId,
-      diaryId: diaryId ?? this.diaryId,
       date: date ?? this.date,
       content: content ?? this.content,
       deadline: deadline ?? this.deadline,

@@ -1,35 +1,22 @@
 # 小记日记 - AI协作指南
 
-版本
-
-: 1.20.0 (2026-04-10) 🗣️ 自言自语 + 全局设计升级 |   技术栈  : Flutter 3.x + Provider + SQLite
+版本: 1.23.0 (2026-05-04) | 技术栈: Flutter 3.x + Provider + SQLite
 
 > **注意**：本文档版本号仅用于 AI 协作记录，软件实际版本号以 `pubspec.yaml` 和软件内显示为准。
 
 ## 快速开始
 
 ```bash
-# 1. 安装依赖
 flutter pub get
-
-# 2. 运行调试版本
 flutter run
-
-# 3. 构建发布版本
-# Android APK
 flutter build apk --release
-
-# iOS（需要Mac）
-flutter build ios --release
 ```
-
-详细的构建说明请参考下方的【构建与发布】章节。
 
 ## 核心规范
 
 ### 1. 屏幕布局规范（重要）
 
-非全面屏设备必须正确处理系统导航栏，确保内容不被遮挡：
+非全面屏设备必须正确处理系统导航栏：
 
 ```dart
 // ✅ 正确 - MainScreen 使用 Stack 精确定位
@@ -37,15 +24,12 @@ return Scaffold(
   extendBody: false,
   body: Stack(
     children: [
-      // 内容区域 - 避开系统导航栏和软件导航栏
       Positioned.fill(
-        bottom: systemNavBarHeight + 96, // 系统导航栏 + 软件导航栏高度
+        bottom: systemNavBarHeight + 96,
         child: PageView(...),
       ),
-      // 软件导航栏 - 位于系统导航栏上方
       Positioned(
-        left: 0,
-        right: 0,
+        left: 0, right: 0,
         bottom: systemNavBarHeight,
         height: 96,
         child: CustomBottomNav(...),
@@ -53,1100 +37,255 @@ return Scaffold(
     ],
   ),
 );
-
-// ❌ 错误 - 使用 SafeArea 底部或默认 bottomNavigationBar 会导致遮挡
-// SafeArea(bottom: true) // 不要这样做
-// Scaffold(bottomNavigationBar: ...) // 不要这样做
+// ❌ 错误 - SafeArea(bottom: true) 或 Scaffold(bottomNavigationBar: ...) 会导致遮挡
 ```
 
 **关键要点：**
-1. `extendBody: false` - 禁止 body 延伸到系统导航栏下方
-2. 使用 `Stack` + `Positioned` 手动控制布局
-3. 内容区域底部留出 `systemNavBarHeight + 96` 空间
-4. 软件导航栏位于 `bottom: systemNavBarHeight` 处
-5. 系统导航栏颜色通过 `SystemChrome.setSystemUIOverlayStyle` 设置
+1. `extendBody: false`
+2. `Stack` + `Positioned` 手动控制布局
+3. 内容底部留出 `systemNavBarHeight + 96`
+4. 软件导航栏位于 `bottom: systemNavBarHeight`
 
 ### 2. 导航栏行为（强制）
 
 ```dart
-/// 处理滚动通知，控制导航栏显示/隐藏
 bool _onScrollNotification(ScrollNotification notification) {
   if (notification is ScrollUpdateNotification) {
     final maxScroll = notification.metrics.maxScrollExtent;
     if (maxScroll > 0) {
       final scrollDelta = notification.scrollDelta ?? 0;
-      
-      // 下滑（向下滚动）：立即隐藏导航栏
-      if (scrollDelta > 10) {
-        _hideNavBar();
-        _inactivityTimer?.cancel();
-      }
-      // 上滑（向上滚动）：显示导航栏，3秒后隐藏
-      else if (scrollDelta < -5) {
-        _showNavBar();
-        _resetInactivityTimer();
-      }
+      if (scrollDelta > 10) { _hideNavBar(); _inactivityTimer?.cancel(); }
+      else if (scrollDelta < -5) { _showNavBar(); _resetInactivityTimer(); }
     }
   }
   return false;
 }
 ```
 
-**行为规则：**
-1. **下滑（向下滚动）**：**任何时候**都立即隐藏导航栏
-2. **上滑（向上滚动）**：立即显示导航栏，3秒后自动隐藏
-3. **点击无效区域**：立即显示导航栏，3秒后自动隐藏
-4. **页面跳转返回**：显示导航栏，**从零开始**3秒计时
-5. **应用后台返回**：显示导航栏，**从零开始**3秒计时
-
-**注意：** 下滑隐藏没有 `pixels > 0` 限制，在页面顶部下滑也会隐藏。
+**行为规则：** 下滑隐藏，上滑显示+3秒后隐藏，点击无效区域显示+3秒后隐藏。
 
 ### 3. 主题使用（强制）
 
 ```dart
-// ✅ 正确
 final scheme = AppTheme.schemeOf(context);
 return Container(color: scheme.backgroundColor);
-
-// ❌ 错误 - 禁止硬编码
-return Container(color: Colors.white);
-```
-
-### 2. 数据库操作（自动加密）
-
-```dart
-// 直接读写明文，加密由底层处理
-await DatabaseService.insertDiary(diary);
-final diaries = await DatabaseService.getAllDiaries();
-```
-
-### 3. Provider状态管理
-
-```dart
-// 读取
-final provider = context.read<DiaryProvider>();
-// 监听
-Consumer<DiaryProvider>(builder: (context, provider, child) => ...)
-// 标签管理
-await provider.addTag/updateTag/deleteTag
+// ❌ 禁止硬编码 Colors.white
 ```
 
 ### 4. 编码处理（⚠️ 重要）
 
-**文件操作必须使用 UTF-8 编码：**
-
+文件操作必须使用 UTF-8：
 ```dart
-// ✅ 正确 - 显式指定 UTF-8
-import 'dart:convert';
-import 'dart:io';
-
-// 读取文件
-final content = await File('file.dart').readAsString(encoding: utf8);
-
-// 写入文件
+await File('file.dart').readAsString(encoding: utf8);
 await File('file.dart').writeAsString(content, encoding: utf8);
 ```
 
-**PowerShell 特别注意：**
-
-```powershell
-# ❌ 错误 - 使用系统默认编码（GBK）
-Get-Content file.dart | Set-Content file.dart
-
-# ✅ 正确 - 显式指定 UTF-8
-Get-Content file.dart -Encoding UTF8 | Set-Content file.dart -Encoding UTF8
-```
-
-**VS Code 设置：**
-
-```json
-{
-  "files.encoding": "utf8",
-  "files.autoGuessEncoding": true
-}
-```
+PowerShell: `Get-Content file.dart -Encoding UTF8 | Set-Content file.dart -Encoding UTF8`
 
 ## 项目结构
 
 ```
 lib/
-├── screens/           # 页面（calendar, write_diary, profile...等）
-│   ├── tags_classification_screen.dart  # 按标签分类
-│   ├── tag_diaries_screen.dart          # 标签日记列表
-│   └── ...
-├── services/          # 数据库、加密、云同步、PDF导出、徽章、图片缓存
-├── providers/         # 状态管理（DiaryProvider, ThemeProvider, SettingsProvider等）
-├── models/            # 数据模型（Diary, Mood, Tag, Anniversary等）
-├── widgets/           # 组件（贴图覆盖层、音效按钮）
-├── utils/             # 工具类（平台图片、图片缓存）
-└── config/            # 主题配置
+├── screens/      # 页面（calendar, write_diary, profile, self_talk...）
+├── services/     # 数据库、加密、云同步、PDF导出、徽章、图片缓存、浮窗、备份
+├── providers/    # 状态管理（DiaryProvider, ThemeProvider, SettingsProvider...）
+├── models/       # 数据模型（Diary, Mood, Tag, Anniversary, QuickNote, SelfTalkMessage...）
+├── widgets/      # 组件（贴图覆盖层、音效按钮、浮窗UI...）
+├── utils/        # 工具类（平台图片、图片缓存）
+└── config/       # 主题配置
 ```
 
 ## AI Skills
 
-本项目使用以下 Kimi Code skills 来增强开发体验和 UI 质量：
-
-### 1. interaction-design（交互设计）
-
-位置
-
-: `.kimi/skills/interaction-design/`
-
-用于设计和实现微交互、动画过渡和用户反馈：
-
-- 微交互反馈（按钮点击、状态切换）
-- 页面和组件转场动画
-- 加载状态和骨架屏
-- 手势交互（滑动、拖拽）
-
-### 2. visual-design-foundations（视觉设计基础）
-
-位置
-
-: `.kimi/skills/visual-design-foundations/`
-
-提供设计系统基础规范：
-
-- 8-point 网格间距系统
-- 字体排版层级
-- 色彩系统（主色、语义色、中性色）
-- 图标系统规范
-- WCAG 无障碍对比度标准
-
-### 3. design-system-patterns（设计系统模式）
-
-位置
-
-: `.kimi/skills/design-system-patterns/`
-
-用于构建可扩展的设计系统：
-
-- 设计令牌（Design Tokens）层级
-- 主题切换架构
-- 组件变体系统
-- 多平台适配
-
-### 4. react-native-design（React Native 设计）
-
-位置
-
-: `.kimi/skills/react-native-design/`
-
-跨平台移动开发最佳实践（Flutter 可参考）：
-
-- SafeArea 和刘海屏适配
-- 平台特定样式（iOS/Android 差异）
-- 手势驱动动画
-- 性能优化
+- **interaction-design** (`.kimi/skills/interaction-design/`)：微交互、动画过渡、加载状态
+- **visual-design-foundations** (`.kimi/skills/visual-design-foundations/`)：8-point网格、字体层级、色彩系统
+- **design-system-patterns** (`.kimi/skills/design-system-patterns/`)：Design Tokens、主题切换、组件变体
+- **react-native-design** (`.kimi/skills/react-native-design/`)：SafeArea、手势动画、性能优化
 
 ### 可用组件
 
-| 组件                  | 文件                                     | 用途       |
-| ------------------- | -------------------------------------- | -------- |
-| `InteractiveButton` | `lib/widgets/interactive_button.dart`  | 带缩放反馈的按钮 |
-| `PageTransitions`   | `lib/widgets/page_transitions.dart`    | 页面转场动画   |
-| `SwipeableListItem` | `lib/widgets/swipeable_list_item.dart` | 可滑动列表项   |
-| `SkeletonLoading`   | `lib/widgets/skeleton_loading.dart`    | 骨架屏加载效果  |
-
-### 使用示例
-
-```dart
-// 交互按钮
-InteractiveButton(
-  onTap: () => Navigator.push(context, PageTransitions.fade(NextPage())),
-  child: Icon(Icons.add),
-);
-
-// 骨架屏
-SkeletonLoading(
-  child: ListView.builder(
-    itemBuilder: (context, index) => SkeletonItem(),
-  ),
-);
-```
+| 组件 | 文件 | 用途 |
+|------|------|------|
+| `InteractiveButton` | `lib/widgets/interactive_button.dart` | 带缩放反馈的按钮 |
+| `PageTransitions` | `lib/widgets/page_transitions.dart` | 页面转场动画 |
+| `SwipeableListItem` | `lib/widgets/swipeable_list_item.dart` | 可滑动列表项 |
+| `SkeletonLoading` | `lib/widgets/skeleton_loading.dart` | 骨架屏加载效果 |
 
 ## 功能速查
 
-| 功能      | 关键文件                                | 说明                                           |
-| :------ | :---------------------------------- | :------------------------------------------- |
-| 贴图拖动    | `custom_sticker_overlay.dart`       | 页面上直接拖拽，长按菜单                                 |
-| 随机贴图    | `random_sticker_overlay.dart`       | 日记页和日历页随机出现                                  |
-| 标签编辑    | `profile_screen.dart`               | 支持颜色选择、编辑、删除确认                               |
-| PDF导出   | `pdf_export_service.dart`           | 中文字体支持，图片嵌入，封面+页眉页脚                          |
-| WebDAV  | `cloud_sync_service.dart`           | 坚果云预设，自动错误提示                                 |
-| 自动备份    | `auto_backup_service.dart`          | 每天自动备份，保存7次历史                                |
-| 备份管理    | `backup_manager_screen.dart`        | 查看、恢复、删除备份，支持多设备导入                          |
-| 云端图片备份 | `cloud_sync_service.dart`           | ZIP打包加密，自动上传/下载图片包                           |
-| 应用锁备份  | `app_lock_service.dart`             | 手势密码备份图片保存到Download目录                          |
-| 增量同步    | `incremental_sync_service.dart`     | 只同步变更数据，减少流量                                 |
-| 图片缓存    | `image_cache_service.dart`          | 内存缓存，预加载，提升显示速度                              |
-| 懒加载     | `lazy_image.dart`                   | 图片进入视口才加载，渐进式显示                              |
-| 分页加载    | `paged_diary_list.dart`             | 日记列表分页，下拉刷新上拉加载                              |
-| 图片预览    | `diary_detail_screen.dart`          | 大尺寸缩略图，点击全屏浏览                                |
-| 搜索增强    | `diary_search_enhanced_screen.dart` | 关键词+日期范围+心情筛选                                |
-| 日记模板    | `diary_templates.dart`              | 8种预设模板，快速开始写日记                               |
-| 写作灵感    | gacha\_service.dart                 | 60+深度写作提示，8大主题类别                             |
-| 空状态     | `empty_state.dart`                  | 统一空状态组件，9种预设类型                               |
-| 徽章系统    | `badge_service.dart`                | 84个徽章，8种类型，解锁动画                              |
-| 连续记录    | `badge_service.dart`                | 真正计算连续天数触发徽章                                 |
-| 里程碑     | `milestone_service.dart`            | 记录天数里程碑，五彩纸屑动画                               |
-| 日历上滑    | `calendar_screen.dart`              | 日记>2篇时可上滑展开预览                                |
-| 日历图片    | `calendar_screen.dart`              | 有图片的日期显示图片背景                                 |
-| 文本分析    | `text_analysis_service.dart`        | 成语提取、心情片段                                    |
-| 日记影院    | `diary_cinema_screen.dart`          | 电影风格预览，动态文字，图片显示                             |
-| 启动页     | splash\_screen.dart                 | 3D翻书动画（每两天一次）+ 快速淡入动画（日常）                    |
-| 音效      | `sound_service.dart`                | 点击音效，触感反馈                                    |
-| 应用锁     | `app_lock_service.dart`             | 九宫格手势密码，启动保护，备份保存到Download目录                  |
-| 纪念日     | `anniversary.dart`                  | 日历页定制纪念日/倒数日，写日记自动添加纪念文字                     |
-| 标签分类    | `tags_classification_screen.dart`   | 按标签浏览日记，标签8格预览                               |
-| 照片回忆    | `stats_detail_screen.dart`          | 统计页照片展览，点击可查看所有照片                            |
-| 照片展览    | `PhotoGalleryScreen`                | 全屏浏览所有照片，支持左右滑动、缩略图跳转                        |
-| 实况图片    | `motion_photo_service.dart`         | Android Motion Photo 检测与视频提取（小米/三星/OPPO等）    |
-| 实况播放    | `motion_photo_widget.dart`          | 长按播放实况视频，全屏查看器支持                             |
-| PDF中文字体 | `font_download_service.dart`        | 打包思源宋体到APK（107MB），无需网络下载，PDF导出秒开        |
-| 日历预览    | `calendar_screen.dart`              | 点击日期弹出日记预览，不再遮挡日历                            |
-| 日历顶部    | `calendar_screen.dart`              | 显示日期/今天跳转/本月统计/搜索/纪念日入口                      |
-| 扭蛋系统    | `gacha_service.dart`                | 每日免费3次抽奖，80+种奖励，徽章联动                         |
-| 扭蛋页面    | `gacha_screen.dart`                 | 精美扭蛋机UI，炫酷抽奖动画                               |
-| 重复奖励联动  | `gacha_service.dart`                | 系统联动转化4种资源类型                                 |
-| 贴纸商店    | gacha\_service.stickerShop          | 用碎片兑换商店专属贴纸（与扭蛋机完全独立）                        |
-| 主题商店    | `gacha_service.profileThemeShop`    | 用装饰点兑换个人主页主题                                 |
-| 用户等级    | `gacha_service.getUserLevelInfo()`  | 经验值系统，6级称号                                   |
-| 徽章深度优化  | `badge_service.dart`                | 智能关键词匹配，新增10+新徽章                             |
-| 主题背景    | `theme_backgrounds.dart`            | 5款动态主题：樱花/海洋/极光/黄金/星空（Flutter CustomPainter） |
-| 贴图动画    | `random_sticker_overlay.dart`       | 淡入淡出动画，全局随机数避免重叠                             |
-| 主题字体优化  | `theme_provider.dart`               | 星空主题"我的"页面黑色字体，独立图标颜色                        |
-| 农历日历    | `lunar_calendar_service.dart`       | 内置算法支持1900-2100年，2026年预计算数据                  |
-| 目标系统    | `goal_provider.dart`                | 月度目标设定，进度追踪，连续记录，达成庆祝动画                      |
-| 目标提醒    | `goal_service.dart`                 | 进度提醒、即将完成提醒、连续记录中断提醒、目标达成奖励                  |
-| 三级标签    | `tag_system_service.dart`           | 分类→子分类→标签三级结构，智能迁移，同步支持                      |
-| 标签搜索    | `tag_selector_v3.dart`              | 按名称搜索标签，支持三级结构浏览                             |
-| 自言自语    | `self_talk_screen.dart`             | 聊天式快速记录，自动同步到日记，支持任务识别                   |
-| 任务识别    | `self_talk_task_parser.dart`        | 本地规则解析DDL/提醒/待办，无AI                               |
+| 功能 | 关键文件 | 说明 |
+|------|---------|------|
+| 速记浮窗 | `floating_window_service.dart`, `floating_quick_note_bar.dart` | 系统悬浮窗，可拖拽，速记条+设置面板 |
+| 外部备份 | `quick_note_backup_service.dart` | 速记+自言自语导出到外部存储JSON |
+| 自言自语 | `self_talk_screen.dart`, `self_talk_service.dart` | 聊天式记录，me(右)/alterEgo(左)/system(对侧) |
+| 速记 | `quick_note_editor_screen.dart`, `quick_notes_screen.dart` | 快速笔记，标签，置顶，搜索 |
+| 贴图拖动 | `custom_sticker_overlay.dart` | 页面上直接拖拽，长按菜单 |
+| 标签编辑 | `profile_screen.dart` | 支持颜色选择、编辑、删除确认 |
+| PDF导出 | `pdf_export_service.dart` | 思源宋体，图片嵌入，封面+页眉页脚 |
+| WebDAV | `cloud_sync_service.dart` | 坚果云预设，自动错误提示 |
+| 自动备份 | `auto_backup_service.dart` | 每天自动备份，保存7次历史 |
+| 应用锁 | `app_lock_service.dart` | 九宫格手势密码，启动保护 |
+| 纪念日 | `anniversary.dart` | 日历页定制，写日记自动添加纪念文字 |
+| 扭蛋系统 | `gacha_service.dart`, `gacha_screen.dart` | 每日3次，80+奖励，徽章联动 |
+| 主题背景 | `theme_backgrounds.dart` | 5款动态主题（樱花/海洋/极光/黄金/星空） |
+| 农历日历 | `lunar_calendar_service.dart` | 内置算法1900-2100年 |
+| 目标系统 | `goal_provider.dart`, `goal_service.dart` | 月度目标，进度追踪 |
+| 三级标签 | `tag_system_service.dart` | 分类→子分类→标签 |
+| 徽章系统 | `badge_service.dart` | 84个徽章，8种类型 |
 
-## 开屏动画说明
+## 速记浮窗系统
 
-### 双模式开屏动画
+### 设计原则：快速记录 + 强化提醒
 
-完整动画（每两天一次）：
+**核心文件**：
+- `lib/services/floating_window_service.dart` — 浮窗生命周期
+- `lib/services/floating_permission_service.dart` — 权限管理
+- `lib/services/floating_notification_service.dart` — 通知同步
+- `lib/services/floating_settings_service.dart` — 设置持久化
+- `lib/services/quick_note_backup_service.dart` — 外部存储备份
+- `lib/widgets/floating_button.dart` — 小浮窗UI（拖拽+吸附+双击）
+- `lib/widgets/floating_quick_note_bar.dart` — 速记条横条
+- `lib/widgets/floating_settings_panel.dart` — 设置面板（两页）
+- `lib/main_floating.dart` — 浮窗专用Flutter入口
 
-- 3D翻书效果（SplashPageTurn）
-- 双层叠加封面（轮廓 + 原图）
-- 显示作者信息
-- 翻页动画时长 800ms
+**数据流**：存储速记 → 数据库 + 通知（内容同步）+ 自言自语（最后一条用户消息）
 
-简单动画（日常）：
+**设置项**：使用标签、字体大小、同步通知、字数统计、自动隐藏、输入框透明度、双击灵敏度、靠边自动隐藏、悬浮窗大小（大/中/小）、自定义图标颜色+透明度。
 
-- 淡入淡出效果（FadeTransition）
-- 图标缩放（ScaleTransition + easeOutBack）
-- 显示应用名和用户名
-- 总时长 1200ms（更快进入）
+## 自言自语说明
 
-切换逻辑：
+### 消息对齐规则
 
-```dart
-// 存储上次显示完整动画的月份
-final lastMonth = prefs.getString('last_full_splash_month');
-final currentMonth = DateTime.now().toIso8601String().substring(0, 7);
+| 身份 | 消息位置 | 系统回复位置 |
+|------|---------|------------|
+| **我** (me) | 右侧，主色气泡 | 左侧，灰色气泡 |
+| **另一个我** (alterEgo) | 左侧，紫色气泡+🧠 | 右侧，灰色气泡+📝 |
+| **系统** (system) | 取决于回复对象 | — |
 
-// 每月只显示一次完整动画
-_showFullAnimation = lastMonth != currentMonth;
-```
+### AI 开关
+- 控制**之后是否生成新的系统回复**
+- 不影响已有历史回复的显示
+- 关闭后任何用户消息都不触发 AI 回复
 
 ## 主题背景技术说明
 
-### v1.0.2 主题背景全面增强
-
-#### 贴图系统优化
-
-淡入淡出动画：
-
-```dart
-// 使用 AnimatedOpacity + AnimatedScale 组合
-AnimatedOpacity(
-  opacity: opacity,
-  duration: Duration(milliseconds: opacity == 1.0 ? 400 : 300),
-  child: AnimatedScale(
-    scale: opacity == 1.0 ? 1.0 : 0.8,
-    duration: Duration(milliseconds: opacity == 1.0 ? 400 : 300),
-    child: StickerWidget(),
-  ),
-)
-```
-
-随机序列修复：
-
-```dart
-// 全局单例随机数生成器，避免毫秒级创建产生相同序列
-final Random _globalRandom = Random();
-// 所有随机位置/贴纸类型都使用 _globalRandom
-```
-
-#### 星空主题（4向流星 + 性能优化）
-
-流星碰撞避免：
-
-```dart
-// 流星出现在4个对角象限，避免水平垂直碰撞
-final corners = [
-  Offset(-50, -50),   // 左上 (topLeft)
-  Offset(size.width + 50, -50),  // 右上 (topRight)
-  Offset(-50, size.height + 50), // 左下 (bottomLeft)
-  Offset(size.width + 50, size.height + 50), // 右下 (bottomRight)
-];
-```
-
-#### 极光主题（完美循环 + 增强视觉效果）
-
-整数倍频率公式（完美循环修复）：
-
-```dart
-// 关键：所有参数必须是整数倍才能确保完美循环
-// 1. 速度倍数：1x, 2x, 4x - 确保在 2π 周期后同时回到起点
-// 2. 频率倍数：1, 2, 4 - 整数频率
-// 3. 相位偏移：0, π, 2π - 整数倍
-// 4. 呼吸效果：sin(layerT) - 与速度同步
-
-final layerT = t * config.speedMul; // t * 1, t * 2, t * 4
-final layerPhase = layerIndex * pi; // 0, π, 2π
-
-// 主波 - 整数频率
-y += sin(nx * 1 + layerT + layerPhase) * amp * 0.55;
-// 次波 - 整数频率，反向流动
-y += sin(nx * 2 - layerT + layerPhase) * amp * 0.30;
-// 细节波 - 整数频率
-y += sin(nx * 4 + layerT + layerPhase) * amp * 0.15;
-```
-
-#### 海洋主题（海洋生灵）
-
-生物生成机制：
-
-```dart
-// 低频率随机生成（6-15秒间隔）
-Timer.periodic(Duration(seconds: _random.nextInt(10) + 6), (_) {
-  final creatureType = _random.nextInt(4); // 0:鱼, 1:海龟, 2:虾, 3:无
-  if (creatureType < 3) _spawnCreature(creatureType);
-});
-```
-
-#### 黄金主题（性能优化版）
-
-粒子数量优化：
-
-| 类型   | 优化前 | 优化后 | 节省  |
-| ---- | --- | --- | --- |
-| 金沙粒子 | 50  | 15  | 70% |
-| 能量水晶 | 8   | 4   | 50% |
-| 金色箔片 | 30  | 10  | 67% |
-| 控制器  | 5个  | 1个  | 80% |
-
-#### 樱花主题（唯美樱花版）
-
-轻飘飘落地效果（无吸附）：
-
-```dart
-// 落地时添加随机偏移，模拟自然堆积
-final randomOffset = random.nextDouble() * 0.018; 
-return baseGround + randomOffset; // 0-15px随机高度
-
-// 落地时稍微滑动，更自然
-flower.x += (random.nextDouble() - 0.5) * 0.02;
-```
-
-## 徽章系统说明
-
-### 徽章类型（8类共84个）
-
-| 类型   | 数量 | 说明                         |
-| :--- | :- | :------------------------- |
-| 里程碑  | 5  | 累计不同天数（3/7/30/100/365天）    |
-| 连续记录 | 7  | 真正连续写日记（3/7/14/30/60/100天+补签） |
-| 日记总数 | 5  | 累计篇数（10/50/100/500/1000篇）  |
-| 内容创作 | 10 | 字数、标题、照片数量、时间等            |
-| 时间类  | 8  | 特定时段、周末、节假日                |
-| 照片类  | 5  | 累计照片数、连续发照片                |
-| 情感类  | 10 | 关键词触发（爱情、家人、工作等）          |
-| 特殊徽章 | 12 | 季节、天气、生日等特殊条件             |
-| 隐藏徽章 | 11 | 特殊条件、收集成就                  |
-| 商店徽章 | 6  | 扭蛋商店购买相关成就                 |
-
-### 彩蛋与徽章联动
-
-**关于日记彩蛋：**
-- 双击"关于日记"页面图标触发彩蛋
-- 彩蛋会显示**随机的未解锁徽章tip**
-- 从84个徽章中随机选择提示
-- 帮助用户了解如何获得更多徽章
-- 每日首次触发彩蛋获得1次额外扭蛋机会
-
-## 应用锁说明
-
-### 功能特性
-
-- 九宫格手势密码  ：3x3 点阵，最多9个点
-- 启动保护  ：开场动画后显示解锁界面
-- 密码备份  ：自动生成可视化备份图片
-- 忘记密码  ：可查看本地备份图片找回
-
-## 纪念日/倒数日说明
-
-### 功能特性
-
-- 日历页定制  ：顶部常驻纪念日按钮，为选中日期添加纪念日或倒数日
-- 自动纪念文字  ：写日记时自动在底部添加纪念日相关文字
-- 特殊日子提示  ：周年（365天）、百天（100/200/500/1000天）、月纪念日等特殊日子配有佳句
-- 倒数日提醒  ：距离倒数日7天内会显示提醒文字
-- 文字样式  ：比正文小两号，居中显示，特殊日子加粗
-
-## 日历顶部功能区说明
-
-### 功能特性
-
-日历页顶部卡片集成了多种实用功能，方便快速操作：
-
-- 日期显示  ：显示当前选中的日期和星期
-- 今天跳转  ：当选中日期不是今天时，显示"今天"快捷按钮，一键回到当前日期
-- 本月统计  ：显示当前月份的日记数量（如"本月 12 篇"）
-- 搜索入口  ：快速跳转到日记搜索页面
-- 纪念日入口  ：快速打开纪念日管理对话框
-
-## 实况图片（Motion Photo）说明
-
-### 功能特性
-
-- 自动检测  ：自动识别小米、三星、OPPO、Pixel 等 Android 实况照片
-- 全屏播放  ：图片查看器支持长按播放实况视频
-- 视觉标识  ：实况图片显示发光"实况"角标和"长按播放"提示
-
-## 按标签分类说明
-
-### 功能特性
-
-- 统计页入口  ：统计页新增"按标签分类"卡片
-- 标签网格  ：每个标签占一个大格，显示名称、数量和预览
-- 8格预览  ：每个标签下8个小格，预览最近使用该标签的日记
-- 点击查看  ：点击标签查看所有使用该标签的日记，点击日记跳转详情
-
-## PDF 中文字体说明（打包方案）
-
-### 方案概述
-
-采用**方案2：打包字体到APK**，使用**思源宋体（NotoSerifCJKsc）**，彻底解决大陆网络环境下字体下载不稳定问题。
-
-### 加载优先级
-
-```dart
-1. assets/fonts/          ← 打包字体（优先）
-2. 本地缓存              ← 上次使用时缓存
-3. 网络下载              ← 备选方案
-```
-
-### 字体文件（已实施）
-
-| 文件 | 大小 | 用途 |
-|------|------|------|
-| NotoSerifCJKsc-Regular.otf | ~24MB | 常规文本（思源宋体） |
-| NotoSerifCJKsc-Bold.otf | ~25MB | 标题粗体（思源宋体） |
-| **合计** | **~49MB** | - |
-
-### 当前配置（已生效）
-
-字体已打包到APK，路径：
-```
-assets/fonts/
-├── NotoSerifCJKsc-Regular.otf
-└── NotoSerifCJKsc-Bold.otf
-```
-
-### 如需重新构建
-
-```bash
-flutter clean
-flutter pub get
-flutter build apk --release
-```
-
-3. **构建APK**
-   ```bash
-   flutter clean
-   flutter pub get
-   flutter build apk --release
-   ```
-
-### 网络优化（自动下载备选）
-
-如选择不打包字体，应用会自动尝试从以下源下载：
-- jsDelivr国内节点（cdn/fastly/gcore）
-- 清华大学镜像
-- 中科大镜像
-- ghproxy等国内代理
-
-智能下载策略：
-- 第一轮：快速尝试（8-15秒超时）
-- 第二轮：深度重试（45秒超时）
-
-### 相关文档
-
-- `FONTS_GUIDE.md` - 字体配置详细指南
-- `SCHEME2_IMPLEMENTATION.md` - 打包方案实施指南
-- `assets/fonts/README.md` - 字体放置说明
-
-## 图片缓存说明
-
-```dart
-// 使用缓存图片组件（自动选择清晰度）
-PlatformImage(
-  path: imagePath,
-  fit: BoxFit.cover,
-)
-
-// 日历专用 - 400x400 清晰度
-CalendarImage(
-  path: imagePath,
-  fit: BoxFit.cover,
-)
-
-// 详情页专用 - 800x800 高清
-DetailImage(
-  path: imagePath,
-  fit: BoxFit.cover,
-)
-
-// 全屏预览 - 原图/1200x1200超清
-PreviewImage(
-  path: imagePath,
-  fit: BoxFit.contain,
-)
-
-// 预加载图片
-ImageCacheService().preloadImages(paths, quality: CacheQuality.medium);
-
-// 获取缓存状态
-final status = ImageCacheService().getCacheStatus();
-```
-
-## 扭蛋系统说明
-
-### 功能特性
-
-- 写日记获得抽奖  ：每日初始3次，写第一篇日记+1次，满3篇再+1次
-- 四种稀有度  ：普通(60%)、稀有(25%)、史诗(12%)、传说(3%)
-- 40+种奖励  ：贴图类、日记提示、徽章提示、幸运语、额外抽奖、里程碑祝福、回忆提示、心情建议、标签创意、贴图包、日记模板、照片挑战、情感分析、纪念日提示、成就加成
-- 重复奖励转换  ：获得已有奖励时自动转换为额外抽奖，每次扭蛋都有价值
-- 精美动画  ：扭蛋机缩放+旋转动画，奖励卡片渐显效果
-- 历史记录  ：保存最近10次抽奖记录
-- 收藏统计  ：记录每个奖励的获得次数
-- 特效显示  ：传说奖励显示特殊特效说明
-
-## 照片展览说明
-
-### 功能特性
-
-- 全屏浏览  ：黑色背景沉浸式体验
-- 左右滑动  ：手势切换上一张/下一张照片
-- 双指缩放  ：支持放大查看细节
-- 底部缩略图  ：快速跳转到任意照片
-- 页码指示  ：显示当前页码和总页数
+5款动态主题使用 Flutter CustomPainter：
+- **星空**：4向流星 + 80颗星星 + Bhaskara I快速sin近似
+- **极光**：整数倍频率正弦波（1x/2x/4x），完美无缝循环
+- **海洋**：波浪 + 海洋生物（鱼/海龟/虾）低频率生成
+- **黄金**：粒子系统（金沙/水晶/箔片），性能优化版
+- **樱花**：花瓣飘落 + 花朵生成，落地自然堆积效果
 
 ## 常见问题
 
 Q: 异步回调获取主题报错？
-
 A: `Provider.of<ThemeProvider>(context, listen: false).currentScheme`
 
 Q: 底部弹窗被键盘遮挡？
-
 A: `isScrollControlled: true` + `MediaQuery.of(context).viewInsets.bottom`
 
 Q: 构建失败/缓存问题？
-
 A: `flutter clean && flutter pub get`
 
-Q: 图标生成？
-
-A: `dart run tool/generate_icons.dart`
-
 Q: 徽章不触发？
-
-A: 连续徽章需要真正连续记录，不能中断；检查 `BadgeService.checkStreakBadges()`
+A: 连续徽章需要真正连续记录；检查 `BadgeService.checkStreakBadges()`
 
 ## 构建与发布
 
-### 构建APK（Android）
-
 ```bash
-# 清理缓存（如有构建问题）
-flutter clean
-flutter pub get
-
-# 构建Release版本APK
+# 构建Release APK
 flutter build apk --release
+# 输出: build/app/outputs/flutter-apk/app-release.apk
 
-# 构建完成后APK位置
-build/app/outputs/flutter-apk/app-release.apk
-```
-
-### 构建AppBundle（Google Play）
-
-```bash
-# 构建AAB格式（用于Google Play上架）
+# 构建AppBundle
 flutter build appbundle --release
 
-# 输出位置
-build/app/outputs/bundle/release/app-release.aab
-```
-
-### 构建Windows版本
-
-```bash
+# 构建Windows
 flutter build windows --release
 ```
 
-### 构建Web版本
+**版本号更新**：`pubspec.yaml` + `AGENTS.md` 同步更新。
 
-```bash
-flutter build web --release
-```
-
-### 版本号更新
-
-发布新版本前，请更新以下文件中的版本号：
-
-1. `pubspec.yaml` - 修改 `version: x.x.x`
-2. `AGENTS.md` - 更新文档开头的版本号和版本记录
-
-### 发布前检查清单
-
-- [ ] 更新版本号
-- [ ] 更新 `AGENTS.md` 版本记录
-- [ ] 运行 `flutter test` 检查测试
-- [ ] 构建Release版本并测试
-- [ ] 检查APK大小（通常60-80MB为正常范围）
+**发布前检查**：更新版本号 → `flutter analyze` → 构建Release → 检查APK大小（60-100MB正常）。
 
 ## 常见陷阱与教训
 
 ### ⚠️ 文件编码问题（重要！）
 
-问题描述：
-
-在 Windows PowerShell 中使用字符串替换命令时，UTF-8 编码的中文字符被错误解释为 GBK，导致文件大面积乱码。
-
-错误示例：
+Windows PowerShell 默认使用 GBK，会导致 UTF-8 文件乱码。
 
 ```powershell
-# ❌ 错误 - 会导致中文乱码
-(Get-Content lib\screens\profile_screen.dart -Raw).Replace("旧文本", "新文本") | 
-Set-Content lib\screens\profile_screen.dart -NoNewline
+# ❌ 错误
+Get-Content file.dart | Set-Content file.dart
+# ✅ 正确
+Get-Content file.dart -Encoding UTF8 | Set-Content file.dart -Encoding UTF8
+# ✅ 推荐 - Python
+with open('lib/screens/file.dart', 'r', encoding='utf-8') as f: content = f.read()
 ```
 
-正确做法：
-
-```powershell
-# ✅ 正确 - 显式指定 UTF-8 编码
-$content = Get-Content lib\screens\profile_screen.dart -Raw -Encoding UTF8
-$content = $content.Replace("旧文本", "新文本")
-$content | Set-Content lib\screens\profile_screen.dart -Encoding UTF8 -NoNewline
-```
-
-或者使用 Python（推荐）：
-
-```python
-# ✅ 推荐 - Python 更可靠
-with open('lib/screens/profile_screen.dart', 'r', encoding='utf-8') as f:
-    content = f.read()
-content = content.replace('旧文本', '新文本')
-with open('lib/screens/profile_screen.dart', 'w', encoding='utf-8') as f:
-    f.write(content)
-```
-
-预防措施：
-
-1. 使用 Git  ：每次修改前提交，可随时回滚
-2. 备份文件  ：修改前创建 `.bak` 备份
-3. 验证编码  ：修改后立即检查文件是否能正常编译
-4. IDE 操作  ：优先使用 IDE（VS Code/Android Studio）的替换功能
-
-恢复方案：
-
-- 如果已乱码且没有 Git 备份：
-  1. 立即停止继续修改
-  2. 检查 `.bak` 备份文件是否完好
-  3. 如备份也损坏，基于当前干净代码重新实现功能
-  4. 不要尝试手动修复乱码  （信息已丢失，不可逆）
+预防措施：使用 Git 提交后再修改；优先使用 IDE 替换功能；修改后立即编译验证。
 
 ## 版本记录
 
-- v1.21.0   (2026-04-22) - PDF导出修复 + 自言自语重构 + 速记功能:
-  - PDF 导出修复（根因定位 + 修复）
-    - `assets/fonts/` 下实际只有 `NotoSerifCJKsc-VF.ttf`（可变字体）
-    - 但 `pdf_export_service.dart` 和 `font_download_service.dart` 中代码找的是 `.otf` 文件
-    - **文件名完全不匹配**导致字体加载永远失败，PDF 无法导出中文
-    - 修复：`pdf_export_service.dart` 中 `_loadChineseFont()` / `_loadChineseBoldFont()` 均改为加载 `.ttf`
-    - 修复：`font_download_service.dart` 中字体配置名同步改为 `.ttf`
-    - 可变字体通过 `fontWeight` 参数控制粗细，一个文件同时支持 Regular + Bold
-  - 自言自语完全重构（与日记系统零耦合）
-    - **核心原则**：自言自语是完全独立模块，不再关联日记
-    - `SelfTalkService.sendMessage()`：不再读写 `Diary` 表，不再追加到日记正文
-    - `SelfTalkService.deleteMessage()`：只删除消息和级联任务，不碰日记
-    - `SelfTalkTask`：移除 `diaryId` 依赖，仅通过 `messageId` 关联
-    - 移除废弃方法：`updateSelfTalkMessageDiaryId()`、`getSelfTalkMessagesByDiaryId()`
-    - 数据库升级到 **v10**（v9 标记自言自语独立逻辑，v10 新增速记表）
-    - 删除对话框文案更新：去掉"同时也会从当天日记中移除"
-    - 任务解析逻辑不变：仅在 `senderType == me && aiEnabled` 时触发
-  - 新增「速记」功能（Quick Note）
-    - **定位**：快速捕捉一闪而过的想法，与日记完全隔离
-    - 数据模型：`QuickNote`（content, created_at, updated_at, is_pinned, tag）
-    - 数据库新增 `quick_notes` 表（native + web 双端支持）
-    - 服务层：`QuickNoteService`（CRUD + 搜索 + 标签筛选 + 置顶）
-    - **速记编辑页**（`QuickNoteEditorScreen`）：极简设计，只有多行文本框 + 可选标签
-    - **速记列表页**（`QuickNotesScreen`）：搜索框、标签筛选、置顶优先、左滑删除/右滑置顶
-    - 预设标签：灵感、待办、备忘、读书、想法
-    - 时间显示：相对时间（刚刚、5分钟前、2小时前、3天前）
-    - **入口设计**：
-      - 常规入口：右上角悬浮按钮（💡 图标），点击新建，长按打开列表
-      - 快捷启动：长按屏幕空白区 **3秒** 自动打开速记编辑器
-      - 关闭入口："我的"页 → "速记悬浮按钮"开关，可永久关闭
-    - 新增文件：
-      - `lib/models/quick_note.dart`
-      - `lib/services/quick_note_service.dart`
-      - `lib/screens/quick_notes_screen.dart`
-      - `lib/screens/quick_note_editor_screen.dart`
-  - 构建验证
-    - `flutter analyze` 无 error
-    - Release APK：88.3MB（`build/app/outputs/flutter-apk/app-release.apk`）
+- **v1.23.0** (2026-05-04) - 速记浮窗系统 + 外部存储备份:
+  - 新增依赖：`flutter_overlay_window`, `flutter_local_notifications`
+  - 权限：SYSTEM_ALERT_WINDOW, POST_NOTIFICATIONS, FOREGROUND_SERVICE
+  - 浮窗：可拖拽圆点，边框吸附缩小，双击展开速记条横条
+  - 速记条：粘贴/输入/存储/设置，拖动调节大小，双击还原
+  - 设置面板：功能设置 + 外观设置（两页PageView）
+  - 数据流：存储 → 数据库 + 通知 + 自言自语
+  - 外部备份：速记+自言自语导出JSON到外部存储（可指定目录，日记不备份）
+  - 新增10个文件，修改4个文件
 
-- v1.20.0   (2026-04-10) - 自言自语 + 设计系统全面升级 + 自定义头像修复:
-  - 新增「自言自语」聊天式快速记录
-    - 新建 `SelfTalkScreen`：类IM聊天界面，右侧用户气泡 + 左侧系统气泡
-    - 每条用户消息自动追加到当天 `Diary.content`，系统回复仅存在于聊天页
-    - 本地规则模板回复（无AI）：关键词匹配 + 记录条数反馈 + 兜底正向短句
-    - 支持日期切换、长按删除消息、同步清理日记正文
-    - 数据库新增 `self_talk_messages` 表（native + web 双端支持）
-    - 双入口设计：时间轴顶部快捷胶囊 + 长按底部「+」按钮弹出菜单
-    - 新增文件：`lib/models/self_talk_message.dart`、`lib/services/self_talk_service.dart`、`lib/screens/self_talk_screen.dart`
-  - 全局设计系统升级
-    - 替换所有 `withOpacity` 为 `withValues(alpha: ...)`，适配 Flutter 3.29+
-    - 扩展 `ThemeScheme`：新增 `surfaceColor`、`dividerColor`、`shadowColor` 等语义化颜色
-    - ProfileScreen 沉浸式重构：呼吸动画头像卡片、渐变图标菜单、Toast反馈
-    - TimelineScreen 升级：日记卡片 `TiltCard` 3D倾斜、统一阴影语义色
-    - CalendarScreen 节气动画：`BreathingAnimation` 彩色光晕效果
-    - GachaScreen 奖励展示升级：稀有度光晕层、传说奖励脉冲动画
-    - StatsScreen 数据可视化：统计卡片 `TiltCard`、情绪分布圆角渐变进度条
-    - `SmartRecallHomeCard` 重新设计：自动收缩悬浮胶囊（4秒后折叠）
+- **v1.22.0** (2026-05-04) - 自言自语数据库彻底独立:
+  - 移除 `diary_id` 列（数据库v12迁移）
+  - 模型层移除 `diaryId`
+  - 新增搜索API：`searchMessages`, `searchTasks`, `getRecordedDates`
+  - 时间戳递增偏移确保排序稳定
+
+- **v1.21.0** (2026-04-22) - PDF导出修复 + 自言自语重构 + 速记功能:
+  - PDF字体改为 `.ttf`（可变字体 `NotoSerifCJKsc-VF.ttf`）
+  - 自言自语零耦合（不再读写Diary表）
+  - 新增速记：QuickNote模型 + 编辑页 + 列表页 + 4个入口
+  - APK: 88.3MB
+
+- **v1.20.0** (2026-04-10) - 自言自语 + 设计系统升级:
+  - 新增SelfTalkScreen（IM聊天界面）
+  - 替换 `withOpacity` → `withValues(alpha:)` 适配Flutter 3.29+
+  - 扩展ThemeScheme语义化颜色
   - 自定义头像持久化修复
-    - `setCustomAvatar()` 自动复制图片到 `getApplicationDocumentsDirectory()/avatars/`
-    - 应用更新/系统清理缓存后头像不再丢失
-    - 启动时自检头像文件存在性，自动清理无效记录
-  - 版本号统一升级至 1.20.0
-    - `pubspec.yaml`、`android/app/build.gradle.kts`、软件内所有版本显示同步更新
-    - APK版本号：`versionCode = 120`
-  - 自言自语任务识别（DDL / 提醒 / 待办）
-    - 新增 `SelfTalkTaskParser` 本地规则解析：支持"明天下午3点提醒我交报告"、"周五前完成PPT"、"记得买牛奶"等
-    - 自动提取任务内容 + 截止时间，无 AI、不上云
-    - 聊天界面显示任务卡片（橙色未完成 / 绿色已完成），点击即可标记完成
-    - 数据库新增 `self_talk_tasks` 表（native + web）
-    - 删除消息时级联删除关联任务
-    - 新增文件：`lib/models/self_talk_task.dart`、`lib/services/self_talk_task_parser.dart`
-  - 照片持久化修复
-    - `ImagePersistenceService` 自动将相册/拍照图片复制到应用私有目录
-    - 解决用户移动/删除相册原图后，App 内图片显示空白的问题
-  - 自定义头像持久化修复
-    - `SettingsProvider.setCustomAvatar()` 自动复制到 `getApplicationDocumentsDirectory()/avatars/`
-    - 应用更新/系统清理缓存后头像不再丢失
-    - 启动时自检头像文件存在性，自动清理无效记录
-  - 构建信息
-    - 最终APK大小：84.1MB
 
-- v1.1.6   (2026-03-28) - 徽章系统修复 + PDF字体打包方案 + 彩蛋优化:
-  - 徽章系统全面检查与修复
-    - 遍历全部84个徽章，修复2处描述与触发逻辑不一致问题
-    - `photo_50`徽章：补充"Tip: "前缀
-    - `content_consistent_writer`：描述精确化为"连续3天每天写日记超过300字"
-    - 所有徽章tip现在格式统一
-  - 彩蛋系统升级
-    - 双击"关于日记"页面彩蛋现在显示**随机徽章tip**
-    - 从84个徽章中随机选择提示，不再是固定提示
-    - 新增`getAllBadgeTips()`和`getRandomBadgeTip()`方法
-  - PDF导出乱码问题根治
-    - 实施**方案2：打包字体到APK**
-    - 字体加载优先级调整为：assets字体 > 本地缓存 > 网络下载
-    - 优化大陆网络环境CDN源（jsDelivr/清华/中科大等）
-    - 智能下载策略（快速失败+深度重试）
-    - 添加字体文件头验证、文件完整性检查
-    - 新增`FONTS_GUIDE.md`字体配置指南
-    - 新增`SCHEME2_IMPLEMENTATION.md`实施方案
-    - 新增`assets/fonts/README.md`字体放置说明
-  - 新增辅助工具
-    - `tool/download_fonts.py`：字体下载脚本（大陆网络优化）
-  - APK构建完成
-    - 使用思源宋体（NotoSerifCJKsc）作为PDF中文字体
-    - 字体文件已打包到APK（约49MB）
-    - 最终APK大小：107.1MB
-    - 用户导出PDF无需网络下载，立即可用
+- **v1.1.6** (2026-03-28) - 徽章修复 + PDF字体打包:
+  - 徽章系统全面检查（84个徽章）
+  - 彩蛋显示随机徽章tip
+  - PDF打包思源宋体到APK（~49MB）
+  - APK: 107.1MB
 
-- v1.1.5   (2026-03-24) - 云备份架构重构 + UI优化:
-  - 云备份架构全面升级
-    - 备份按密钥分文件夹存储（diary_backups/backup_<hash>/）
-    - 支持多设备备份共存，不再相互覆盖
-    - 新增云端备份扫描功能，可发现其他设备备份
-    - 支持从其他设备备份导入（需要密钥解密）
-    - 导入采用合并模式，不覆盖现有数据
-    - 备份管理页面新增"云端其他备份"区域
-  - 云端备份图片支持
-    - 备份时自动打包并加密图片（ZIP + AES-256）
-    - 图片存储路径：diary_backups/<folder>/images/
-    - 恢复时自动下载并解压图片到本地
-    - 支持从其他设备备份恢复图片
-  - 云端备份导入UI自动刷新
-    - 导入成功后自动调用 loadDiaries() 刷新日记列表
-    - 页面返回链传递数据更改标记
-    - 个人资料页面检测并刷新数据
-  - 应用锁备份图片路径优化
-    - 备份图片保存到 Download/diary_backup/（与txt导出一致）
-    - 方便用户查找和管理备份图片
-  - 时间轴页面顶部卡片优化
-    - 图标替换为用户头像（优先自定义头像，否则emoji）
-    - 昵称字号放大（20→22），更加醒目
-    - 新增用户签名显示（替换固定文案）
-    - 扭蛋入口缩小至80%
-    - 整体Y轴居中对齐
+- **v1.1.5** (2026-03-24) - 云备份重构:
+  - 备份按密钥分文件夹，多设备共存
+  - 云端图片ZIP+AES-256加密备份
+  - 时间轴顶部卡片优化（头像/昵称/签名）
 
-- v1.1.0   (2026-03-24) - 目标系统完善 + 指纹解锁功能:
-  - 目标系统全面升级
-    - 支持最多5个自定义目标（原1个）
-    - 完善的目标增删改机制
-    - 添加目标时自动检查数量限制
-    - 删除目标需二次确认，删除激活目标自动切换
-  - 日历页目标卡片重构
-    - 默认只显示激活目标
-    - 显示"还有x个"提示其他目标
-    - 点击展开显示所有目标列表
-    - 支持切换激活目标
-    - 支持快速编辑任意目标
-    - 支持从列表直接添加新目标
-  - 指纹解锁功能（生物识别认证）
-    - 新增 local_auth 依赖支持指纹/面容识别
-    - 应用锁下方新增生物识别开关
-    - 自动检测设备支持的生物识别类型
-    - 解锁页面自动触发指纹验证
-    - 指纹失败后可继续使用手势密码
-    - 提供详细的设置指南
-    - Android 添加 USE_BIOMETRIC 和 USE_FINGERPRINT 权限
+- **v1.1.0** (2026-03-24) - 目标系统 + 指纹解锁:
+  - 支持5个自定义目标
+  - 日历页目标卡片可折叠
+  - 指纹/面容识别解锁
 
-- v1.0.5   (2026-03-22) - 底部导航栏优化 + 编辑页UI修复 + 调试功能增强:
-  - 底部导航栏页面状态保持
-    - 使用 IndexedStack 替代 PageView，切换页面时保持状态
-    - 修复页面状态丢失问题（滚动位置、展开状态等）
-    - 添加防快速点击保护
-  - 编辑日记页和日记详情页UI优化
-    - 移除标题和内容卡片的渐变背景，改为纯色
-    - 移除卡片边框，消除外圈杂线
-    - 修复 TextField 内框显示问题
-    - 统一所有卡片圆角风格
-  - 导航栏倒计时调整
-    - 自动隐藏倒计时从 3 秒改为 5 秒
-    - 优化从子页面返回时的导航栏显示逻辑
-  - 贴纸系统优化
-    - 扩大贴纸位置范围到全屏（避开核心内容区）
-    - 调整刷新频率、显示时长和最大数量
-    - 添加贴纸"性格"系统（闪现型/普通型/常驻型）
-  - 新增调试功能
-    - 添加"清除除日记外所有数据"功能
-    - 可清除徽章、扭蛋、主题、贴纸、头像等数据
-    - 保留日记数据不受影响
+- **v1.0.5** (2026-03-22) - 底部导航栏优化:
+  - IndexedStack替代PageView保持页面状态
+  - 编辑页UI修复（移除渐变背景）
+  - 导航栏自动隐藏5秒
 
-- v1.0.4   (2026-03-19) - 主题配色统一 + 系统导航栏适配 + SafeArea 优化:
-  - 主题配色统一（所有特殊主题统一成主动设置效果）
-    - 修复 gacha_service.dart 中樱花主题配色（添加白色卡片、iconColor）
-    - 修复 gacha_service.dart 中海洋主题配色（统一 theme_provider.dart 定义）
-    - 修复 gacha_service.dart 中极光主题配色（添加卡片和图标色）
-    - 确保所有特殊主题都有 card 和 iconColor 定义
+- **v1.0.4** (2026-03-19) - 主题配色统一 + SafeArea优化:
+  - 所有特殊主题统一配色
   - 系统导航栏遮挡修复
-    - MainScreen: extendBody: true + body SafeArea(bottom: false)
-    - MainScreen: bottomNavigationBar 被 SafeArea 包裹（只处理底部）
-    - TimelineScreen: SafeArea 设置 bottom: false
-    - StatsScreen: SafeArea 设置 bottom: false
-    - 所有子页面内容由 MainScreen 统一处理系统导航栏适配
-  - 日历页面修复
-    - 修复日历被底部导航栏遮挡问题（使用LayoutBuilder动态计算高度）
-    - 修改日历网格为固定高度计算，确保完整显示
-    - 优化cell宽高比（0.9 → 1.0）
-  - 全新自定义目标系统（完全与日记脱钩）
-    - 用户可以创建完全自定义的目标（如：每天喝水8杯、每周运动3次）
-    - 支持自定义目标名称、图标、数量、周期（日/周/月）
-    - 提供10+快捷模板（喝水、运动、阅读、冥想等）
-    - 目标进度手动记录（+/-按钮）
-    - 保留原有UI设计风格（卡片式、渐变色、圆角）
-    - 日历页显示迷你目标卡片，支持展开/收起
-  - 标签分类功能修复
-    - 更新标签分类页面支持三级标签系统（String tagId）
-    - 添加 diary_tags_v3 数据库表支持
-    - 更新 TagDiariesScreen 兼容新旧标签系统
-    - 添加 getDiariesByTagIdV3 方法到数据库服务
-  - 调试功能修复
-    - 修复解锁主题功能（使用正确的 unlocked_themes key）
-    - 修复扭蛋机会功能（使用 GachaService.addDraws()）
-    - 修复解锁徽章功能（使用 BadgeService.unlockBadge()）
-  - 节假日连续显示优化
-    - 添加节日假期定义（春节7天、国庆7天、劳动节3天等）
-    - 添加节日开始日期映射（2026年数据）
-    - 修改农历服务，支持节假日连续多天显示
-  - 编辑日记页渐变重设计
-    - 统一卡片渐变风格：三色渐变（cardColor → cardColor.withAlpha → lightColor低透明度）
-    - 日期卡片：添加渐变停止点(0.0, 0.6, 1.0)，柔和过渡
-    - 日期图标：优化渐变角度和阴影（blurRadius: 16, spreadRadius: -2）
-    - 心情/标题/内容/图片卡片：统一添加微妙边框（opacity 0.12）
-    - 添加图片按钮：降低渐变对比度（0.25 → 0.12）
-    - 图片滑动提示：三色渐变 + 优化阴影
-  - 导航栏修复
-    - 重构为 Stack 布局，中间按钮可超出边界
-    - 修复圆形按钮被裁剪问题
-    - 正确计算按钮位置（bottom: 12）
-  - 调试模式增强
-    - 新增"作弊功能"区域
-    - 解锁所有特殊主题（星空、樱花、海洋、极光、黄金）
-    - 获得99次扭蛋机会
-    - 解锁全部78个徽章
-    
-- v1.0.3   (2026-03-19) - 日历页UI优化:
-  - 日历布局重构
-    - 移除顶部LunarInfoCard，整合农历简写到日期标题
-    - 目标进度卡片改为可折叠迷你版
-    - 优化日历单元格农历/节日显示（字体11px，节日最多3字）
-    - 添加底部padding防止被导航栏遮挡
-  - 农历/节日显示优化
-    - 日期标题显示农历简写或节日/节气
-    - 节日红色高亮、节气主题色高亮
+  - 自定义目标系统（与日记脱钩）
+  - 三级标签系统
 
-- v1.0.2   (2026-03-19) - Profile修复与Git初始化:
-  - 🔧 修复profile\_screen.dart中文乱码问题
-    - 根因：PowerShell默认使用GBK编码导致UTF-8文件损坏
-    - 解决：完全重写profile\_screen，使用UTF-8显式编码
-  - ✅ 完整还原UI功能
-    - 用户卡片（头像/昵称/签名编辑）
-    - 徽章展示区域（已解锁预览+图鉴入口）
-    - 数据管理（云同步/本地备份/导出）
-    - 主题配色/桌面图标/应用锁
-    - 心情管理/标签管理/自定义贴纸
-    - 关于日记（彩蛋）/版权信息
-  - 📝 添加编码处理规范到AGENTS.md
-  - 🔒 初始化Git版本控制
-- v1.0.1   (2026-03-20) - 新功能更新:
-  - 📅 农历日历系统
-    - 内置算法支持任意年份（1900-2100）
-    - 2026年预计算数据（ holidays + 24节气）
-    - 日历页面显示农历日期、节气、节日
-  - 🎯 目标系统增强
-    - 目标进度提醒（月底前3天自动提醒）
-    - 即将完成提醒（还差1-2篇时提示）
-    - 连续记录提醒（晚上8点后未写日记提醒）
-    - 目标达成自动奖励扭蛋
-  - 🏷️ 三级标签系统
-    - 分类→子分类→标签三级结构
-    - 智能标签迁移（旧标签自动归类）
-    - 标签搜索与分类浏览
-    - 标签同步支持（云同步）
-  - 🎁 扭蛋池优化
-    - 头像藏品精简至30%（11个精选头像）
-    - 新增目标达成头像（4个）
-    - 新增目标道具奖励（6个）
-    - 新增标签收藏奖励（6个）
-  - 🎨 自定义头像支持
-    - 个人中心可设置自定义头像
-    - 支持从相册选择图片
-- v1.0.0   (2026-03-18) - 🎉 正式发布:
-  - 樱花主题混乱效果优化
-    - 混乱频率提高10%（0.0008 → 0.00088）
-    - 混乱时间延长（90帧 → 120帧，1.5秒 → 2秒）
-    - 渐入渐出时间延长（30帧 → 40帧）
-    - 混乱力度减轻20%
-    - 风向调整：上、左、右、下右、下左五个方向
-  - 时间轴玻璃态UI效果
-  - 双模式开屏动画（每两天一次完整动画）
-- v1.0.3   (2026-03-17) - 开屏动画优化:
-- 双模式开屏动画
-  - 完整动画（每两天一次）：3D翻书效果
-  - 简单动画（日常）：淡入淡出 + 图标缩放
-  - 自动判断：根据上次显示月份决定动画类型
-- v1.0.2   (2026-03-16) - 主题背景全面增强:
-- 贴图系统优化
-  - 新增淡入淡出动画（AnimatedOpacity + AnimatedScale）
-  - 修复随机序列问题，使用全局Random实例避免毫秒级重复
-- 星空主题增强
-  - 4方向流星（左上/右上/左下/右下），避免水平垂直碰撞
-  - 流星生命周期：流动→渐隐→闪耀三阶段
-  - 碰撞避免逻辑，确保不会重叠
-- 极光主题完美循环 + 增强
-  - 整数倍速度（1x/2x/4x）确保完美无缝循环
-  - 提高透明度（0.35→0.45）和振幅，更明显
-  - 更亮的霓虹绿色（#39FF14）
-  - 新增8颗随机位置闪烁星星
-- 海洋主题生灵
-  - 新增海洋生物（鱼、海龟、虾）
-  - 6-15秒低频率随机生成
-  - 波浪完美循环修复
-- 黄金主题性能优化
-  - 粒子数量大幅减少（金沙50→15，水晶8→4，箔片30→10）
-  - 5个AnimationController合并为1个
-  - 简化噪声函数，波浪步长10→25px
-- 樱花主题唯美优化
-  - 落地效果改为轻飘飘的自然堆积（随机偏移0-15px）
-  - 移除吸附效果，添加轻微滑动
-  - 所有花瓣/花朵颜色加深（深粉#FF6B8A）
-  - 大樱花改为唯美心形花瓣+径向渐变
-  - 地面位置降低（93%→95%）
-  - 大樱花生成频率提高（3秒/45%→2秒/60%）
-  - 风的频率降低（0.3%→0.15%，时长2秒→1.5秒）
-- 主题配色优化
-  - ThemeScheme新增iconColor字段
-  - 星空主题"我的"页面使用深色文字（#1A1A2E）
-  - 独立图标颜色支持
-- 星空主题字体优化
-  - 参考自定义颜色逻辑：白色卡片 + 深色文字
-  - textDarkColor: #2D2D4A（深紫黑，白色卡片可见）
-  - textMediumColor: #4A4A6A（中紫灰）
-  - textLightColor: #7A7A9A（浅紫灰）
-  - iconColor: #7C4DFF（梦幻紫主题色）
-- v1.0.1   (2026-03-16) - 主题动画优化:
-- 极光主题重构
-  - 改为纯绿色系（霓虹绿/翠绿/酸橙绿），与星空主题区分开
-  - 使用整数周期正弦波算法，实现完美无缝循环动画
-  - 背景改为深绿黑色调（#020C10）
-- 星空主题算法优化（加法替代减法）
-  - 星星数量：40颗 → 80颗（翻倍）
-  - 使用 Float64List 存储星星数据（内存减半）
-  - 流星对象池管理（4个预创建对象复用）
-  - Bhaskara I 快速sin近似（10倍计算速度）
-  - 按大小批量绘制（减少Paint状态切换）
-  - 10点连续尾迹路径（原来4个离散圆点）
-  - 更深邃的背景渐变（#030310 到 #0D0D2F）
-- 樱花主题花朵修复
-  - 提高花朵生成频率（6秒→3秒检查，50%→60%概率）
-  - 花朵尺寸增大（12-16 → 14-20）
-  - 最大同时花朵数增加（2朵 → 3朵）
-- 星空主题文字颜色调整
-  - textDarkColor: #F5F5FF → #E0E0F0（更柔和）
-  - textMediumColor: #D0D4F0 → #B8B8D0（降低亮度）
-  - textLightColor: #B0B8E0 → #9090B0（更暗的灰色）
-- v1.02   (2026-03-16) - 主题价格回调:
-- 所有主题价格下调100装饰点
-  - 星空主题：140 → 40
-  - 樱花主题：140 → 40
-  - 海洋主题：150 → 50
-  - 极光主题：150 → 50
-  - 黄金主题：190 → 99
-- v1.01   (2026-03-16) - 主题价格调整:
-- 所有主题价格涨价110装饰点
-  - 星空主题：30 → 140
-  - 樱花主题：30 → 140
-  - 海洋主题：40 → 150
-  - 极光主题：40 → 150
-  - 黄金主题：80 → 190
-- v1.0.0   (2026-03-16) - 🎉 正式发布:
-- 作者信息更新\
-  \- 作者：PDDP
-  \- 版权所有 © 2024-2026 PDDP
-- 作品保护机制\
-  \\
+- **v1.0.3 → v1.0.0** (2026-03-16~19) - 农历日历、目标系统、主题背景:
+  - 农历日历（1900-2100）
+  - 5款动态主题（星空/樱花/海洋/极光/黄金）
+  - 双模式开屏动画
+  - 玻璃态UI时间轴
 
+- **v1.0.0** (2026-03-16) - 🎉 正式发布

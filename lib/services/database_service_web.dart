@@ -963,10 +963,10 @@ class DatabaseService {
     await _ensureInitialized();
     final newMessage = SelfTalkMessage(
       id: _selfTalkMessageIdCounter++,
-      diaryId: message.diaryId,
       date: message.date,
       content: message.content,
       isUser: message.isUser,
+      senderType: message.senderType,
       createdAt: message.createdAt,
     );
     _selfTalkMessages.add(newMessage);
@@ -996,7 +996,6 @@ class DatabaseService {
     final newTask = SelfTalkTask(
       id: _selfTalkTaskIdCounter++,
       messageId: task.messageId,
-      diaryId: task.diaryId,
       date: task.date,
       content: task.content,
       deadline: task.deadline,
@@ -1040,6 +1039,79 @@ class DatabaseService {
     _selfTalkTasks.removeWhere((t) => t.id == id);
     await _saveSelfTalkTasks();
     return 1;
+  }
+
+  // ==================== 自言自语搜索操作 ====================
+
+  static Future<List<SelfTalkMessage>> searchSelfTalkMessages({
+    String? keyword,
+    String? dateFrom,
+    String? dateTo,
+    int? senderType,
+  }) async {
+    await _ensureInitialized();
+    var results = _selfTalkMessages.where((m) {
+      if (keyword != null && keyword.isNotEmpty) {
+        if (!m.content.toLowerCase().contains(keyword.toLowerCase())) return false;
+      }
+      if (dateFrom != null && dateFrom.isNotEmpty) {
+        if (m.date.compareTo(dateFrom) < 0) return false;
+      }
+      if (dateTo != null && dateTo.isNotEmpty) {
+        if (m.date.compareTo(dateTo) > 0) return false;
+      }
+      if (senderType != null) {
+        if (m.senderType.index != senderType) return false;
+      }
+      return true;
+    }).toList();
+    results.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return results;
+  }
+
+  static Future<List<SelfTalkMessage>> getSelfTalkMessagesByDateRange(
+    String dateFrom,
+    String dateTo,
+  ) async {
+    await _ensureInitialized();
+    var results = _selfTalkMessages
+        .where((m) => m.date.compareTo(dateFrom) >= 0 && m.date.compareTo(dateTo) <= 0)
+        .toList();
+    results.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    return results;
+  }
+
+  static Future<List<String>> getSelfTalkDates() async {
+    await _ensureInitialized();
+    final dates = _selfTalkMessages.map((m) => m.date).toSet().toList();
+    dates.sort((a, b) => b.compareTo(a));
+    return dates;
+  }
+
+  static Future<List<SelfTalkTask>> searchSelfTalkTasks({
+    String? keyword,
+    String? dateFrom,
+    String? dateTo,
+    bool? isCompleted,
+  }) async {
+    await _ensureInitialized();
+    var results = _selfTalkTasks.where((t) {
+      if (keyword != null && keyword.isNotEmpty) {
+        if (!t.content.toLowerCase().contains(keyword.toLowerCase())) return false;
+      }
+      if (dateFrom != null && dateFrom.isNotEmpty) {
+        if (t.date.compareTo(dateFrom) < 0) return false;
+      }
+      if (dateTo != null && dateTo.isNotEmpty) {
+        if (t.date.compareTo(dateTo) > 0) return false;
+      }
+      if (isCompleted != null) {
+        if (t.isCompleted != isCompleted) return false;
+      }
+      return true;
+    }).toList();
+    results.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return results;
   }
 
   // ==================== 速记操作 ====================
