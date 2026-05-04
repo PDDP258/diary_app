@@ -49,7 +49,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _appLockEnabled = false;
   bool _biometricEnabled = false;
   bool _biometricAvailable = false;
-  bool _quickNoteFabEnabled = true;
   bool _floatingWindowEnabled = false;
   List<Mood> _moods = [];
 
@@ -59,7 +58,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadBadges();
     _loadAppLockStatus();
     _loadBiometricStatus();
-    _loadQuickNoteFabStatus();
     _loadFloatingWindowStatus();
   }
 
@@ -97,15 +95,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Future<void> _loadQuickNoteFabStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (mounted) {
-      setState(() {
-        _quickNoteFabEnabled = prefs.getBool('quick_note_fab_enabled') ?? true;
-      });
-    }
-  }
-
   Future<void> _loadFloatingWindowStatus() async {
     final enabled = await FloatingSettingsService.getEnabled();
     if (mounted) {
@@ -122,7 +111,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => _floatingWindowEnabled = newValue);
 
     if (newValue) {
-      // 请求权限并显示浮窗
+      // 1. 请求通知权限（用于速记同步通知）
+      await FloatingPermissionService.requestNotificationPermission();
+      
+      // 2. 请求悬浮窗权限并显示
       final hasOverlay = await FloatingPermissionService.checkOverlayPermission();
       if (hasOverlay) {
         await FloatingWindowService.showFloatingButton();
@@ -259,13 +251,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   );
                 },
-              ),
-              _MenuItem(
-                icon: Icons.touch_app_outlined,
-                title: '速记悬浮按钮',
-                subtitle: _quickNoteFabEnabled ? '已显示' : '已隐藏',
-                trailing: _buildQuickNoteFabToggle(),
-                onTap: () => _toggleQuickNoteFab(),
               ),
               _MenuItem(
                 icon: Icons.picture_in_picture_alt_outlined,
@@ -1471,53 +1456,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
       }
     }
-  }
-
-  Widget _buildQuickNoteFabToggle() {
-    return GestureDetector(
-      onTap: () => _toggleQuickNoteFab(),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 50,
-        height: 28,
-        decoration: BoxDecoration(
-          color: _quickNoteFabEnabled
-              ? Colors.black
-              : Colors.grey.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        padding: const EdgeInsets.all(2),
-        child: AnimatedAlign(
-          duration: const Duration(milliseconds: 200),
-          alignment:
-              _quickNoteFabEnabled ? Alignment.centerRight : Alignment.centerLeft,
-          child: Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 4,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _toggleQuickNoteFab() async {
-    HapticFeedback.mediumImpact();
-    final prefs = await SharedPreferences.getInstance();
-    final newValue = !_quickNoteFabEnabled;
-    await prefs.setBool('quick_note_fab_enabled', newValue);
-    setState(() {
-      _quickNoteFabEnabled = newValue;
-    });
   }
 
   // 主题选择弹窗

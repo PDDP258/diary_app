@@ -19,7 +19,6 @@ import 'stats_screen.dart';
 import 'profile_screen.dart';
 import 'write_diary_screen.dart';
 import 'quick_note_editor_screen.dart';
-import 'quick_notes_screen.dart';
 import 'self_talk_screen.dart';
 
 /// 全局路由观察者，用于监听页面导航
@@ -78,9 +77,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   // 标记是否强制显示导航栏（用于页面切换时立即显示，无动画）
   bool _forceShowNav = false;
 
-  // 速记悬浮按钮显示设置
-  bool _quickNoteFabEnabled = true;
-
   // 标记是否正在切换页面（禁用滚动通知处理，防止导航栏闪烁）
   bool _isPageChanging = false;
   Timer? _pageChangeTimer;
@@ -115,7 +111,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     // 延迟加载数据，避免在构建过程中调用 setState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadData();
-      _loadQuickNoteFabSetting();
       // 启动无操作计时器
       _resetInactivityTimer();
     });
@@ -188,16 +183,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     });
   }
 
-  /// 加载速记悬浮按钮显示设置
-  Future<void> _loadQuickNoteFabSetting() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (mounted) {
-      setState(() {
-        _quickNoteFabEnabled = prefs.getBool('quick_note_fab_enabled') ?? true;
-      });
-    }
-  }
-
   /// 打开速记编辑器
   Future<void> _openQuickNoteEditor() async {
     _longPressTimer?.cancel();
@@ -217,20 +202,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   /// 打开速记列表
-  Future<void> _openQuickNotesList() async {
-    _inactivityTimer?.cancel();
-    _showNavBarImmediately();
 
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const QuickNotesScreen()),
-    );
-
-    if (mounted) {
-      _showNavBarImmediately();
-      _resetInactivityTimer();
-    }
-  }
 
   Future<void> _loadData() async {
     try {
@@ -625,39 +597,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               ),
             ),
           ),
-          // 速记悬浮按钮（右上角）
-          if (_quickNoteFabEnabled)
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 8,
-              right: 16,
-              child: GestureDetector(
-                onTap: _openQuickNoteEditor,
-                onLongPress: _openQuickNotesList,
-                child: Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: themeProvider.currentScheme.cardColor.withValues(alpha: 0.85),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: themeProvider.currentScheme.dividerColor.withValues(alpha: 0.5),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: themeProvider.currentScheme.shadowColor.withValues(alpha: 0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    Icons.lightbulb_outline,
-                    size: 22,
-                    color: themeProvider.currentScheme.primaryColor,
-                  ),
-                ),
-              ),
-            ),
+
           // 软件导航栏 - 悬浮在页面内容上方（放在Stack顶层，避免被GestureDetector包裹）
           Positioned(
             left: 0,
