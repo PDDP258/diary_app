@@ -266,7 +266,7 @@ with open('lib/screens/file.dart', 'r', encoding='utf-8') as f: content = f.read
     - **最终结论**：`flutter_overlay_window` 方案在目标设备上彻底不可行。
     - APK: 84.8MB
 
-- **v1.24.0** (2026-05-11) - 浮窗系统全面重构（原生 Kotlin 实现）:
+- **v1.3.0** (2026-05-11) - 浮窗系统全面重构（原生 Kotlin 实现）:
   - **根因**：Flutter 引擎无法在 `WindowManager` overlay 中初始化渲染管线，`FlutterTextureView`/`FlutterSurfaceView` 均失败
   - **方案**：放弃 `flutter_overlay_window`，改为原生 Kotlin Service + 原生 Android View + MethodChannel
   - **移除依赖**：`flutter_overlay_window`
@@ -358,7 +358,7 @@ with open('lib/screens/file.dart', 'r', encoding='utf-8') as f: content = f.read
   - 新增速记：QuickNote模型 + 编辑页 + 列表页 + 4个入口
   - APK: 88.3MB
 
-- **v1.20.0** (2026-04-10) - 自言自语 + 设计系统升级:
+- **v1.3.0** (2026-04-10) - 自言自语 + 设计系统升级:
   - 新增SelfTalkScreen（IM聊天界面）
   - 替换 `withOpacity` → `withValues(alpha:)` 适配Flutter 3.29+
   - 扩展ThemeScheme语义化颜色

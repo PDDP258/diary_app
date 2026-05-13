@@ -210,7 +210,7 @@ final appDir = await _getAppDataDirectory();
   static Map<String, String> getCopyrightInfo() {
     return {
       'app_name': '小记日记',
-      'version': '1.20.0',
+      'version': '1.3.0',
       'author': 'PDDP',
       'copyright': '© 2024-2026 PDDP',
       'license': '个人作品，免费使用，禁止修改',

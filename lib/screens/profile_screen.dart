@@ -374,7 +374,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _MenuItem(
                 icon: Icons.info_outline,
                 title: '关于日记',
-                subtitle: '版本 1.20.0',
+                subtitle: '版本 1.3.0',
                 onTap: () => _showAboutWithEasterEgg(context),
               ),
               _MenuItem(
@@ -2080,7 +2080,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '版本 1.20.0',
+                            '版本 1.3.0',
                             style: TextStyle(
                               fontSize: 14,
                               color: scheme.textLightColor,
@@ -2393,7 +2393,7 @@ class _AboutEasterEgg {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  '版本 1.20.0',
+                                  '版本 1.3.0',
                                   style: TextStyle(
                                     fontSize: 14,
                                     color: scheme.textLightColor,
@@ -2418,7 +2418,7 @@ class _AboutEasterEgg {
                         ),
                         const SizedBox(height: 12),
                         _buildVersionItem(
-                          'v1.20.0',
+                          'v1.3.0',
                           '☁️ 云备份重构 + 🎨 UI优化',
                           [
                             '云备份按密钥分文件夹存储，支持多设备共存',
@@ -2872,7 +2872,7 @@ class DebugScreen extends StatelessWidget {
             ListTile(
               title: Text('版本号', style: TextStyle(color: scheme.textDarkColor)),
               trailing:
-                  Text('1.20.0', style: TextStyle(color: scheme.textLightColor)),
+                  Text('1.3.0', style: TextStyle(color: scheme.textLightColor)),
             ),
             Divider(
                 height: 1,

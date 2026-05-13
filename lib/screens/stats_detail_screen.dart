@@ -1155,7 +1155,7 @@ class _StatsDetailScreenState extends State<StatsDetailScreen> {
           ),
           const SizedBox(height: 24),
           Text(
-            '小记日记 v1.20.0',
+            '小记日记 v1.3.0',
             style: TextStyle(fontSize: 14, color: scheme.textLightColor),
           ),
         ],
