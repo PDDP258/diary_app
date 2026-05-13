@@ -1,116 +1,104 @@
-import 'dart:convert';
-import 'package:flutter/services.dart';
-import 'package:flutter_overlay_window/flutter_overlay_window.dart';
+import 'dart:async';
+import 'dart:developer' as developer;
+import 'package:flutter/material.dart';
 import 'floating_settings_service.dart';
+import 'native_floating_service.dart';
 
 /// 浮窗生命周期管理服务
 ///
-/// 封装 flutter_overlay_window 包，提供统一的浮窗控制接口
+/// 对外提供统一的浮窗控制接口，内部委托给 NativeFloatingService（原生 Kotlin 实现）。
+/// 此层保持接口稳定，调用方（如 profile_screen.dart）无需修改。
 class FloatingWindowService {
   static bool _isShowingBar = false;
+  static bool _isInitialized = false;
+
+  /// 初始化回调（应在应用启动时调用）
+  static void initialize() {
+    if (_isInitialized) return;
+    _isInitialized = true;
+    NativeFloatingService.registerCallbacks();
+    developer.log('FloatingWindowService initialized', name: 'FloatingWindow');
+  }
 
   /// 检查浮窗是否正在显示
   static Future<bool> isActive() async {
-    return await FlutterOverlayWindow.isActive();
+    try {
+      return await NativeFloatingService.isServiceRunning();
+    } catch (e) {
+      developer.log('isActive error: $e', name: 'FloatingWindow');
+      return false;
+    }
   }
 
   /// 显示小浮窗按钮
-  static Future<void> showFloatingButton() async {
-    final settings = await FloatingSettingsService.load();
-    final windowSize = FloatingSettingsService.getWindowSizePixels(settings.windowSize);
+  static Future<bool> showFloatingButton() async {
+    try {
+      // 如果已经显示，先关闭再重新显示
+      if (await isActive()) {
+        await closeFloatingWindow();
+        await Future.delayed(const Duration(milliseconds: 300));
+      }
 
-    if (await isActive()) {
-      await closeFloatingWindow();
+      developer.log('Showing floating button via native service', name: 'FloatingWindow');
+      final success = await NativeFloatingService.showFloatingButton();
+
+      _isShowingBar = false;
+      return success;
+    } catch (e, stack) {
+      developer.log('showFloatingButton error: $e\n$stack', name: 'FloatingWindow');
+      return false;
     }
-
-    await FlutterOverlayWindow.showOverlay(
-      height: windowSize.toInt(),
-      width: windowSize.toInt(),
-      alignment: OverlayAlignment.topRight,
-      flag: OverlayFlag.defaultFlag,
-      overlayTitle: '小记速记',
-      overlayContent: '双击打开速记',
-      enableDrag: true,
-      positionGravity: PositionGravity.none,
-    );
-
-    _isShowingBar = false;
   }
 
   /// 显示速记条（在浮窗内切换到速记条模式）
-  ///
-  /// 通过 OverlayWindow 的数据通道通知浮窗切换 UI
-  static Future<void> showQuickNoteBar() async {
-    final settings = await FloatingSettingsService.load();
+  static Future<bool> showQuickNoteBar() async {
+    try {
+      if (!await isActive()) {
+        // 如果浮窗未显示，先显示按钮
+        await showFloatingButton();
+        await Future.delayed(const Duration(milliseconds: 300));
+      }
 
-    if (!await isActive()) {
-      // 如果浮窗未显示，先显示再切换
-      await FlutterOverlayWindow.showOverlay(
-        height: settings.barHeight.toInt(),
-        width: settings.barWidth.toInt(),
-        alignment: OverlayAlignment.center,
-        flag: OverlayFlag.defaultFlag,
-        overlayTitle: '小记速记',
-        overlayContent: '速记条',
-        enableDrag: true,
-        positionGravity: PositionGravity.none,
-      );
-    } else {
-      // 已显示，调整大小为速记条尺寸
-      await FlutterOverlayWindow.resizeOverlay(
-        settings.barWidth.toInt(),
-        settings.barHeight.toInt(),
-        true,
-      );
+      final success = await NativeFloatingService.showQuickNotePanel();
+      _isShowingBar = true;
+      return success;
+    } catch (e, stack) {
+      developer.log('showQuickNoteBar error: $e\n$stack', name: 'FloatingWindow');
+      return false;
     }
-
-    // 发送消息通知浮窗切换到速记条模式
-    await FlutterOverlayWindow.shareData(jsonEncode({
-      'action': 'show_bar',
-      'width': settings.barWidth,
-      'height': settings.barHeight,
-    }));
-
-    _isShowingBar = true;
-    HapticFeedback.mediumImpact();
   }
 
   /// 关闭速记条，回到小浮窗
-  static Future<void> hideQuickNoteBar() async {
-    if (!await isActive()) return;
-
-    final settings = await FloatingSettingsService.load();
-    final windowSize = FloatingSettingsService.getWindowSizePixels(settings.windowSize);
-
-    // 调整回小浮窗大小
-    await FlutterOverlayWindow.resizeOverlay(
-      windowSize.toInt(),
-      windowSize.toInt(),
-      true,
-    );
-
-    // 发送消息通知浮窗切换回按钮模式
-    await FlutterOverlayWindow.shareData(jsonEncode({
-      'action': 'show_button',
-    }));
-
-    _isShowingBar = false;
+  static Future<bool> hideQuickNoteBar() async {
+    try {
+      if (!await isActive()) return false;
+      final success = await NativeFloatingService.hideQuickNotePanel();
+      _isShowingBar = false;
+      return success;
+    } catch (e, stack) {
+      developer.log('hideQuickNoteBar error: $e\n$stack', name: 'FloatingWindow');
+      return false;
+    }
   }
 
   /// 完全关闭浮窗
-  static Future<void> closeFloatingWindow() async {
-    if (await isActive()) {
-      await FlutterOverlayWindow.closeOverlay();
+  static Future<bool> closeFloatingWindow() async {
+    try {
+      final success = await NativeFloatingService.hideFloatingWindow();
+      _isShowingBar = false;
+      return success;
+    } catch (e, stack) {
+      developer.log('closeFloatingWindow error: $e\n$stack', name: 'FloatingWindow');
+      return false;
     }
-    _isShowingBar = false;
   }
 
   /// 切换浮窗显示/隐藏
-  static Future<void> toggle() async {
+  static Future<bool> toggle() async {
     if (await isActive()) {
-      await closeFloatingWindow();
+      return await closeFloatingWindow();
     } else {
-      await showFloatingButton();
+      return await showFloatingButton();
     }
   }
 
@@ -123,7 +111,7 @@ class FloatingWindowService {
   static Future<Offset> getSavedPosition() async {
     final settings = await FloatingSettingsService.load();
     if (settings.posX < 0 || settings.posY < 0) {
-      return const Offset(-1, -1); // 表示未设置
+      return const Offset(-1, -1);
     }
     return Offset(settings.posX, settings.posY);
   }

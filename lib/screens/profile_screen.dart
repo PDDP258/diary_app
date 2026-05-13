@@ -111,18 +111,58 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => _floatingWindowEnabled = newValue);
 
     if (newValue) {
-      // 1. 请求通知权限（用于速记同步通知）
-      await FloatingPermissionService.requestNotificationPermission();
+      // 1. 请求通知权限（前台服务通知需要，Android 13+）
+      final hasNotif = await FloatingPermissionService.requestNotificationPermission();
+      if (!hasNotif) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('需要通知权限才能保持浮窗运行')),
+          );
+        }
+      }
       
       // 2. 请求悬浮窗权限并显示
       final hasOverlay = await FloatingPermissionService.checkOverlayPermission();
       if (hasOverlay) {
-        await FloatingWindowService.showFloatingButton();
+        final success = await FloatingWindowService.showFloatingButton();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(success ? '速记浮窗已开启' : '浮窗启动失败，请检查权限或重启应用'),
+              backgroundColor: success ? null : Colors.red,
+            ),
+          );
+        }
+        // 3. 请求电池优化白名单（非阻塞，失败仅提示）
+        if (success) {
+          final hasBattery = await FloatingPermissionService.checkBatteryOptimizationWhitelist();
+          if (!hasBattery) {
+            final batteryGranted = await FloatingPermissionService.requestBatteryOptimizationWhitelist();
+            if (mounted && !batteryGranted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('建议关闭电池优化，防止浮窗被系统清理'),
+                  duration: Duration(seconds: 4),
+                ),
+              );
+            }
+          }
+        }
       } else {
         await FloatingPermissionService.openOverlaySettings();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('请授予悬浮窗权限后重新开启')),
+          );
+        }
       }
     } else {
-      await FloatingWindowService.closeFloatingWindow();
+      final success = await FloatingWindowService.closeFloatingWindow();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(success ? '速记浮窗已关闭' : '浮窗关闭失败')),
+        );
+      }
     }
   }
 

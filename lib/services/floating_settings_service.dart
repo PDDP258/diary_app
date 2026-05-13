@@ -8,6 +8,7 @@ class FloatingSettings {
   final bool useTags;
   final double fontSize;
   final bool syncToNotification;
+  final bool syncToSelfTalk;
   final bool showWordCount;
   final bool autoHideBar;
   final int autoHideDelaySeconds;
@@ -31,6 +32,7 @@ class FloatingSettings {
     this.useTags = true,
     this.fontSize = 15,
     this.syncToNotification = true,
+    this.syncToSelfTalk = true,
     this.showWordCount = true,
     this.autoHideBar = false,
     this.autoHideDelaySeconds = 5,
@@ -52,6 +54,7 @@ class FloatingSettings {
       'useTags': useTags,
       'fontSize': fontSize,
       'syncToNotification': syncToNotification,
+      'syncToSelfTalk': syncToSelfTalk,
       'showWordCount': showWordCount,
       'autoHideBar': autoHideBar,
       'autoHideDelaySeconds': autoHideDelaySeconds,
@@ -60,7 +63,7 @@ class FloatingSettings {
       'autoHideToEdge': autoHideToEdge,
       'windowSize': windowSize.index,
       // ignore: deprecated_member_use
-      'iconColor': iconColor.value,
+      'iconColor': iconColor.toARGB32(),
       'iconEmoji': iconEmoji,
       'iconOpacity': iconOpacity,
       'barWidth': barWidth,
@@ -75,6 +78,7 @@ class FloatingSettings {
       useTags: map['useTags'] as bool? ?? true,
       fontSize: (map['fontSize'] as num?)?.toDouble() ?? 15,
       syncToNotification: map['syncToNotification'] as bool? ?? true,
+      syncToSelfTalk: map['syncToSelfTalk'] as bool? ?? true,
       showWordCount: map['showWordCount'] as bool? ?? true,
       autoHideBar: map['autoHideBar'] as bool? ?? false,
       autoHideDelaySeconds: map['autoHideDelaySeconds'] as int? ?? 5,
@@ -96,6 +100,7 @@ class FloatingSettings {
     bool? useTags,
     double? fontSize,
     bool? syncToNotification,
+    bool? syncToSelfTalk,
     bool? showWordCount,
     bool? autoHideBar,
     int? autoHideDelaySeconds,
@@ -115,6 +120,7 @@ class FloatingSettings {
       useTags: useTags ?? this.useTags,
       fontSize: fontSize ?? this.fontSize,
       syncToNotification: syncToNotification ?? this.syncToNotification,
+      syncToSelfTalk: syncToSelfTalk ?? this.syncToSelfTalk,
       showWordCount: showWordCount ?? this.showWordCount,
       autoHideBar: autoHideBar ?? this.autoHideBar,
       autoHideDelaySeconds: autoHideDelaySeconds ?? this.autoHideDelaySeconds,
@@ -183,6 +189,7 @@ class FloatingSettingsService {
     bool? useTags,
     double? fontSize,
     bool? syncToNotification,
+    bool? syncToSelfTalk,
     bool? showWordCount,
     bool? autoHideBar,
     int? autoHideDelaySeconds,
@@ -203,6 +210,7 @@ class FloatingSettingsService {
       useTags: useTags,
       fontSize: fontSize,
       syncToNotification: syncToNotification,
+      syncToSelfTalk: syncToSelfTalk,
       showWordCount: showWordCount,
       autoHideBar: autoHideBar,
       autoHideDelaySeconds: autoHideDelaySeconds,

@@ -1,6 +1,6 @@
 # 小记日记 - AI协作指南
 
-版本: 1.23.0 (2026-05-04) | 技术栈: Flutter 3.x + Provider + SQLite
+版本: 1.24.0 (2026-05-11) | 技术栈: Flutter 3.x + Provider + SQLite
 
 > **注意**：本文档版本号仅用于 AI 协作记录，软件实际版本号以 `pubspec.yaml` 和软件内显示为准。
 
@@ -115,7 +115,7 @@ lib/
 
 | 功能 | 关键文件 | 说明 |
 |------|---------|------|
-| 速记浮窗 | `floating_window_service.dart`, `floating_quick_note_bar.dart` | 系统悬浮窗，可拖拽，速记条+设置面板 |
+| 速记浮窗 | `floating_window_service.dart`, `native_floating_service.dart` | 原生Android View系统悬浮窗，MethodChannel通信 |
 | 外部备份 | `quick_note_backup_service.dart` | 速记+自言自语导出到外部存储JSON |
 | 自言自语 | `self_talk_screen.dart`, `self_talk_service.dart` | 聊天式记录，me(右)/alterEgo(左)/system(对侧) |
 | 速记 | `quick_note_editor_screen.dart`, `quick_notes_screen.dart` | 快速笔记，标签，置顶，搜索 |
@@ -137,18 +137,34 @@ lib/
 
 ### 设计原则：快速记录 + 强化提醒
 
-**核心文件**：
-- `lib/services/floating_window_service.dart` — 浮窗生命周期
+**架构**：原生 Kotlin Service + 原生 Android View + MethodChannel
+> 放弃 `flutter_overlay_window` 方案（Flutter 引擎无法在 WindowManager overlay 中初始化渲染管线），改为 100% 原生 View 实现。
+
+**核心文件（Dart 侧）**：
+- `lib/services/floating_window_service.dart` — 浮窗生命周期（对外接口层）
+- `lib/services/native_floating_service.dart` — MethodChannel 通信层（Dart ↔ Kotlin）
 - `lib/services/floating_permission_service.dart` — 权限管理
 - `lib/services/floating_notification_service.dart` — 通知同步
 - `lib/services/floating_settings_service.dart` — 设置持久化
 - `lib/services/quick_note_backup_service.dart` — 外部存储备份
-- `lib/widgets/floating_button.dart` — 小浮窗UI（拖拽+吸附+双击）
-- `lib/widgets/floating_quick_note_bar.dart` — 速记条横条
-- `lib/widgets/floating_settings_panel.dart` — 设置面板（两页）
-- `lib/main_floating.dart` — 浮窗专用Flutter入口
 
-**数据流**：存储速记 → 数据库 + 通知（内容同步）+ 自言自语（最后一条用户消息）
+**核心文件（Kotlin 侧）**：
+- `android/.../FloatingWindowService.kt` — 前台 Service + WindowManager 管理
+- `android/.../FloatingWindowPlugin.kt` — MethodChannel 注册与处理
+- `android/.../res/layout/floating_button.xml` — 浮窗按钮布局
+- `android/.../res/layout/floating_panel.xml` — 速记面板布局
+- `android/.../res/drawable/bg_floating_button.xml` — 圆形按钮背景
+- `android/.../res/drawable/bg_floating_panel.xml` — 面板圆角背景
+- `android/.../res/drawable/bg_save_button.xml` — 保存按钮背景
+
+**通信协议**：
+```
+Channel: "com.diary_app/floating_window"
+Dart → Kotlin: showFloatingButton / hideFloatingWindow / showQuickNotePanel / hideQuickNotePanel / updateSettings
+Kotlin → Dart: onSaveQuickNote / onPanelShown / onPanelHidden / onPositionChanged
+```
+
+**数据流**：用户在浮窗面板输入 → Kotlin Service 通过 MethodChannel 回调 Dart → `QuickNoteService.insert()` → SQLite + 通知更新
 
 **设置项**：使用标签、字体大小、同步通知、字数统计、自动隐藏、输入框透明度、双击灵敏度、靠边自动隐藏、悬浮窗大小（大/中/小）、自定义图标颜色+透明度。
 
@@ -228,6 +244,7 @@ with open('lib/screens/file.dart', 'r', encoding='utf-8') as f: content = f.read
 ## 版本记录
 
 - **v1.23.0** (2026-05-04) - 速记浮窗系统 + 外部存储备份:
+  - 计划文件：`C:\Users\PDXX\.kimi\plans\quasar-jessica-cruz-kid-flash.md`
   - 新增依赖：`flutter_overlay_window`, `flutter_local_notifications`
   - 权限：SYSTEM_ALERT_WINDOW, POST_NOTIFICATIONS, FOREGROUND_SERVICE
   - 浮窗：可拖拽圆点，边框吸附缩小，双击展开速记条横条
@@ -236,6 +253,98 @@ with open('lib/screens/file.dart', 'r', encoding='utf-8') as f: content = f.read
   - 数据流：存储 → 数据库 + 通知 + 自言自语
   - 外部备份：速记+自言自语导出JSON到外部存储（可指定目录，日记不备份）
   - 新增10个文件，修改4个文件
+  - **【2026-05-06 修复】浮窗不显示 — 多轮排查：**
+    - **第一轮 — 依赖缺失（已修复）**：`flutter_overlay_window` 和 `flutter_local_notifications` 从未添加到 `pubspec.yaml`。已添加三个依赖并重新构建。
+    - **第二轮 — AOT 编译（已修复）**：`main_floating.dart` 未被 import 导致 `overlayMain` 入口未打包。已添加 `import 'main_floating.dart' as _;`
+    - **第三轮 — 时序 + 可见性（已修复）**：
+      - `showOverlay` 单位是像素不是 dp，原 48px 在高密度屏约 5mm 看不见 → 改为 180x180 像素
+      - `alignment: topRight` 被系统状态栏/R角遮挡 → 改为 `center`
+      - `flutter_overlay_window` 有 bug：`stopSelf()` 后 `onDestroy()` 会移除新窗口 → `showFloatingButton()` 关闭旧窗口后循环等待 `isActive()==false`（最多 3 秒）
+      - `FloatingWindowScreen` 背景从 `Colors.transparent` 改为半透明黑
+      - `main_floating.dart` 去掉 `SystemChrome.setSystemUIOverlayStyle()`
+    - **第四轮 — 根因确认**：红色背景可见 + Flutter UI 不可见 = `WindowManager.addView()` 正常，Flutter 渲染管线在 overlay 中初始化失败。这是架构级问题，非 `flutter_overlay_window` 独有 bug。
+    - **最终结论**：`flutter_overlay_window` 方案在目标设备上彻底不可行。
+    - APK: 84.8MB
+
+- **v1.24.0** (2026-05-11) - 浮窗系统全面重构（原生 Kotlin 实现）:
+  - **根因**：Flutter 引擎无法在 `WindowManager` overlay 中初始化渲染管线，`FlutterTextureView`/`FlutterSurfaceView` 均失败
+  - **方案**：放弃 `flutter_overlay_window`，改为原生 Kotlin Service + 原生 Android View + MethodChannel
+  - **移除依赖**：`flutter_overlay_window`
+  - **新增 Kotlin 文件**：
+    - `FloatingWindowService.kt` — 前台 Service，管理浮窗生命周期
+    - `FloatingWindowPlugin.kt` — MethodChannel 插件，处理 Dart ↔ Kotlin 通信
+  - **新增 XML 资源**：
+    - `floating_button.xml` — 浮窗按钮布局（ImageButton）
+    - `floating_panel.xml` — 速记面板布局（EditText + Spinner + Button）
+    - `bg_floating_button.xml` — 圆形背景
+    - `bg_floating_panel.xml` — 面板圆角背景
+    - `bg_save_button.xml` — 保存按钮圆角背景
+  - **新增 Dart 文件**：
+    - `native_floating_service.dart` — MethodChannel 封装，替代原 flutter_overlay_window 调用
+  - **修改文件**：
+    - `floating_window_service.dart` — 改为调用 `NativeFloatingService`
+    - `MainActivity.kt` — 注册 `FloatingWindowPlugin`
+    - `AndroidManifest.xml` — 替换 Service 声明，添加 `PROPERTY_SPECIAL_USE_FGS_SUBTYPE`
+    - `profile_screen.dart` — 增强错误反馈（SnackBar 显示具体结果）
+  - **删除文件**：
+    - `lib/main_floating.dart`（不再需要 Flutter overlay entry point）
+    - `lib/screens/floating_window_screen.dart`
+    - `lib/widgets/floating_button.dart`
+    - `lib/widgets/floating_quick_note_bar.dart`
+    - `lib/widgets/floating_settings_panel.dart`
+  - **关键修复记录**：
+    - **颜色类型不匹配**：Dart `Color` 对象被 MethodChannel 序列化为 `int`，Kotlin 侧 `call.argument<String>("color")` 抛出 `ClassCastException` → 修复：Dart 侧新增 `_colorToHex()` 转为 `#RRGGBB` 字符串传递
+    - **系统 drawable 缺失**：`@android:drawable/edit_text`、`@android:drawable/btn_dropdown` 在 Android 12+ 已移除 → 修复：全部改为纯色背景 `#F5F5F5`
+    - **AppCompat 属性不兼容**：`app:tint`、`?attr/selectableItemBackgroundBorderless` 在某些 ROM 上不可用 → 修复：改为 `android:tint`、普通 TextView 点击
+    - **前台服务启动**：Android 8+ 必须使用 `startForegroundService()` → 已在 `FloatingWindowPlugin` 中处理
+  - **【2026-05-12 修复】拖动失效 + 触摸事件冲突**：
+    - **OnTouchListener 位置错误**：设置在父 FrameLayout 上，但子 ImageButton 的 OnClickListener 消费了事件，导致父布局收不到触摸 → 修复：将 OnTouchListener 移到 ImageButton 上，移除 OnClickListener/OnLongClickListener，自己实现双击/长按检测
+    - **Handler + Runnable 长按检测**：ACTION_DOWN 启动 500ms 延迟 Runnable，ACTION_MOVE 超过 10px 时取消
+  - **【2026-05-12 修复】设置透明度后触摸失效**：
+    - **根因**：`WindowManager.LayoutParams.alpha < 0.5f` 时，某些 ROM（小米）会丢弃该窗口的触摸事件
+    - **修复**：不在 `LayoutParams` 上设置 alpha，改为在 `View` 上设置 `view.alpha = buttonOpacity.coerceIn(0.2f, 1.0f)`
+  - **【2026-05-12 修复】贴边缩小后不靠边且不是圆**：
+    - **根因 1（不靠边）**：`snapToEdge()` 先按大按钮尺寸（60dp）计算贴边位置，动画完成后再缩小到 24dp，缩小后留下 36dp 空白
+    - **根因 2（不是圆）**：`floating_button.xml` 中 FrameLayout 和 ImageButton 尺寸固定（60dp/56dp），不随 `LayoutParams` 变化。当窗口缩小时，内部 View 超出边界被裁剪成不规则形状；且 padding 固定 14dp，24dp 窗口中 padding 占满空间导致图标不可见
+    - **修复**：XML 尺寸改为 `match_parent`；`snapToEdge()` 改为同时动画移动+缩小（一个 ValueAnimator 控制位置+大小+padding）；padding 随大小动态调整（24dp→3dp, 60dp→14dp）
+  - **【2026-05-12 优化】UI 全面美化 + 选中状态**：
+    - 浮窗按钮：渐变背景、柔和阴影、更现代的配色
+    - 速记面板：更大的圆角、更清晰的排版、更好的间距
+    - 设置面板：彩色色块带选中白色边框、更直观的滑块、大小选择高亮
+    - **颜色选中状态**：`createColorCircle()` / `createColorCircleWithBorder()` — 当前选中颜色显示白色 3dp 边框，其余无框
+    - **大小选中状态**：`updateSizeSelection()` — 当前选中尺寸显示蓝色背景+白字，其余灰色背景+灰字
+    - 新增 drawable：`bg_size_option.xml`（灰色圆角背景）、`bg_size_option_selected.xml`（蓝色圆角背景）
+  - **【2026-05-12 修复】速记保存后同步到自言自语**：
+    - **根因**：计划书要求存储速记时自动追加到当天自言自语，但 `_saveQuickNote` 只保存到数据库+通知，未调用 `SelfTalkService.sendMessage()`
+    - **修复**：`_saveQuickNote()` 现在检查 `FloatingSettings.syncToSelfTalk` 和 `syncToNotification` 开关，分别同步到自言自语和通知
+    - **新增字段**：`FloatingSettings.syncToSelfTalk`（默认 true）
+  - **【2026-05-12 修复】电池优化白名单**：
+    - `profile_screen._toggleFloatingWindow()` 开启浮窗后，自动请求电池优化白名单（非阻塞，失败仅提示）
+  - **【2026-05-12 修复】设置面板扩展为两页（外观 + 功能）**：
+    - **外观页**：颜色选择（带选中白边框）、透明度滑块、大小选择（蓝底白字高亮）
+    - **功能页**：同步到通知（Switch）、同步到自言自语（Switch）、显示字数统计（Switch）、贴边自动缩小（Switch）、双击灵敏度（SeekBar 100-800ms）
+    - **Tab 切换**：`switchTab()` 控制 `page_appearance` / `page_function` 可见性
+    - **功能设置同步**：Kotlin `notifyFunctionSettingsChanged()` → Dart `onFunctionSettingsChanged` → `FloatingSettingsService.update()`
+    - **贴边自动隐藏生效**：`snapToEdge()` 开头检查 `autoHideToEdge`，false 时不贴边缩小
+    - **双击灵敏度生效**：`doubleTapSensitivityMs` 替换原硬编码 `DOUBLE_CLICK_DELAY = 300L`
+  - **【2026-05-12 修复】浮窗按钮自定义图标图案**：
+    - 支持 `FloatingSettings.iconEmoji`（如 💡）作为浮窗按钮图标
+    - `createEmojiDrawable()` 用 Canvas 绘制 emoji 为 BitmapDrawable
+    - 空字符串时回退到默认 `@android:drawable/ic_menu_edit`
+    - MethodChannel 协议扩展：传递 `iconEmoji` → Kotlin 读取并设置
+  - **【2026-05-12 修复】面板大小拖动调节（P5）**：
+    - **右下角拖动横杠**：`floating_panel.xml` 改为 FrameLayout 包裹，右下角添加 28dp 圆形拖动手柄
+    - **拖动逻辑**：`dragHandle.setOnTouchListener` 监听 ACTION_DOWN/MOVE/UP，实时更新 `WindowManager.LayoutParams.width/height`
+    - **尺寸限制**：宽度 200dp ~ 屏幕宽-32dp，高度 120dp ~ 屏幕高/2
+    - **尺寸记忆**：拖动结束后通过 `notifyPanelSizeChanged()` → Dart `onPanelSizeChanged` → `FloatingSettingsService.saveBarSize()`
+    - **恢复尺寸**：`showQuickNotePanel()` 传递 `barWidth`/`barHeight` → Kotlin 使用保存尺寸初始化面板
+  - **【2026-05-12 修复】设置面板位置自适应**：
+    - `showPanel()` 和 `showSettingsPanel()` 的 y 坐标计算从 `coerceAtLeast` 改为 `coerceIn`，限制最大值防止超出屏幕底部
+  - **【2026-05-12 修复】pubspec.yaml 依赖恢复 + build.gradle.kts desugaring**：
+    - 恢复意外缺失的 `flutter_local_notifications: ^17.2.4` 和 `device_info_plus: ^10.1.2`
+    - `build.gradle.kts` 添加 `isCoreLibraryDesugaringEnabled = true` + `coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")`
+  - 功能保留：可拖拽按钮、贴边吸附缩小、双击展开面板、长按打开应用、设置面板（两页）、多行输入、标签选择、字数统计、粘贴、保存、通知同步、自言自语同步、面板大小拖动
+  - APK: 84.7MB
 
 - **v1.22.0** (2026-05-04) - 自言自语数据库彻底独立:
   - 移除 `diary_id` 列（数据库v12迁移）

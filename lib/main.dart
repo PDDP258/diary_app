@@ -15,7 +15,6 @@ import 'services/sound_service.dart';
 import 'services/debug_log_service.dart';
 import 'services/sync_log_service.dart';
 import 'services/app_protection_service.dart';
-import 'services/floating_notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,9 +36,6 @@ void main() async {
 
   // 初始化音效服务
   await SoundService.initialize();
-
-  // 初始化通知服务（速记浮窗通知渠道）
-  await FloatingNotificationService.init();
 
   // 预加载主题设置（确保启动时主题已加载）
   final themeProvider = ThemeProvider();

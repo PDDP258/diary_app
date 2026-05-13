@@ -11,5 +11,9 @@ class MainActivity : FlutterFragmentActivity() {
         // 注册图标主题插件
         // 「笔迹·成长」图标换色功能
         IconThemePlugin(this).registerWith(flutterEngine)
+        
+        // 注册速记浮窗插件
+        // 原生 Android View 实现系统级悬浮窗
+        FloatingWindowPlugin(this).registerWith(flutterEngine)
     }
 }
