@@ -75,6 +75,7 @@ class FloatingWindowService : Service() {
     private var isDragging = false
     private var isPanelShowing = false
     private var isSettingsShowing = false
+    private var isPanelAnimatingOut = false
 
     // 点击检测
     private var lastUpTime = 0L
@@ -84,13 +85,22 @@ class FloatingWindowService : Service() {
     private val longPressHandler = android.os.Handler(android.os.Looper.getMainLooper())
     private var longPressRunnable: Runnable? = null
 
+    // 面板自动隐藏
+    private val autoHideHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var autoHideRunnable: Runnable? = null
+    private var autoHideDelaySeconds = 5
+
     // 贴边缩小
     private var isCollapsed = false
     private var normalSize = 60
     private var collapsedSize = 24
 
-    // 设置
-    private var buttonColor = 0xFFFF6B6B.toInt()
+    // 呼吸动画
+    private var breathingAnimator: ValueAnimator? = null
+    private var isBreathingPaused = false
+
+    // 设置（默认暖棕色，参考木质风格）
+    private var buttonColor = 0xFFC4956A.toInt()
     private var buttonOpacity = 1.0f
     private var buttonSizeDp = 60
     private var savedPosX = -1
@@ -99,6 +109,7 @@ class FloatingWindowService : Service() {
     private var iconEmoji = ""
     private var savedBarWidth = -1
     private var savedBarHeight = -1
+    private var savedFontSize = -1
 
     // 屏幕尺寸
     private var screenWidth = 0
@@ -128,6 +139,7 @@ class FloatingWindowService : Service() {
                 autoHideToEdge = intent.getBooleanExtra("autoHideToEdge", true)
                 doubleTapSensitivityMs = intent.getIntExtra("doubleTapSensitivityMs", 300)
                 iconEmoji = intent.getStringExtra("iconEmoji") ?: ""
+                buttonSizeDp = intent.getIntExtra("windowSize", buttonSizeDp)
                 val tags = intent.getStringArrayExtra(EXTRA_TAGS)
                 if (tags != null && tags.isNotEmpty()) {
                     customTags = tags
@@ -138,6 +150,7 @@ class FloatingWindowService : Service() {
             ACTION_SHOW_PANEL -> {
                 savedBarWidth = intent.getIntExtra("barWidth", -1)
                 savedBarHeight = intent.getIntExtra("barHeight", -1)
+                savedFontSize = intent.getIntExtra("fontSize", -1)
                 showPanel()
             }
             ACTION_HIDE_PANEL -> hidePanel()
@@ -224,21 +237,10 @@ class FloatingWindowService : Service() {
                 return
             }
 
-            updateButtonAppearance()
-
             val btn = view.findViewById<ImageButton>(R.id.floating_button)
                 ?: run { Log.e(TAG, "floating_button not found"); return }
 
-            // 设置图标（自定义 emoji 或默认系统图标）
-            try {
-                if (iconEmoji.isNotEmpty()) {
-                    btn.setImageDrawable(createEmojiDrawable(iconEmoji, dpToPx(24), 0xFFFFFFFF.toInt()))
-                } else {
-                    btn.setImageResource(android.R.drawable.ic_menu_edit)
-                }
-            } catch (_: Exception) {
-                btn.setImageResource(android.R.drawable.ic_input_add)
-            }
+            updateButtonAppearance()
 
             // 触摸事件统一处理（双击展开面板、长按打开主应用、拖动）
             // 必须设置在 ImageButton 上，不能设置在父 FrameLayout 上，
@@ -265,6 +267,8 @@ class FloatingWindowService : Service() {
             }
 
             windowManager.addView(view, buttonParams)
+            // 启动呼吸动画
+            startBreathingAnimation()
             Log.d(TAG, "Floating button ADDED at (${buttonParams!!.x}, ${buttonParams!!.y})")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to add floating button", e)
@@ -277,13 +281,148 @@ class FloatingWindowService : Service() {
         val view = floatingButtonView ?: return
         val btn = view.findViewById<ImageButton>(R.id.floating_button) ?: return
 
-        val drawable = GradientDrawable()
-        drawable.shape = GradientDrawable.OVAL
-        drawable.setColor(buttonColor)
-        btn.background = drawable
+        // ===== 图片图标模式：使用生成的图片作为完整按钮外观 =====
+        if (iconEmoji == "💡") {
+            btn.setImageResource(R.drawable.icon_bulb)
+            btn.scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+            btn.setBackgroundResource(0) // 彻底清除背景
+            btn.imageTintList = null // 清除 tint，避免图片被染色
+            btn.clearColorFilter()
+            view.alpha = buttonOpacity.coerceIn(0.2f, 1.0f)
+            return
+        }
+
+        // ===== 代码绘制模式：木质风格渐变背景 + emoji/图标 =====
+        val sizePx = dpToPx(buttonSizeDp)
+        val cornerRadius = sizePx * 0.25f
+
+        // 层1：柔和阴影
+        val shadowDrawable = GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            this.cornerRadius = cornerRadius
+            setColor(0x20000000)
+        }
+
+        // 层2：外框层（用户选择的颜色，温暖渐变模拟木质感）
+        val frameDrawable = GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            this.cornerRadius = cornerRadius
+            colors = intArrayOf(
+                lightenColor(buttonColor, 1.1f),
+                buttonColor,
+                darkenColor(buttonColor, 0.8f)
+            )
+            orientation = GradientDrawable.Orientation.TL_BR
+        }
+
+        // 层3：内部浅色层（形成内凹效果，类似图片的米色内部）
+        val innerPadding = (sizePx * 0.14f).toInt().coerceAtLeast(dpToPx(4))
+        val innerCornerRadius = cornerRadius * 0.65f
+        val innerColor = blendWithWhite(buttonColor, 0.72f)
+        val innerDrawable = GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            this.cornerRadius = innerCornerRadius
+            colors = intArrayOf(
+                lightenColor(innerColor, 1.06f),
+                innerColor
+            )
+            orientation = GradientDrawable.Orientation.TL_BR
+        }
+
+        // 组合三层：阴影 → 外框 → 内部
+        val layerDrawable = LayerDrawable(arrayOf(shadowDrawable, frameDrawable, innerDrawable)).apply {
+            setLayerInset(0, dpToPx(2), dpToPx(5), dpToPx(2), 0)
+            setLayerInset(1, 0, 0, 0, dpToPx(3))
+            setLayerInset(2, innerPadding, innerPadding, innerPadding, innerPadding + dpToPx(3))
+        }
+
+        btn.background = layerDrawable
+
+        // 设置图标（emoji 或默认系统图标）
+        if (iconEmoji.isNotEmpty()) {
+            btn.setImageDrawable(createEmojiDrawable(iconEmoji, dpToPx(28), 0xFF8B5E3C.toInt()))
+        } else {
+            btn.setImageResource(android.R.drawable.ic_menu_edit)
+        }
+        btn.scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+        btn.imageTintList = null
+        btn.clearColorFilter()
 
         // 设置整体透明度（在 View 上设置，不在 LayoutParams 上设置，避免触摸失效）
         view.alpha = buttonOpacity.coerceIn(0.2f, 1.0f)
+    }
+
+    /**
+     * 将颜色与白色混合，生成协调的浅色
+     */
+    private fun blendWithWhite(color: Int, ratio: Float): Int {
+        val a = android.graphics.Color.alpha(color)
+        val r = (android.graphics.Color.red(color) * (1 - ratio) + 255 * ratio).toInt().coerceIn(0, 255)
+        val g = (android.graphics.Color.green(color) * (1 - ratio) + 255 * ratio).toInt().coerceIn(0, 255)
+        val b = (android.graphics.Color.blue(color) * (1 - ratio) + 255 * ratio).toInt().coerceIn(0, 255)
+        return android.graphics.Color.argb(a, r, g, b)
+    }
+
+    /**
+     * 加深颜色
+     */
+    private fun darkenColor(color: Int, factor: Float): Int {
+        val a = android.graphics.Color.alpha(color)
+        val r = (android.graphics.Color.red(color) * factor).toInt().coerceIn(0, 255)
+        val g = (android.graphics.Color.green(color) * factor).toInt().coerceIn(0, 255)
+        val b = (android.graphics.Color.blue(color) * factor).toInt().coerceIn(0, 255)
+        return android.graphics.Color.argb(a, r, g, b)
+    }
+
+    /**
+     * 减淡颜色
+     */
+    private fun lightenColor(color: Int, factor: Float): Int {
+        val a = android.graphics.Color.alpha(color)
+        val r = (android.graphics.Color.red(color) * factor).toInt().coerceIn(0, 255)
+        val g = (android.graphics.Color.green(color) * factor).toInt().coerceIn(0, 255)
+        val b = (android.graphics.Color.blue(color) * factor).toInt().coerceIn(0, 255)
+        return android.graphics.Color.argb(a, r, g, b)
+    }
+
+    // ==================== 呼吸动画 ====================
+
+    private fun startBreathingAnimation() {
+        if (breathingAnimator?.isRunning == true) return
+        val btn = floatingButtonView?.findViewById<ImageButton>(R.id.floating_button) ?: return
+
+        breathingAnimator = ValueAnimator.ofFloat(1.0f, 1.06f, 1.0f).apply {
+            duration = 2200
+            repeatCount = ValueAnimator.INFINITE
+            interpolator = AccelerateDecelerateInterpolator()
+            addUpdateListener { animator ->
+                if (!isBreathingPaused) {
+                    val scale = animator.animatedValue as Float
+                    btn.scaleX = scale
+                    btn.scaleY = scale
+                }
+            }
+            start()
+        }
+    }
+
+    private fun pauseBreathingAnimation() {
+        isBreathingPaused = true
+        val btn = floatingButtonView?.findViewById<ImageButton>(R.id.floating_button) ?: return
+        btn.animate()
+            .scaleX(1.0f)
+            .scaleY(1.0f)
+            .setDuration(150)
+            .start()
+    }
+
+    private fun resumeBreathingAnimation() {
+        isBreathingPaused = false
+    }
+
+    private fun stopBreathingAnimation() {
+        breathingAnimator?.cancel()
+        breathingAnimator = null
     }
 
     private fun createColorCircle(color: Int): GradientDrawable {
@@ -293,26 +432,46 @@ class FloatingWindowService : Service() {
         }
     }
 
-    private fun createColorCircleWithBorder(color: Int): GradientDrawable {
-        return GradientDrawable().apply {
+    /**
+     * 创建带选中效果的颜色圆形（白色边框 + 外圈阴影）
+     */
+    private fun createColorCircleWithBorder(color: Int): android.graphics.drawable.LayerDrawable {
+        // 外圈阴影
+        val shadow = GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(0x20000000)
+        }
+        // 颜色圆
+        val circle = GradientDrawable().apply {
             shape = GradientDrawable.OVAL
             setColor(color)
             setStroke(dpToPx(3), 0xFFFFFFFF.toInt())
         }
+        return LayerDrawable(arrayOf(shadow, circle)).apply {
+            setLayerInset(0, 0, dpToPx(2), 0, dpToPx(2))
+            setLayerInset(1, dpToPx(2), 0, dpToPx(2), dpToPx(4))
+        }
     }
 
+    /**
+     * 创建精美的 emoji 图标 Drawable
+     * 直接在按钮内部浅色区域上绘制清晰的 emoji，无额外背景
+     */
     private fun createEmojiDrawable(emoji: String, sizePx: Int, textColor: Int): android.graphics.drawable.BitmapDrawable {
         val bitmap = android.graphics.Bitmap.createBitmap(sizePx, sizePx, android.graphics.Bitmap.Config.ARGB_8888)
         val canvas = android.graphics.Canvas(bitmap)
+
+        // 绘制 emoji（更大更清晰）
         val paint = android.graphics.Paint().apply {
-            textSize = sizePx * 0.65f
+            textSize = sizePx * 0.58f
             color = textColor
             textAlign = android.graphics.Paint.Align.CENTER
             isAntiAlias = true
         }
         val x = sizePx / 2f
-        val y = sizePx / 2f + (paint.textSize * 0.35f)
+        val y = sizePx / 2f + (paint.textSize * 0.38f)
         canvas.drawText(emoji, x, y, paint)
+
         return android.graphics.drawable.BitmapDrawable(resources, bitmap)
     }
 
@@ -347,6 +506,14 @@ class FloatingWindowService : Service() {
                     windowManager.updateViewLayout(view, params)
                 } catch (_: Exception) {}
             }
+            animator.addListener(object : android.animation.Animator.AnimatorListener {
+                override fun onAnimationStart(animation: android.animation.Animator) {}
+                override fun onAnimationEnd(animation: android.animation.Animator) {
+                    updateButtonAppearance()
+                }
+                override fun onAnimationCancel(animation: android.animation.Animator) {}
+                override fun onAnimationRepeat(animation: android.animation.Animator) {}
+            })
             animator.start()
         } else {
             params.width = targetSize
@@ -369,6 +536,7 @@ class FloatingWindowService : Service() {
         if (!isCollapsed) return
         isCollapsed = false
         resizeButton(buttonSizeDp)
+        resumeBreathingAnimation()
         Log.d(TAG, "Button expanded")
     }
 
@@ -384,6 +552,9 @@ class FloatingWindowService : Service() {
                 touchDownY = event.rawY
                 isDragging = false
                 isLongPressTriggered = false
+
+                // 暂停呼吸动画
+                pauseBreathingAnimation()
 
                 // 拖动时自动展开
                 if (isCollapsed) {
@@ -428,11 +599,14 @@ class FloatingWindowService : Service() {
                     // 拖动结束，贴边吸附
                     snapToEdge()
                     savePosition(params.x, params.y)
+                    // 贴边后暂停呼吸动画
+                    pauseBreathingAnimation()
                 } else if (!isLongPressTriggered) {
                     // 没有拖动，也不是长按 → 处理点击/双击
                     val now = System.currentTimeMillis()
                     if (now - lastUpTime < doubleTapSensitivityMs && lastUpTime > 0) {
-                        // 双击
+                        // 双击：展开/收起面板
+                        view.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
                         togglePanel()
                     }
                     lastUpTime = now
@@ -487,6 +661,9 @@ class FloatingWindowService : Service() {
             override fun onAnimationStart(animation: android.animation.Animator) {}
             override fun onAnimationEnd(animation: android.animation.Animator) {
                 isCollapsed = true
+                pauseBreathingAnimation()
+                updateButtonAppearance() // 确保缩小后外观正确（清除背景/tint等）
+                view.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY)
                 Log.d(TAG, "Snap animation done, button collapsed to ${params.x},${params.y}")
             }
             override fun onAnimationCancel(animation: android.animation.Animator) {}
@@ -524,18 +701,22 @@ class FloatingWindowService : Service() {
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             spinner.adapter = adapter
 
+            // 根据设置控制标签显示/隐藏
+            val panelPrefs = getSharedPreferences("flutter_floating_window_settings", Context.MODE_PRIVATE)
+            val useTags = panelPrefs.getBoolean("useTags", true)
+            if (!useTags) {
+                spinner.visibility = View.GONE
+            }
+
             val etContent = view.findViewById<EditText>(R.id.et_quick_note)
                 ?: run { Log.e(TAG, "et_quick_note not found"); return }
             val tvWordCount = view.findViewById<TextView>(R.id.tv_word_count)
                 ?: run { Log.e(TAG, "tv_word_count not found"); return }
-            etContent.addTextChangedListener(object : android.text.TextWatcher {
-                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-                override fun afterTextChanged(s: android.text.Editable?) {
-                    val length = s?.length ?: 0
-                    tvWordCount.text = "${length}字"
-                }
-            })
+
+            // 应用字体大小设置
+            if (savedFontSize > 0) {
+                etContent.textSize = savedFontSize.toFloat()
+            }
 
             // 粘贴按钮
             val btnPaste = view.findViewById<TextView>(R.id.btn_paste)
@@ -568,6 +749,7 @@ class FloatingWindowService : Service() {
                 }
                 val tag = spinner.selectedItem?.toString() ?: ""
                 saveQuickNote(content, tag)
+                view.performHapticFeedback(android.view.HapticFeedbackConstants.CONFIRM)
                 etContent.setText("")
                 hidePanel()
             }
@@ -641,8 +823,65 @@ class FloatingWindowService : Service() {
                 }
             }
 
+            // 自动隐藏定时器
+            autoHideDelaySeconds = panelPrefs.getInt("autoHideDelaySeconds", 5)
+            val autoHideEnabled = panelPrefs.getBoolean("autoHideBar", false)
+
+            fun resetAutoHideTimer() {
+                autoHideRunnable?.let { autoHideHandler.removeCallbacks(it) }
+                if (autoHideEnabled && autoHideDelaySeconds > 0) {
+                    autoHideRunnable = Runnable {
+                        if (isPanelShowing) {
+                            hidePanel()
+                            Toast.makeText(this, "速记面板已自动收起", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    autoHideHandler.postDelayed(autoHideRunnable!!, autoHideDelaySeconds * 1000L)
+                }
+            }
+
+            // 启动自动隐藏
+            if (autoHideEnabled) resetAutoHideTimer()
+
+            // 在面板交互中重置定时器
+            etContent.addTextChangedListener(object : android.text.TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                override fun afterTextChanged(s: android.text.Editable?) {
+                    val length = s?.length ?: 0
+                    tvWordCount.text = "${length}字"
+                    if (autoHideEnabled) resetAutoHideTimer()
+                }
+            })
+
+            // 为面板根布局添加触摸监听以重置定时器
+            view.setOnTouchListener { _, event ->
+                if (event.action == MotionEvent.ACTION_DOWN && autoHideEnabled) {
+                    resetAutoHideTimer()
+                }
+                false
+            }
+
+            // 展开动画：先设为不可见，addView 后再淡入缩放
+            view.alpha = 0f
+            view.scaleX = 0.92f
+            view.scaleY = 0.92f
+
             windowManager.addView(view, panelParams)
+
+            // 延迟一帧开始动画，避免 addView 瞬间的闪烁
+            view.post {
+                view.animate()
+                    .alpha(1f)
+                    .scaleX(1f)
+                    .scaleY(1f)
+                    .setDuration(180)
+                    .setInterpolator(AccelerateDecelerateInterpolator())
+                    .start()
+            }
+
             isPanelShowing = true
+            isPanelAnimatingOut = false
             FloatingWindowPlugin.notifyPanelShown()
             Log.d(TAG, "Panel ADDED")
         } catch (e: Exception) {
@@ -654,13 +893,27 @@ class FloatingWindowService : Service() {
     }
 
     private fun hidePanel() {
+        if (isPanelAnimatingOut) return
+        autoHideRunnable?.let { autoHideHandler.removeCallbacks(it) }
+        autoHideRunnable = null
         val view = floatingPanelView ?: return
-        try {
-            windowManager.removeView(view)
-        } catch (_: Exception) {}
-        floatingPanelView = null
-        isPanelShowing = false
-        FloatingWindowPlugin.notifyPanelHidden()
+        isPanelAnimatingOut = true
+        // 收起动画（淡出+缩放）
+        view.animate()
+            .alpha(0f)
+            .scaleX(0.9f)
+            .scaleY(0.9f)
+            .setDuration(150)
+            .withEndAction {
+                try {
+                    windowManager.removeView(view)
+                } catch (_: Exception) {}
+                floatingPanelView = null
+                isPanelShowing = false
+                isPanelAnimatingOut = false
+                FloatingWindowPlugin.notifyPanelHidden()
+            }
+            .start()
     }
 
     // ==================== 设置面板 ====================
@@ -716,7 +969,7 @@ class FloatingWindowService : Service() {
                     buttonColor = color
                     updateButtonAppearance()
                     updateColorSelection(clickedView)
-                    FloatingWindowPlugin.notifySettingsChanged(buttonColor, buttonOpacity, buttonSizeDp)
+                    FloatingWindowPlugin.notifySettingsChanged(buttonColor, buttonOpacity, buttonSizeDp, iconEmoji)
                     Toast.makeText(this, "颜色已更新", Toast.LENGTH_SHORT).show()
                 }
             }
@@ -734,7 +987,7 @@ class FloatingWindowService : Service() {
                 }
                 override fun onStartTrackingTouch(seekBar: SeekBar?) {}
                 override fun onStopTrackingTouch(seekBar: SeekBar?) {
-                    FloatingWindowPlugin.notifySettingsChanged(buttonColor, buttonOpacity, buttonSizeDp)
+                    FloatingWindowPlugin.notifySettingsChanged(buttonColor, buttonOpacity, buttonSizeDp, iconEmoji)
                 }
             })
 
@@ -772,36 +1025,82 @@ class FloatingWindowService : Service() {
                     buttonSizeDp = sizeDp
                     resizeButton(buttonSizeDp)
                     updateSizeSelection(viewId)
-                    FloatingWindowPlugin.notifySettingsChanged(buttonColor, buttonOpacity, buttonSizeDp)
+                    FloatingWindowPlugin.notifySettingsChanged(buttonColor, buttonOpacity, buttonSizeDp, iconEmoji)
                     Toast.makeText(this, "大小已更新", Toast.LENGTH_SHORT).show()
                 }
             }
 
-            // ===== Tab 切换 =====
+            // ===== 图标选择器 =====
+            val iconMap = mapOf(
+                R.id.icon_default to "",
+                R.id.icon_bulb to "💡",
+                R.id.icon_note to "📝",
+                R.id.icon_pin to "📌",
+                R.id.icon_bell to "🔔",
+                R.id.icon_star to "⭐",
+                R.id.icon_moon to "🌙",
+                R.id.icon_sun to "☀️",
+                R.id.icon_flower to "🌸",
+                R.id.icon_fire to "🔥",
+                R.id.icon_diamond to "💎",
+                R.id.icon_target to "🎯"
+            )
+
+            fun updateIconSelection(selectedId: Int) {
+                iconMap.forEach { (viewId, _) ->
+                    val iconBtn = view.findViewById<TextView>(viewId)
+                    if (viewId == selectedId) {
+                        iconBtn?.setBackgroundResource(R.drawable.bg_icon_option_selected)
+                        iconBtn?.animate()?.scaleX(1.1f)?.scaleY(1.1f)?.setDuration(150)?.start()
+                    } else {
+                        iconBtn?.setBackgroundResource(R.drawable.bg_icon_option)
+                        iconBtn?.animate()?.scaleX(1.0f)?.scaleY(1.0f)?.setDuration(150)?.start()
+                    }
+                }
+            }
+
+            // 初始化选中状态
+            val currentIconId = iconMap.entries.find { it.value == iconEmoji }?.key ?: R.id.icon_default
+            updateIconSelection(currentIconId)
+
+            iconMap.forEach { (viewId, emoji) ->
+                val iconBtn = view.findViewById<TextView>(viewId)
+                iconBtn?.setOnClickListener {
+                    iconEmoji = emoji
+                    updateButtonAppearance()
+                    updateIconSelection(viewId)
+                    FloatingWindowPlugin.notifySettingsChanged(buttonColor, buttonOpacity, buttonSizeDp, iconEmoji)
+                    Toast.makeText(this, "图标已更新", Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            // ===== Tab 切换（底部指示器样式） =====
             val pageAppearance = view.findViewById<LinearLayout>(R.id.page_appearance)
             val pageFunction = view.findViewById<LinearLayout>(R.id.page_function)
             val tabAppearance = view.findViewById<TextView>(R.id.tab_appearance)
             val tabFunction = view.findViewById<TextView>(R.id.tab_function)
+            val indicatorAppearance = view.findViewById<View>(R.id.tab_indicator_appearance)
+            val indicatorFunction = view.findViewById<View>(R.id.tab_indicator_function)
 
             fun switchTab(isAppearance: Boolean) {
                 if (isAppearance) {
                     pageAppearance?.visibility = View.VISIBLE
                     pageFunction?.visibility = View.GONE
-                    tabAppearance?.setBackgroundColor(0xFFFFFFFF.toInt())
                     tabAppearance?.setTextColor(0xFF1A1A1A.toInt())
                     tabAppearance?.setTypeface(null, android.graphics.Typeface.BOLD)
-                    tabFunction?.setBackgroundColor(0x00000000)
-                    tabFunction?.setTextColor(0xFF666666.toInt())
+                    indicatorAppearance?.visibility = View.VISIBLE
+                    tabFunction?.setTextColor(0xFF999999.toInt())
                     tabFunction?.setTypeface(null, android.graphics.Typeface.NORMAL)
+                    indicatorFunction?.visibility = View.INVISIBLE
                 } else {
                     pageAppearance?.visibility = View.GONE
                     pageFunction?.visibility = View.VISIBLE
-                    tabAppearance?.setBackgroundColor(0x00000000)
-                    tabAppearance?.setTextColor(0xFF666666.toInt())
+                    tabAppearance?.setTextColor(0xFF999999.toInt())
                     tabAppearance?.setTypeface(null, android.graphics.Typeface.NORMAL)
-                    tabFunction?.setBackgroundColor(0xFFFFFFFF.toInt())
+                    indicatorAppearance?.visibility = View.INVISIBLE
                     tabFunction?.setTextColor(0xFF1A1A1A.toInt())
                     tabFunction?.setTypeface(null, android.graphics.Typeface.BOLD)
+                    indicatorFunction?.visibility = View.VISIBLE
                 }
             }
 
@@ -812,6 +1111,7 @@ class FloatingWindowService : Service() {
             // 从 SharedPreferences 读取当前功能设置（Flutter 侧保存的）
             val prefs = getSharedPreferences("flutter_floating_window_settings", Context.MODE_PRIVATE)
 
+            val switchUseTags = view.findViewById<Switch>(R.id.switch_use_tags)
             val switchSyncNotif = view.findViewById<Switch>(R.id.switch_sync_notification)
             val switchSyncSelfTalk = view.findViewById<Switch>(R.id.switch_sync_self_talk)
             val switchShowWordCount = view.findViewById<Switch>(R.id.switch_show_word_count)
@@ -819,7 +1119,8 @@ class FloatingWindowService : Service() {
             val seekBarDoubleTap = view.findViewById<SeekBar>(R.id.seekbar_double_tap)
             val tvDoubleTapValue = view.findViewById<TextView>(R.id.tv_double_tap_value)
 
-            // 初始化值（默认 true, true, true, true, 300）
+            // 初始化值（默认 true, true, true, true, true, 300）
+            switchUseTags?.isChecked = prefs.getBoolean("useTags", true)
             switchSyncNotif?.isChecked = prefs.getBoolean("syncToNotification", true)
             switchSyncSelfTalk?.isChecked = prefs.getBoolean("syncToSelfTalk", true)
             switchShowWordCount?.isChecked = prefs.getBoolean("showWordCount", true)
@@ -828,6 +1129,12 @@ class FloatingWindowService : Service() {
             seekBarDoubleTap?.progress = savedDoubleTap - 100
             tvDoubleTapValue?.text = "${savedDoubleTap}ms"
 
+            val seekBarFontSize = view.findViewById<SeekBar>(R.id.seekbar_font_size)
+            val tvFontSizeValue = view.findViewById<TextView>(R.id.tv_font_size_value)
+            val savedFontSize = prefs.getInt("fontSize", 15)
+            seekBarFontSize?.progress = savedFontSize - 12
+            tvFontSizeValue?.text = "${savedFontSize}sp"
+
             // 功能设置变更监听
             fun notifyFunctionSettings() {
                 FloatingWindowPlugin.notifyFunctionSettingsChanged(
@@ -835,10 +1142,13 @@ class FloatingWindowService : Service() {
                     syncToSelfTalk = switchSyncSelfTalk?.isChecked ?: true,
                     showWordCount = switchShowWordCount?.isChecked ?: true,
                     autoHideToEdge = switchAutoHideEdge?.isChecked ?: true,
-                    doubleTapSensitivityMs = (seekBarDoubleTap?.progress ?: 200) + 100
+                    doubleTapSensitivityMs = (seekBarDoubleTap?.progress ?: 200) + 100,
+                    fontSize = (seekBarFontSize?.progress ?: 3) + 12,
+                    useTags = switchUseTags?.isChecked ?: true
                 )
             }
 
+            switchUseTags?.setOnCheckedChangeListener { _, _ -> notifyFunctionSettings() }
             switchSyncNotif?.setOnCheckedChangeListener { _, _ -> notifyFunctionSettings() }
             switchSyncSelfTalk?.setOnCheckedChangeListener { _, _ -> notifyFunctionSettings() }
             switchShowWordCount?.setOnCheckedChangeListener { _, _ -> notifyFunctionSettings() }
@@ -851,6 +1161,17 @@ class FloatingWindowService : Service() {
                     val ms = progress + 100
                     tvDoubleTapValue?.text = "${ms}ms"
                     doubleTapSensitivityMs = ms
+                }
+                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+                override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                    notifyFunctionSettings()
+                }
+            })
+
+            seekBarFontSize?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                    val size = progress + 12
+                    tvFontSizeValue?.text = "${size}sp"
                 }
                 override fun onStartTrackingTouch(seekBar: SeekBar?) {}
                 override fun onStopTrackingTouch(seekBar: SeekBar?) {
@@ -880,7 +1201,23 @@ class FloatingWindowService : Service() {
                 }
             }
 
+            // 展开动画
+            view.alpha = 0f
+            view.scaleX = 0.95f
+            view.scaleY = 0.95f
+
             windowManager.addView(view, settingsParams)
+
+            view.post {
+                view.animate()
+                    .alpha(1f)
+                    .scaleX(1f)
+                    .scaleY(1f)
+                    .setDuration(150)
+                    .setInterpolator(AccelerateDecelerateInterpolator())
+                    .start()
+            }
+
             isSettingsShowing = true
             Log.d(TAG, "Settings panel ADDED")
         } catch (e: Exception) {
@@ -902,6 +1239,7 @@ class FloatingWindowService : Service() {
     // ==================== 公共方法 ====================
 
     private fun hideAll() {
+        stopBreathingAnimation()
         hideSettingsPanel()
         hidePanel()
         val view = floatingButtonView

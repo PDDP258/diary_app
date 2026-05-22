@@ -33,6 +33,9 @@ class NativeFloatingService {
       final settings = await FloatingSettingsService.load();
       // 获取自定义标签列表（如果用户没有自定义标签，使用预设标签）
       final tags = await _getCustomTags();
+      // 将 windowSize 枚举映射为 dp 值（与 Kotlin 侧保持一致：48/60/72）
+      final sizeDp = settings.windowSize == FloatingWindowSize.small ? 48 :
+                     settings.windowSize == FloatingWindowSize.large ? 72 : 60;
       final result = await _channel.invokeMethod('showFloatingButton', {
         'color': _colorToHex(settings.iconColor),
         'opacity': settings.iconOpacity,
@@ -42,6 +45,7 @@ class NativeFloatingService {
         'autoHideToEdge': settings.autoHideToEdge,
         'doubleTapSensitivityMs': settings.doubleTapSensitivityMs,
         'iconEmoji': settings.iconEmoji,
+        'windowSize': sizeDp,
       });
       return result == true;
     } catch (e, stack) {
@@ -68,6 +72,7 @@ class NativeFloatingService {
       final result = await _channel.invokeMethod('showQuickNotePanel', {
         'barWidth': settings.barWidth.toInt(),
         'barHeight': settings.barHeight.toInt(),
+        'fontSize': settings.fontSize.toInt(),
       });
       return result == true;
     } catch (e, stack) {
@@ -144,28 +149,33 @@ class NativeFloatingService {
         return true;
 
       case 'onSettingsChanged':
-        // 浮窗设置变更（用户在浮窗设置面板中修改了颜色/透明度/大小）
+        // 浮窗设置变更（用户在浮窗设置面板中修改了颜色/透明度/大小/图标）
         final colorHex = call.arguments['color'] as String?;
         final opacity = call.arguments['opacity'] as double?;
         final sizeDp = call.arguments['sizeDp'] as int?;
-        await _updateFloatingSettings(colorHex: colorHex, opacity: opacity, sizeDp: sizeDp);
+        final iconEmoji = call.arguments['iconEmoji'] as String?;
+        await _updateFloatingSettings(colorHex: colorHex, opacity: opacity, sizeDp: sizeDp, iconEmoji: iconEmoji);
         return true;
 
       case 'onFunctionSettingsChanged':
-        // 功能设置变更（同步开关、字数统计、自动隐藏、双击灵敏度）
+        // 功能设置变更（同步开关、字数统计、自动隐藏、双击灵敏度、字体大小、标签）
         final syncToNotification = call.arguments['syncToNotification'] as bool?;
         final syncToSelfTalk = call.arguments['syncToSelfTalk'] as bool?;
         final showWordCount = call.arguments['showWordCount'] as bool?;
         final autoHideToEdge = call.arguments['autoHideToEdge'] as bool?;
         final doubleTapSensitivityMs = call.arguments['doubleTapSensitivityMs'] as int?;
+        final fontSize = call.arguments['fontSize'] as int?;
+        final useTags = call.arguments['useTags'] as bool?;
         await FloatingSettingsService.update(
           syncToNotification: syncToNotification,
           syncToSelfTalk: syncToSelfTalk,
           showWordCount: showWordCount,
           autoHideToEdge: autoHideToEdge,
           doubleTapSensitivityMs: doubleTapSensitivityMs,
+          fontSize: fontSize?.toDouble(),
+          useTags: useTags,
         );
-        developer.log('Function settings updated from native: syncNotif=$syncToNotification, syncSelfTalk=$syncToSelfTalk, showWordCount=$showWordCount, autoHideEdge=$autoHideToEdge, doubleTap=$doubleTapSensitivityMs', name: 'FloatingWindow');
+        developer.log('Function settings updated from native: syncNotif=$syncToNotification, syncSelfTalk=$syncToSelfTalk, showWordCount=$showWordCount, autoHideEdge=$autoHideToEdge, doubleTap=$doubleTapSensitivityMs, fontSize=$fontSize, useTags=$useTags', name: 'FloatingWindow');
         return true;
 
       case 'onPanelSizeChanged':
@@ -243,6 +253,7 @@ class NativeFloatingService {
     String? colorHex,
     double? opacity,
     int? sizeDp,
+    String? iconEmoji,
   }) async {
     try {
       Color? color;
@@ -264,8 +275,9 @@ class NativeFloatingService {
         iconColor: color,
         iconOpacity: opacity,
         windowSize: windowSize,
+        iconEmoji: iconEmoji,
       );
-      developer.log('Floating settings updated from native: color=$colorHex, opacity=$opacity, size=$sizeDp', name: 'FloatingWindow');
+      developer.log('Floating settings updated from native: color=$colorHex, opacity=$opacity, size=$sizeDp, iconEmoji=$iconEmoji', name: 'FloatingWindow');
     } catch (e, stack) {
       developer.log('Failed to update floating settings: $e\n$stack', name: 'FloatingWindow');
     }

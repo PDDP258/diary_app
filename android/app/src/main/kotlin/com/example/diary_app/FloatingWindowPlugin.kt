@@ -75,13 +75,14 @@ class FloatingWindowPlugin(private val context: Context) : MethodCallHandler {
             } catch (_: Exception) {}
         }
 
-        fun notifySettingsChanged(color: Int, opacity: Float, sizeDp: Int) {
+        fun notifySettingsChanged(color: Int, opacity: Float, sizeDp: Int, iconEmoji: String = "") {
             try {
                 val colorHex = String.format("#%06X", 0xFFFFFF and color)
                 methodChannel?.invokeMethod("onSettingsChanged", mapOf(
                     "color" to colorHex,
                     "opacity" to opacity,
-                    "sizeDp" to sizeDp
+                    "sizeDp" to sizeDp,
+                    "iconEmoji" to iconEmoji
                 ))
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to notify settings changed", e)
@@ -93,7 +94,9 @@ class FloatingWindowPlugin(private val context: Context) : MethodCallHandler {
             syncToSelfTalk: Boolean,
             showWordCount: Boolean,
             autoHideToEdge: Boolean,
-            doubleTapSensitivityMs: Int
+            doubleTapSensitivityMs: Int,
+            fontSize: Int,
+            useTags: Boolean
         ) {
             try {
                 methodChannel?.invokeMethod("onFunctionSettingsChanged", mapOf(
@@ -101,7 +104,9 @@ class FloatingWindowPlugin(private val context: Context) : MethodCallHandler {
                     "syncToSelfTalk" to syncToSelfTalk,
                     "showWordCount" to showWordCount,
                     "autoHideToEdge" to autoHideToEdge,
-                    "doubleTapSensitivityMs" to doubleTapSensitivityMs
+                    "doubleTapSensitivityMs" to doubleTapSensitivityMs,
+                    "fontSize" to fontSize,
+                    "useTags" to useTags
                 ))
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to notify function settings changed", e)
@@ -139,6 +144,7 @@ class FloatingWindowPlugin(private val context: Context) : MethodCallHandler {
                     val autoHideToEdge = call.argument<Boolean>("autoHideToEdge") ?: true
                     val doubleTapSensitivityMs = call.argument<Int>("doubleTapSensitivityMs") ?: 300
                     val iconEmoji = call.argument<String>("iconEmoji") ?: ""
+                    val windowSize = call.argument<Int>("windowSize") ?: 60
 
                     val color = parseColor(colorHex)
                     val intent = Intent(context, FloatingWindowService::class.java).apply {
@@ -150,6 +156,7 @@ class FloatingWindowPlugin(private val context: Context) : MethodCallHandler {
                         putExtra("autoHideToEdge", autoHideToEdge)
                         putExtra("doubleTapSensitivityMs", doubleTapSensitivityMs)
                         putExtra("iconEmoji", iconEmoji)
+                        putExtra("windowSize", windowSize)
                         if (tags != null) {
                             putExtra(EXTRA_TAGS, tags.toTypedArray())
                         }
@@ -178,10 +185,12 @@ class FloatingWindowPlugin(private val context: Context) : MethodCallHandler {
                 try {
                     val barWidth = call.argument<Int>("barWidth") ?: -1
                     val barHeight = call.argument<Int>("barHeight") ?: -1
+                    val fontSize = call.argument<Int>("fontSize") ?: -1
                     val intent = Intent(context, FloatingWindowService::class.java).apply {
                         action = ACTION_SHOW_PANEL
                         putExtra("barWidth", barWidth)
                         putExtra("barHeight", barHeight)
+                        putExtra("fontSize", fontSize)
                     }
                     startService(intent)
                     result.success(true)

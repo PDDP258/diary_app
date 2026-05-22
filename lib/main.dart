@@ -15,6 +15,9 @@ import 'services/sound_service.dart';
 import 'services/debug_log_service.dart';
 import 'services/sync_log_service.dart';
 import 'services/app_protection_service.dart';
+import 'services/floating_window_service.dart';
+import 'services/floating_settings_service.dart';
+import 'services/floating_permission_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,6 +40,9 @@ void main() async {
   // 初始化音效服务
   await SoundService.initialize();
 
+  // 初始化浮窗服务（注册 MethodChannel 回调）
+  FloatingWindowService.initialize();
+
   // 预加载主题设置（确保启动时主题已加载）
   final themeProvider = ThemeProvider();
   await themeProvider.loadSettings();
@@ -57,6 +63,29 @@ void main() async {
   }
 
   runApp(MyApp(preloadedThemeProvider: themeProvider));
+
+  // 延迟自动恢复浮窗（如果之前已开启）
+  _autoRestoreFloatingWindow();
+}
+
+/// 应用启动后自动恢复浮窗
+Future<void> _autoRestoreFloatingWindow() async {
+  try {
+    // 延迟 2 秒，等应用完全启动后再恢复
+    await Future.delayed(const Duration(seconds: 2));
+    final isEnabled = await FloatingSettingsService.getEnabled();
+    if (isEnabled) {
+      final hasOverlay = await FloatingPermissionService.checkOverlayPermission();
+      if (hasOverlay) {
+        final success = await FloatingWindowService.showFloatingButton();
+        print('浮窗自动恢复: $success');
+      } else {
+        print('浮窗自动恢复跳过: 无悬浮窗权限');
+      }
+    }
+  } catch (e) {
+    print('浮窗自动恢复失败: $e');
+  }
 }
 
 class MyApp extends StatelessWidget {

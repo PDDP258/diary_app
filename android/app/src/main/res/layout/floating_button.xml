@@ -2,17 +2,17 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/floating_button_container"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:clipChildren="true">
 
     <ImageButton
         android:id="@+id/floating_button"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_gravity="center"
-        android:background="@drawable/bg_floating_button"
+        android:background="@null"
         android:contentDescription="速记"
         android:padding="14dp"
         android:scaleType="fitCenter"
-        android:src="@android:drawable/ic_menu_edit"
-        android:tint="#FFFFFF" />
+        android:src="@null" />
 </FrameLayout>

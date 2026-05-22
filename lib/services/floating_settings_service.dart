@@ -40,7 +40,7 @@ class FloatingSettings {
     this.doubleTapSensitivityMs = 300,
     this.autoHideToEdge = true,
     this.windowSize = FloatingWindowSize.medium,
-    this.iconColor = const Color(0xFF7C4DFF),
+    this.iconColor = const Color(0xFFC4956A),
     this.iconEmoji = '💡',
     this.iconOpacity = 1.0,
     this.barWidth = 320,

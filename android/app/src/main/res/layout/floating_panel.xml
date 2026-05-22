@@ -33,46 +33,47 @@
             <TextView
                 android:id="@+id/btn_settings"
                 android:layout_width="wrap_content"
-                android:layout_height="32dp"
+                android:layout_height="40dp"
                 android:background="@drawable/bg_panel_action"
                 android:gravity="center"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
                 android:text="设置"
                 android:textColor="#666666"
-                android:textSize="13sp" />
+                android:textSize="14sp" />
 
             <View
-                android:layout_width="8dp"
+                android:layout_width="10dp"
                 android:layout_height="0dp" />
 
             <TextView
                 android:id="@+id/btn_paste"
                 android:layout_width="wrap_content"
-                android:layout_height="32dp"
+                android:layout_height="40dp"
                 android:background="@drawable/bg_panel_action"
                 android:gravity="center"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
                 android:text="粘贴"
                 android:textColor="#FF6B6B"
-                android:textSize="13sp" />
+                android:textSize="14sp"
+                android:textStyle="bold" />
 
             <View
-                android:layout_width="8dp"
+                android:layout_width="10dp"
                 android:layout_height="0dp" />
 
             <TextView
                 android:id="@+id/btn_close_panel"
                 android:layout_width="wrap_content"
-                android:layout_height="32dp"
+                android:layout_height="40dp"
                 android:background="@drawable/bg_panel_action"
                 android:gravity="center"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
                 android:text="关闭"
                 android:textColor="#999999"
-                android:textSize="13sp" />
+                android:textSize="14sp" />
         </LinearLayout>
 
         <!-- 输入框 -->
@@ -121,14 +122,14 @@
             <TextView
                 android:id="@+id/btn_save"
                 android:layout_width="wrap_content"
-                android:layout_height="40dp"
+                android:layout_height="48dp"
                 android:background="@drawable/bg_save_button"
                 android:gravity="center"
-                android:paddingStart="24dp"
-                android:paddingEnd="24dp"
+                android:paddingStart="32dp"
+                android:paddingEnd="32dp"
                 android:text="保存"
                 android:textColor="#FFFFFF"
-                android:textSize="15sp"
+                android:textSize="16sp"
                 android:textStyle="bold" />
         </LinearLayout>
     </LinearLayout>

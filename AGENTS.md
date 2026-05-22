@@ -1,6 +1,6 @@
 # 小记日记 - AI协作指南
 
-版本: 1.24.0 (2026-05-11) | 技术栈: Flutter 3.x + Provider + SQLite
+版本: 1.25.0 (2026-05-13) | 技术栈: Flutter 3.x + Provider + SQLite
 
 > **注意**：本文档版本号仅用于 AI 协作记录，软件实际版本号以 `pubspec.yaml` 和软件内显示为准。
 
@@ -343,8 +343,33 @@ with open('lib/screens/file.dart', 'r', encoding='utf-8') as f: content = f.read
   - **【2026-05-12 修复】pubspec.yaml 依赖恢复 + build.gradle.kts desugaring**：
     - 恢复意外缺失的 `flutter_local_notifications: ^17.2.4` 和 `device_info_plus: ^10.1.2`
     - `build.gradle.kts` 添加 `isCoreLibraryDesugaringEnabled = true` + `coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")`
+  - **【2026-05-13 修复】设置持久化不完整（核心问题）**：
+    - **按钮大小不保存**：`showFloatingButton()` 未传递 `windowSize`，重启后恢复默认 60dp → 修复：Dart 侧映射 `FloatingWindowSize` → dp（48/60/72），MethodChannel 传递 `windowSize`
+    - **图标 emoji 不保存**：`notifySettingsChanged()` 未传递 `iconEmoji`，重启后恢复默认 💡 → 修复：`FloatingWindowPlugin.notifySettingsChanged()` 新增 `iconEmoji` 参数，Dart 侧 `_updateFloatingSettings()` 接收并保存
+    - **Kotlin `FloatingWindowService` 接收 windowSize**：`ACTION_SHOW` 读取 `windowSize` 并赋值给 `buttonSizeDp`
+  - **【2026-05-13 优化】按钮外观全面重设计（解决"图标很丑"）**：
+    - **渐变圆角矩形背景**：`updateButtonAppearance()` 从纯色圆形改为 TL-BR 三色渐变（`lightenColor(1.15f)` → 主色 → `darkenColor(0.75f)`）
+    - **LayerDrawable 阴影层**：底层半透明黑 + 2dp/4dp 偏移，模拟真实 elevation
+    - **emoji 图标精美绘制**：`createEmojiDrawable()` 新增 `BlurMaskFilter` 柔和阴影 + 白色圆形背景 + 居中 emoji，告别简陋白字
+    - **动态圆角适配**：`cornerRadius = dpToPx(size) * 0.28f`，大小变化时自动调整比例
+  - **【2026-05-13 新增】按钮呼吸动画**：
+    - `startBreathingAnimation()`：2.2s 无限循环，`scaleX/Y` 1.0 → 1.06 → 1.0
+    - **智能生命周期**：拖动 ACTION_DOWN 暂停（秒回 1.0），松开未拖动恢复；贴边缩小后暂停，展开后恢复；`hideAll()` 彻底停止
+  - **【2026-05-13 优化】设置面板 UI 全面美化**：
+    - **Tab 切换**：灰色胶囊 → 底部紫色指示器 + 文字加粗（`bg_tab_indicator.xml`）
+    - **颜色选择器**：36dp → 40dp，`elevation="2dp"` 阴影
+    - **选中颜色效果**：`createColorCircleWithBorder()` 改为 `LayerDrawable`（阴影层 + 白色 3dp 边框层）
+    - **图标选择器**：灰色方框 → 圆角卡片（`bg_icon_option.xml`，12dp 圆角），选中时淡紫背景 + 主色边框 + 放大动画（scale 1.1）
+    - **选中状态动画**：`updateIconSelection()` 使用 `View.animate()` 实现选中放大/未选中还原
+  - **【2026-05-13 修复】resizeButton 动画结束刷新背景**：动画 `onAnimationEnd` 中调用 `updateButtonAppearance()`，确保贴边/展开后圆角比例正确
+  - **【2026-05-13 修复】设置持久化最终根因**：`main.dart` 缺失 `FloatingWindowService.initialize()` 调用，导致 MethodChannel 回调未注册，Kotlin→Dart 的所有通知无人接收 → 修复：应用启动时调用 `initialize()` 注册回调
+  - **【2026-05-13 新增】应用重启后自动恢复浮窗**：`main.dart` `_autoRestoreFloatingWindow()` 延迟 2 秒检查，若之前开启则自动恢复
+  - **【2026-05-13 优化】木质托盘风格图片图标**：`iconEmoji == "💡"` 时使用 `R.drawable.icon_bulb`（木质托盘+灯泡完整图），`FIT_CENTER` 缩放，`setBackgroundResource(0)` 清除背景避免叠加
+  - **【2026-05-13 修复】图片图标缩小超出图框**：`floating_button.xml` 中 `android:background="@drawable/bg_floating_button"`（椭圆形）+ `android:tint="#FFFFFF"` 在代码中未完全清除，缩小后方形图片超出椭圆边界 → 修复：XML 中移除默认 background/tint/src，`updateButtonAppearance()` 中 `imageTintList = null` + `clearColorFilter()` + `setBackgroundResource(0)`，`snapToEdge()` 动画结束补调 `updateButtonAppearance()`
+  - **【2026-05-13 优化】按钮尺寸与字体增大**：设置/粘贴/关闭 32dp→40dp，保存 40dp→48dp，文字加粗 13/15sp→14/16sp
+  - **【2026-05-13 优化】面板展开/收起动画**：`showPanel()` 先 `alpha=0, scale=0.92`，`addView` 后 `view.post { animate() }` 淡入缩放（200ms），避免闪烁
   - 功能保留：可拖拽按钮、贴边吸附缩小、双击展开面板、长按打开应用、设置面板（两页）、多行输入、标签选择、字数统计、粘贴、保存、通知同步、自言自语同步、面板大小拖动
-  - APK: 84.7MB
+  - APK: ~88MB
 
 - **v1.22.0** (2026-05-04) - 自言自语数据库彻底独立:
   - 移除 `diary_id` 列（数据库v12迁移）

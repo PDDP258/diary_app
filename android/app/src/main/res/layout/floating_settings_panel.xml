@@ -38,37 +38,66 @@
             android:textStyle="bold" />
     </LinearLayout>
 
-    <!-- Tab 切换栏 -->
+    <!-- Tab 切换栏（底部指示器样式） -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:background="#F5F5F5"
-        android:orientation="horizontal"
-        android:padding="4dp">
+        android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/tab_appearance"
+        <FrameLayout
             android:layout_width="0dp"
-            android:layout_height="36dp"
-            android:layout_weight="1"
-            android:background="#FFFFFF"
-            android:gravity="center"
-            android:text="外观"
-            android:textColor="#1A1A1A"
-            android:textSize="14sp"
-            android:textStyle="bold" />
+            android:layout_height="40dp"
+            android:layout_weight="1">
 
-        <TextView
-            android:id="@+id/tab_function"
+            <TextView
+                android:id="@+id/tab_appearance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="外观"
+                android:textColor="#1A1A1A"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <View
+                android:id="@+id/tab_indicator_appearance"
+                android:layout_width="24dp"
+                android:layout_height="3dp"
+                android:layout_gravity="center|bottom"
+                android:layout_marginBottom="2dp"
+                android:background="@drawable/bg_tab_indicator" />
+        </FrameLayout>
+
+        <FrameLayout
             android:layout_width="0dp"
-            android:layout_height="36dp"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:text="功能"
-            android:textColor="#666666"
-            android:textSize="14sp" />
+            android:layout_height="40dp"
+            android:layout_weight="1">
+
+            <TextView
+                android:id="@+id/tab_function"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="功能"
+                android:textColor="#999999"
+                android:textSize="15sp" />
+
+            <View
+                android:id="@+id/tab_indicator_function"
+                android:layout_width="24dp"
+                android:layout_height="3dp"
+                android:layout_gravity="center|bottom"
+                android:layout_marginBottom="2dp"
+                android:background="@drawable/bg_tab_indicator"
+                android:visibility="invisible" />
+        </FrameLayout>
     </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#F0F0F0" />
 
     <!-- ===== 外观设置页（默认显示） ===== -->
     <LinearLayout
@@ -89,57 +118,204 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="12dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
             <View
                 android:id="@+id/color_red"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:layout_marginEnd="10dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginEnd="12dp"
                 android:background="@drawable/bg_color_circle"
-                android:backgroundTint="#FF6B6B" />
+                android:backgroundTint="#FF6B6B"
+                android:elevation="2dp" />
 
             <View
                 android:id="@+id/color_purple"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:layout_marginEnd="10dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginEnd="12dp"
                 android:background="@drawable/bg_color_circle"
-                android:backgroundTint="#7C4DFF" />
+                android:backgroundTint="#7C4DFF"
+                android:elevation="2dp" />
 
             <View
                 android:id="@+id/color_blue"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:layout_marginEnd="10dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginEnd="12dp"
                 android:background="@drawable/bg_color_circle"
-                android:backgroundTint="#448AFF" />
+                android:backgroundTint="#448AFF"
+                android:elevation="2dp" />
 
             <View
                 android:id="@+id/color_green"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:layout_marginEnd="10dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginEnd="12dp"
                 android:background="@drawable/bg_color_circle"
-                android:backgroundTint="#66BB6A" />
+                android:backgroundTint="#66BB6A"
+                android:elevation="2dp" />
 
             <View
                 android:id="@+id/color_orange"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:layout_marginEnd="10dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginEnd="12dp"
                 android:background="@drawable/bg_color_circle"
-                android:backgroundTint="#FFA726" />
+                android:backgroundTint="#FFA726"
+                android:elevation="2dp" />
 
             <View
                 android:id="@+id/color_pink"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:background="@drawable/bg_color_circle"
-                android:backgroundTint="#EC407A" />
+                android:backgroundTint="#EC407A"
+                android:elevation="2dp" />
         </LinearLayout>
+
+        <!-- 按钮图标 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="按钮图标"
+            android:textColor="#666666"
+            android:textSize="14sp" />
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/icon_default"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_icon_option"
+                    android:gravity="center"
+                    android:text="✏️"
+                    android:textSize="22sp" />
+
+                <TextView
+                    android:id="@+id/icon_bulb"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_icon_option"
+                    android:gravity="center"
+                    android:text="💡"
+                    android:textSize="22sp" />
+
+                <TextView
+                    android:id="@+id/icon_note"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_icon_option"
+                    android:gravity="center"
+                    android:text="📝"
+                    android:textSize="22sp" />
+
+                <TextView
+                    android:id="@+id/icon_pin"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_icon_option"
+                    android:gravity="center"
+                    android:text="📌"
+                    android:textSize="22sp" />
+
+                <TextView
+                    android:id="@+id/icon_bell"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_icon_option"
+                    android:gravity="center"
+                    android:text="🔔"
+                    android:textSize="22sp" />
+
+                <TextView
+                    android:id="@+id/icon_star"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_icon_option"
+                    android:gravity="center"
+                    android:text="⭐"
+                    android:textSize="22sp" />
+
+                <TextView
+                    android:id="@+id/icon_moon"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_icon_option"
+                    android:gravity="center"
+                    android:text="🌙"
+                    android:textSize="22sp" />
+
+                <TextView
+                    android:id="@+id/icon_sun"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_icon_option"
+                    android:gravity="center"
+                    android:text="☀️"
+                    android:textSize="22sp" />
+
+                <TextView
+                    android:id="@+id/icon_flower"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_icon_option"
+                    android:gravity="center"
+                    android:text="🌸"
+                    android:textSize="22sp" />
+
+                <TextView
+                    android:id="@+id/icon_fire"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_icon_option"
+                    android:gravity="center"
+                    android:text="🔥"
+                    android:textSize="22sp" />
+
+                <TextView
+                    android:id="@+id/icon_diamond"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_icon_option"
+                    android:gravity="center"
+                    android:text="💎"
+                    android:textSize="22sp" />
+
+                <TextView
+                    android:id="@+id/icon_target"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_icon_option"
+                    android:gravity="center"
+                    android:text="🎯"
+                    android:textSize="22sp" />
+            </LinearLayout>
+        </HorizontalScrollView>
 
         <!-- 透明度 -->
         <TextView
@@ -237,11 +413,34 @@
         android:orientation="vertical"
         android:visibility="gone">
 
-        <!-- 同步到通知 -->
+        <!-- 使用标签 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="使用标签"
+                android:textColor="#1A1A1A"
+                android:textSize="14sp" />
+
+            <Switch
+                android:id="@+id/switch_use_tags"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true" />
+        </LinearLayout>
+
+        <!-- 同步到通知 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
@@ -328,6 +527,58 @@
                 android:layout_height="wrap_content"
                 android:checked="true" />
         </LinearLayout>
+
+        <!-- 字体大小 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="字体大小"
+            android:textColor="#666666"
+            android:textSize="14sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="12"
+                android:textColor="#999999"
+                android:textSize="12sp" />
+
+            <SeekBar
+                android:id="@+id/seekbar_font_size"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="1"
+                android:max="12"
+                android:min="0"
+                android:progress="3" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="24"
+                android:textColor="#999999"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tv_font_size_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:text="15sp"
+            android:textColor="#1A1A1A"
+            android:textSize="12sp"
+            android:textStyle="bold" />
 
         <!-- 双击灵敏度 -->
         <TextView
