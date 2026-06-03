@@ -368,6 +368,7 @@ with open('lib/screens/file.dart', 'r', encoding='utf-8') as f: content = f.read
   - **【2026-05-13 修复】图片图标缩小超出图框**：`floating_button.xml` 中 `android:background="@drawable/bg_floating_button"`（椭圆形）+ `android:tint="#FFFFFF"` 在代码中未完全清除，缩小后方形图片超出椭圆边界 → 修复：XML 中移除默认 background/tint/src，`updateButtonAppearance()` 中 `imageTintList = null` + `clearColorFilter()` + `setBackgroundResource(0)`，`snapToEdge()` 动画结束补调 `updateButtonAppearance()`
   - **【2026-05-13 优化】按钮尺寸与字体增大**：设置/粘贴/关闭 32dp→40dp，保存 40dp→48dp，文字加粗 13/15sp→14/16sp
   - **【2026-05-13 优化】面板展开/收起动画**：`showPanel()` 先 `alpha=0, scale=0.92`，`addView` 后 `view.post { animate() }` 淡入缩放（200ms），避免闪烁
+  - **【2026-05-13 修复】DebugLogOverlay Directionality 错误**：`DebugLogOverlay` 包裹在 `MaterialApp` 外部，`Stack` 默认 `AlignmentDirectional.topStart` 缺少 `Directionality` ancestor → 修复：将 `DebugLogOverlay` 移到 `MaterialApp.builder` 中
   - 功能保留：可拖拽按钮、贴边吸附缩小、双击展开面板、长按打开应用、设置面板（两页）、多行输入、标签选择、字数统计、粘贴、保存、通知同步、自言自语同步、面板大小拖动
   - APK: ~88MB
 

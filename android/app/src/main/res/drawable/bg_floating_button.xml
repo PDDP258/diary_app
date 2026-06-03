@@ -1,12 +1,43 @@
-<?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="oval">
-    <gradient
-        android:angle="135"
-        android:endColor="#FF8E8E"
-        android:startColor="#FF6B6B"
-        android:type="linear" />
-    <stroke
-        android:width="2dp"
-        android:color="#40FFFFFF" />
-</shape>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- 悬浮按钮：暖珊瑚渐变 + 内发光 + 阴影 -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 阴影层（偏移） -->
+    <item
+        android:left="1dp"
+        android:top="2dp"
+        android:right="1dp"
+        android:bottom="0dp">
+        <shape android:shape="oval">
+            <solid android:color="#1A000000" />
+            <size android:width="48dp" android:height="48dp" />
+        </shape>
+    </item>
+
+    <!-- 主体渐变 -->
+    <item
+        android:left="0dp"
+        android:top="0dp"
+        android:right="0dp"
+        android:bottom="2dp">
+        <shape android:shape="oval">
+            <gradient
+                android:angle="135"
+                android:startColor="#FF8A65"
+                android:endColor="#FF6B6B"
+                android:type="linear" />
+            <size android:width="48dp" android:height="48dp" />
+        </shape>
+    </item>
+
+    <!-- 内发光高光（左上角） -->
+    <item
+        android:left="6dp"
+        android:top="6dp"
+        android:right="14dp"
+        android:bottom="14dp">
+        <shape android:shape="oval">
+            <solid android:color="#33FFFFFF" />
+        </shape>
+    </item>
+</layer-list>

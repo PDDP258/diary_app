@@ -108,14 +108,15 @@ class MyApp extends StatelessWidget {
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
-          return DebugLogOverlay(
-            child: MaterialApp(
-              title: '小记日记',
-              debugShowCheckedModeBanner: false,
-              theme: themeProvider.theme,
-              home: const SplashScreen(),
-              navigatorObservers: [mainScreenRouteObserver],
-            ),
+          return MaterialApp(
+            title: '小记日记',
+            debugShowCheckedModeBanner: false,
+            theme: themeProvider.theme,
+            home: const SplashScreen(),
+            navigatorObservers: [mainScreenRouteObserver],
+            builder: (context, child) {
+              return DebugLogOverlay(child: child!);
+            },
           );
         },
       ),

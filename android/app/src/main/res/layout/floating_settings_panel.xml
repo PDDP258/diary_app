@@ -20,7 +20,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="浮窗设置"
-            android:textColor="#1A1A1A"
+            android:textColor="#3D2B1F"
             android:textSize="18sp"
             android:textStyle="bold" />
 
