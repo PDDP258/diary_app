@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config/design_tokens.dart';
 
 /// 页面过渡动画集合
 ///
@@ -64,7 +65,7 @@ class DiaryListItemTransition extends StatelessWidget {
         curve: Interval(
           delay.clamp(0.0, 0.6),
           1.0,
-          curve: const Cubic(0.16, 1, 0.3, 1), // Ease-out
+          curve: PrimitiveAnimation.easeOutExpo,
         ),
       ),
     );
@@ -106,7 +107,7 @@ class CardExpandTransition extends StatelessWidget {
     return AnimatedBuilder(
       animation: animation,
       builder: (context, child) {
-        final easeOut = const Cubic(0.16, 1, 0.3, 1).transform(animation.value);
+        final easeOut = PrimitiveAnimation.easeOutExpo.transform(animation.value);
 
         return ClipRect(
           child: Opacity(
@@ -185,7 +186,7 @@ class BottomSheetTransition extends StatelessWidget {
       animation: animation,
       builder: (context, child) {
         // Ease-out 进入
-        final easeOut = const Cubic(0.16, 1, 0.3, 1).transform(animation.value);
+        final easeOut = PrimitiveAnimation.easeOutExpo.transform(animation.value);
 
         return Transform.translate(
           offset: Offset(0, (1 - easeOut) * 100),
@@ -251,7 +252,7 @@ class SkeletonLoadingTransition extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 300),
+      duration: PrimitiveAnimation.normal,
       switchInCurve: Curves.easeOut,
       switchOutCurve: Curves.easeIn,
       transitionBuilder: (child, animation) {

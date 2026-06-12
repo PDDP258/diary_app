@@ -180,6 +180,7 @@ Get-Content file.dart -Encoding UTF8 | Set-Content file.dart -Encoding UTF8
   - 应用重启后自动恢复浮窗
   - 官网升级温暖手账风格（`DESIGN_SYSTEM.md`）
   - App 主题背景统一为 `#FDF8F0`，新增品牌色 `#C4956A`
+  - 动画原则同步：官网 ScrollReveal stagger/方向/hover 微交互 → App 端 `ScrollReveal`、`InteractiveButton`、`PageTransitions` 统一使用 `PrimitiveAnimation` 设计令牌
 
 - **v1.22.0** (2026-05-04) - 自言自语数据库彻底独立
 - **v1.21.0** (2026-04-22) - PDF 导出修复 + 自言自语重构 + 速记功能

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../config/app_theme.dart';
+import '../config/design_tokens.dart';
 import '../services/sound_service.dart';
 
 /// 交互增强按钮 - 带缩放、涟漪、音效反馈
@@ -52,18 +53,18 @@ class _InteractiveButtonState extends State<InteractiveButton>
     super.initState();
     // 150ms 快速反馈 - 符合 Skill 的微交互时间标准
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 150),
+      duration: PrimitiveAnimation.fast,
       vsync: this,
     );
-    
-    // 使用 spring 动画 - 符合 Skill 的自然物理原则
+
+    // 使用 spring 动画 - 符合 Interaction Design Skill 的自然物理原则
     _scaleAnimation = Tween<double>(
       begin: 1.0,
       end: widget.scaleFactor,
     ).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Cubic(0.34, 1.56, 0.64, 1), // Spring overshoot
+        curve: PrimitiveAnimation.spring,
       ),
     );
   }
@@ -193,13 +194,13 @@ class _InteractiveIconButtonState extends State<InteractiveIconButton>
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 150),
+      duration: PrimitiveAnimation.fast,
       vsync: this,
     );
     _scaleAnimation = Tween<double>(begin: 1.0, end: 0.85).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: Curves.easeOut,
+        curve: PrimitiveAnimation.easeOutExpo,
       ),
     );
   }

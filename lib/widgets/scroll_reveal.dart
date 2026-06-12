@@ -1,34 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+import '../config/design_tokens.dart';
 
 /// 滚动揭示动画组件
-/// 参考 pddp258.github.io/PROJECT_INTRO ScrollReveal 实现
 ///
-/// 使用 IntersectionObserver 理念，当组件进入视口 15% 时触发
-/// opacity: 0→1, translateY: 30→0, 过渡 0.3s ease-out（默认无延迟）
+/// 基于 Interaction Design Skill 与 Visual Design Foundations：
+/// - 进入视口时触发 reveal 动画
+/// - 使用统一设计令牌：时长、缓动、距离
+/// - 支持多方向 reveal 与 stagger 延迟
 ///
 /// 用法:
 /// ```dart
 /// ScrollReveal(
-///   delay: const Duration(milliseconds: 200),
+///   delay: PrimitiveAnimation.normal,
+///   direction: AxisDirection.up,
 ///   child: MyWidget(),
 /// )
 /// ```
 class ScrollReveal extends StatefulWidget {
-  /// 子组件
   final Widget child;
 
   /// 延迟触发时间
   final Duration delay;
 
-  /// 初始 Y 轴偏移（默认 30px）
-  final double offsetY;
+  /// 初始偏移距离（默认 28 逻辑像素）
+  final double offset;
 
   /// 动画时长
   final Duration duration;
 
   /// 动画曲线
   final Curve curve;
+
+  /// 动画方向：up/down/left/right
+  final AxisDirection direction;
 
   /// 可视阈值 (0.0 - 1.0)
   final double visibleFraction;
@@ -40,10 +45,11 @@ class ScrollReveal extends StatefulWidget {
     super.key,
     required this.child,
     this.delay = Duration.zero,
-    this.offsetY = 30.0,
-    this.duration = const Duration(milliseconds: 300),
-    this.curve = const Cubic(0.16, 1, 0.3, 1),
-    this.visibleFraction = 0.15,
+    this.offset = 28.0,
+    this.duration = PrimitiveAnimation.normal,
+    this.curve = PrimitiveAnimation.easeOutExpo,
+    this.direction = AxisDirection.up,
+    this.visibleFraction = 0.12,
     this.once = true,
   });
 
@@ -55,7 +61,7 @@ class _ScrollRevealState extends State<ScrollReveal>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _opacity;
-  late final Animation<double> _translateY;
+  late final Animation<Offset> _translate;
   bool _triggered = false;
 
   @override
@@ -65,10 +71,15 @@ class _ScrollRevealState extends State<ScrollReveal>
       vsync: this,
       duration: widget.duration,
     );
+
     _opacity = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+      CurvedAnimation(parent: _controller, curve: widget.curve),
     );
-    _translateY = Tween<double>(begin: widget.offsetY, end: 0.0).animate(
+
+    _translate = Tween<Offset>(
+      begin: _getInitialOffset(widget.direction, widget.offset),
+      end: Offset.zero,
+    ).animate(
       CurvedAnimation(parent: _controller, curve: widget.curve),
     );
   }
@@ -103,7 +114,7 @@ class _ScrollRevealState extends State<ScrollReveal>
           return Opacity(
             opacity: _opacity.value,
             child: Transform.translate(
-              offset: Offset(0, _translateY.value),
+              offset: _translate.value,
               child: child,
             ),
           );
@@ -111,5 +122,18 @@ class _ScrollRevealState extends State<ScrollReveal>
         child: widget.child,
       ),
     );
+  }
+}
+
+Offset _getInitialOffset(AxisDirection direction, double distance) {
+  switch (direction) {
+    case AxisDirection.up:
+      return Offset(0, distance);
+    case AxisDirection.down:
+      return Offset(0, -distance);
+    case AxisDirection.right:
+      return Offset(-distance, 0);
+    case AxisDirection.left:
+      return Offset(distance, 0);
   }
 }
