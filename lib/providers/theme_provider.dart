@@ -88,13 +88,13 @@ class ThemeScheme {
 
   // 温馨米（默认）- 温暖舒适的米色调
   static const ThemeScheme warmBeige = ThemeScheme(
-    primaryColor: Color(0xFFE8B4B8),      // 温暖玫瑰粉
-    backgroundColor: Color(0xFFFDF8F3),  // 温暖米白
+    primaryColor: Color(0xFFC4956A),      // 暖木棕（品牌主色）
+    backgroundColor: Color(0xFFFDF8F0),  // 暖纸白（与官网一致）
     cardColor: Colors.white,
     lightColor: Color(0xFFF5E6D3),       // 浅米色
-    darkColor: Color(0xFFD4A5A5),        // 深玫瑰
-    textDarkColor: Color(0xFF5C4B51),    // 温暖深棕
-    textMediumColor: Color(0xFF8B7B7B),  // 中灰棕
+    darkColor: Color(0xFFA67B52),        // 深木棕
+    textDarkColor: Color(0xFF2C241F),    // 墨色
+    textMediumColor: Color(0xFF8A7D6F),  // 暖灰
     textLightColor: Color(0xFFB8A8A8),   // 浅灰棕
     name: '温馨米',
   );
