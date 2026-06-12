@@ -13,6 +13,7 @@ import '../providers/diary_provider.dart';
 import '../providers/theme_provider.dart';
 import '../services/badge_service.dart';
 import '../services/cloud_sync_service.dart';
+import '../widgets/code_comment.dart';
 import '../services/milestone_service.dart';
 import '../services/gacha_service.dart';
 import '../utils/platform_helpers.dart';
@@ -950,30 +951,34 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
               children: [
                 // 日期卡片
                 _buildDateCard(),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
 
+                CodeComment(text: '心情'),
                 // 心情选择 - 使用新的动画选择器
                 _buildAnimatedMoodSelector(),
                 // 双心情按钮
                 _buildSecondMoodButton(AppTheme.schemeOf(context)),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
 
+                CodeComment(text: '标签'),
                 // 标签选择
                 _buildTagSelector(),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
 
                 // 标题输入
                 _buildTitleInput(),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
 
+                CodeComment(text: '内容'),
                 // 语音日记按钮
                 _buildVoiceRecorderButton(),
                 const SizedBox(height: 16),
 
                 // 内容输入
                 _buildContentInput(),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
 
+                CodeComment(text: '图片'),
                 // 图片区域
                 _buildImageSection(),
               ],

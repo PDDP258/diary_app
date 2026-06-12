@@ -1,6 +1,6 @@
 # 小记日记 - AI协作指南
 
-版本: 1.25.0 (2026-05-13) | 技术栈: Flutter 3.x + Provider + SQLite
+版本: 1.25.0 (2026-06-09) | 技术栈: Flutter 3.x + Provider + SQLite
 
 > **注意**：本文档版本号仅用于 AI 协作记录，软件实际版本号以 `pubspec.yaml` 和软件内显示为准。
 
@@ -72,7 +72,65 @@ return Container(color: scheme.backgroundColor);
 // ❌ 禁止硬编码 Colors.white
 ```
 
-### 4. 编码处理（⚠️ 重要）
+## 设计系统
+
+### 设计语言（Dev-Aesthetic 代码诗意风格）
+
+参考网站：https://pddp258.github.io/PROJECT_INTRO
+
+| 概念 | 实现 |
+|------|------|
+| `//` 代码注释引导 | `CodeComment` 组件（profile、write_diary、timeline、self_talk） |
+| 双色对比 | 奶油纸白 `#FDF6E3` + 深邃黑 `#0D0E10` |
+| 陶土红点缀 | `AppTheme.terraPink` `#E88D8D` |
+| 宋体标题 + 等宽装饰 | Noto Serif SC VF（本地） + 系统等宽字体 |
+
+### 页面组件集成
+
+| 页面 | 集成组件 | 效果 |
+|------|---------|------|
+| profile_screen | CodeComment（8处）+ bentoDecoration（9处） | 区块代码注释引导 + Bento Box卡片 |
+| write_diary_screen | CodeComment（4处：心情/标签/内容/图片） | 写日记区块代码注释引导 |
+| timeline_screen | ScrollReveal（第11+条日记）+ CodeComment | 滚动渐入动画 |
+| self_talk_screen | GlassPanel（底部输入栏）+ CodeComment | 毛玻璃输入区 |
+| custom_bottom_nav | BackdropFilter（已有） | 毛玻璃底部导航 ✅ |
+
+### 字体方案（⚠️ 国内网络）
+
+| 用途 | 字体 | 来源 |
+|------|------|------|
+| 中文标题 | Noto Serif SC VF | 本地 `assets/fonts/NotoSerifCJKsc-VF.ttf` |
+| 正文 | 系统默认无衬线 | 系统内置 |
+| 代码装饰 | 系统默认等宽 | 系统内置 |
+
+**禁止使用 `google_fonts` 包**：国内无法访问 Google Fonts API，所有字体必须本地化或使用系统字体。
+
+### 动画系统
+
+| 层级 | 时长 | 用途 |
+|------|------|------|
+| `microDuration` | 100ms | 按钮按压微交互 |
+| `quickDuration` | 200ms | hover 快速反馈 |
+| `normalDuration` | 300ms | 路由切换标准过渡 |
+| `smoothDuration` | 500ms | 页面进入平滑动画 |
+| `elaborateDuration` | 800ms | 3D视差复杂动画 |
+
+**动画曲线**：`smoothDecel`(Cubic 0.16,1,0.3,1) / `bouncyCurve` / `gentleCurve` / `smoothCurve`
+
+### 玻璃态装饰
+
+```dart
+// 毛玻璃面板 - 弹窗/浮窗
+AppTheme.glassDecoration(blur: 15.0, borderRadius: 20.0)
+
+// 深色毛玻璃 - Hero/深色区域
+AppTheme.darkGlassDecoration(borderRadius: 16.0)
+
+// Bento Box 卡片
+AppTheme.bentoDecoration(color: scheme.cardColor, borderRadius: 20.0)
+```
+
+### 编码处理（⚠️ 重要）
 
 文件操作必须使用 UTF-8：
 ```dart
@@ -90,7 +148,7 @@ lib/
 ├── services/     # 数据库、加密、云同步、PDF导出、徽章、图片缓存、浮窗、备份
 ├── providers/    # 状态管理（DiaryProvider, ThemeProvider, SettingsProvider...）
 ├── models/       # 数据模型（Diary, Mood, Tag, Anniversary, QuickNote, SelfTalkMessage...）
-├── widgets/      # 组件（贴图覆盖层、音效按钮、浮窗UI...）
+├── widgets/      # 组件（贴图覆盖层、音效按钮、浮窗UI、ScrollReveal、GlassPanel、CodeComment、BentoCard）
 ├── utils/        # 工具类（平台图片、图片缓存）
 └── config/       # 主题配置
 ```
@@ -101,15 +159,22 @@ lib/
 - **visual-design-foundations** (`.kimi/skills/visual-design-foundations/`)：8-point网格、字体层级、色彩系统
 - **design-system-patterns** (`.kimi/skills/design-system-patterns/`)：Design Tokens、主题切换、组件变体
 - **react-native-design** (`.kimi/skills/react-native-design/`)：SafeArea、手势动画、性能优化
+- **ui-ux-pro-max** (`.trae-cn/skills/ui-ux-pro-max/`)：UI/UX设计智能、配色方案、排版层级
 
 ### 可用组件
 
 | 组件 | 文件 | 用途 |
 |------|------|------|
-| `InteractiveButton` | `lib/widgets/interactive_button.dart` | 带缩放反馈的按钮 |
-| `PageTransitions` | `lib/widgets/page_transitions.dart` | 页面转场动画 |
+| `InteractiveButton` | `lib/widgets/interactive_button.dart` | 带缩放+触觉+音效的按钮 |
+| `InteractiveIconButton` | `lib/widgets/interactive_button.dart` | 带缩放反馈的图标按钮 |
+| `PageTransitions` | `lib/widgets/page_transitions.dart` | 页面转场动画（7种过渡） |
 | `SwipeableListItem` | `lib/widgets/swipeable_list_item.dart` | 可滑动列表项 |
 | `SkeletonLoading` | `lib/widgets/skeleton_loading.dart` | 骨架屏加载效果 |
+| `ScrollReveal` | `lib/widgets/scroll_reveal.dart` | 滚动揭示动画（visibility_detector） |
+| `GlassPanel` | `lib/widgets/glass_panel.dart` | 毛玻璃容器（BackdropFilter） |
+| `CodeComment` | `lib/widgets/code_comment.dart` | 代码注释式标题（`// ` 前缀） |
+| `BentoCard` | `lib/widgets/bento_card.dart` | Bento Box 模块化卡片（6种尺寸） |
+| `BentoGrid` | `lib/widgets/bento_card.dart` | Bento Box 网格布局 |
 
 ## 功能速查
 
@@ -242,6 +307,23 @@ with open('lib/screens/file.dart', 'r', encoding='utf-8') as f: content = f.read
 预防措施：使用 Git 提交后再修改；优先使用 IDE 替换功能；修改后立即编译验证。
 
 ## 版本记录
+
+- **v1.25.0** (2026-06-09) - UI 设计系统全面升级 + 页面融合:
+  - **设计语言**：融合参考网站 (pddp258.github.io/PROJECT_INTRO) 的 Dev-Aesthetic 代码诗意风格
+  - **色彩系统**：主色 `#6DD5C0`，陶土粉 `#E88D8D`，奶油纸白 `#FDF6E3`，深邃黑 `#0D0E10`
+  - **动画系统**：5级时长层级 + 4条动画曲线（smoothDecel/bouncy/gentle/smooth）
+  - **新增组件**：ScrollReveal（滚动揭示）、GlassPanel（毛玻璃）、CodeComment（代码注释标题）、BentoCard/BentoGrid（Bento Box卡片）
+  - **新增依赖**：`visibility_detector: ^0.4.0`
+  - **移除依赖**：`google_fonts`（国内网络不可用）
+  - **字体决策**：全部使用系统默认字体 + 本地 Noto Serif SC VF，不依赖 Google Fonts
+  - **页面融合**（本轮完成）：
+    - `profile_screen`：8处 `CodeComment` 区块标题 + 9处 `bentoDecoration` 卡片
+    - `write_diary_screen`：4处 `CodeComment` 区块标题（心情/标签/内容/图片）
+    - `timeline_screen`：`ScrollReveal` 包裹第11+条日记项实现滚动渐入
+    - `self_talk_screen`：`GlassPanel` 毛玻璃底部输入栏
+    - `custom_bottom_nav`：已有 `BackdropFilter` 实现，无需修改
+  - **文档**：`软件说明书.md` 更新为产品官网设计需求 + UI优化方案
+  - **质量**：dart analyze 零新增错误，flutter build apk --release 构建成功（88.0MB）
 
 - **v1.23.0** (2026-05-04) - 速记浮窗系统 + 外部存储备份:
   - 计划文件：`C:\Users\PDXX\.kimi\plans\quasar-jessica-cruz-kid-flash.md`

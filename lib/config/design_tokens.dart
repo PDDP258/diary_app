@@ -106,6 +106,18 @@ class PrimitiveColors {
   static const Color warm700 = Color(0xFF44403C);
   static const Color warm800 = Color(0xFF292524);
   static const Color warm900 = Color(0xFF1C1917);
+
+  // 暖木棕（品牌强调色，与官网木质托盘风格一致）
+  static const Color wood50 = Color(0xFFFDF8F0);
+  static const Color wood100 = Color(0xFFF5EFE6);
+  static const Color wood200 = Color(0xFFE8E0D4);
+  static const Color wood300 = Color(0xFFD4AF82);
+  static const Color wood400 = Color(0xFFC4956A);
+  static const Color wood500 = Color(0xFFA67B52);
+  static const Color wood600 = Color(0xFF8B6543);
+  static const Color wood700 = Color(0xFF6E4F35);
+  static const Color wood800 = Color(0xFF523B28);
+  static const Color wood900 = Color(0xFF36271B);
 }
 
 /// 间距原始值 - 8pt 网格系统
@@ -155,6 +167,26 @@ class PrimitiveTypography {
   static const double tight = 1.2;    // 标题
   static const double normal = 1.5;   // 正文
   static const double relaxed = 1.7;  // 阅读文本
+}
+
+/// 字体家族令牌（双字体系统 + 代码装饰）
+/// - Noto Serif SC VF: 中文衬线标题（本地资源，已内置）
+/// - System Default: 正文使用系统默认字体（无需网络）
+/// - System Mono: 代码装饰使用系统等宽字体（无需网络）
+///
+/// 注：由于国内无法访问 Google Fonts API，不使用 google_fonts 包。
+/// JetBrains Mono / Inter 改用系统默认等宽/无衬线字体作 fallback。
+class FontFamilies {
+  FontFamilies._();
+
+  /// 中文衬线标题字体（本地资源 NotoSerifCJKsc-VF.ttf）
+  static const String serifHeading = 'NotoSerifSC';
+  
+  /// 英文/数字正文字体（系统默认无衬线）
+  static const String sansBody = 'sans-serif';
+  
+  /// 等宽代码装饰字体（系统默认等宽）
+  static const String monoCode = 'monospace';
 }
 
 /// 圆角原始值

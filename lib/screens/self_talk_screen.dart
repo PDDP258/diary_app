@@ -8,6 +8,8 @@ import '../providers/theme_provider.dart';
 import '../models/self_talk_message.dart';
 import '../models/self_talk_task.dart';
 import '../services/self_talk_service.dart';
+import '../widgets/glass_panel.dart';
+import '../widgets/code_comment.dart';
 import '../services/sound_service.dart';
 import '../widgets/smart_notifications.dart';
 
@@ -654,19 +656,15 @@ class _SelfTalkScreenState extends State<SelfTalkScreen> {
     final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
     final bool isAlterEgo = _senderType == SelfTalkSenderType.alterEgo;
 
-    return AnimatedContainer(
+    return GlassPanel(
+      borderRadius: 0,
+      dark: Theme.of(context).brightness == Brightness.dark,
+      child: AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       padding: EdgeInsets.fromLTRB(16, 10, 16, 10 + (bottomPadding > 0 ? 0 : 8)),
       decoration: BoxDecoration(
-        color: scheme.cardColor,
-        border: Border(top: BorderSide(color: scheme.dividerColor)),
-        boxShadow: [
-          BoxShadow(
-            color: scheme.shadowColor.withValues(alpha: 0.1),
-            blurRadius: 12,
-            offset: const Offset(0, -4),
-          ),
-        ],
+        color: scheme.cardColor.withValues(alpha: 0.85),
+        border: Border(top: BorderSide(color: scheme.dividerColor.withValues(alpha: 0.3))),
       ),
       child: SafeArea(
         top: false,
@@ -777,7 +775,8 @@ class _SelfTalkScreenState extends State<SelfTalkScreen> {
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildSenderButton({

@@ -20,6 +20,7 @@ import '../services/icon_theme_service.dart';
 import '../services/sound_service.dart';
 // 技能整合: 导入新组件和工具
 import '../widgets/widgets.dart';
+import '../widgets/code_comment.dart';
 import '../utils/utils.dart';
 import 'app_lock_screen.dart';
 import 'backup_manager_screen.dart';
@@ -112,7 +113,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (newValue) {
       // 1. 请求通知权限（前台服务通知需要，Android 13+）
-      final hasNotif = await FloatingPermissionService.requestNotificationPermission();
+      final hasNotif =
+          await FloatingPermissionService.requestNotificationPermission();
       if (!hasNotif) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -120,9 +122,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           );
         }
       }
-      
+
       // 2. 请求悬浮窗权限并显示
-      final hasOverlay = await FloatingPermissionService.checkOverlayPermission();
+      final hasOverlay =
+          await FloatingPermissionService.checkOverlayPermission();
       if (hasOverlay) {
         final success = await FloatingWindowService.showFloatingButton();
         if (mounted) {
@@ -135,9 +138,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
         // 3. 请求电池优化白名单（非阻塞，失败仅提示）
         if (success) {
-          final hasBattery = await FloatingPermissionService.checkBatteryOptimizationWhitelist();
+          final hasBattery = await FloatingPermissionService
+              .checkBatteryOptimizationWhitelist();
           if (!hasBattery) {
-            final batteryGranted = await FloatingPermissionService.requestBatteryOptimizationWhitelist();
+            final batteryGranted = await FloatingPermissionService
+                .requestBatteryOptimizationWhitelist();
             if (mounted && !batteryGranted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -212,7 +217,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             // 标题
             Padding(
-              padding: const EdgeInsets.fromLTRB(8, 16, 8, 24),
+              padding: const EdgeInsets.fromLTRB(8, 16, 8, 4),
+              child: CodeComment(text: '个人中心'),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 0, 8, 24),
               child: Text(
                 '我的',
                 style: TextStyle(
@@ -241,6 +250,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 24),
 
             // 数据管理
+            CodeComment(text: '数据管理'),
+            const SizedBox(height: 4),
             _buildMenuGroup([
               _MenuItem(
                 icon: Icons.storage_outlined,
@@ -251,7 +262,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             const SizedBox(height: 16),
 
-            // 主题配色
+            CodeComment(text: '主题配色'),
+            const SizedBox(height: 4),
             _buildMenuGroup([
               _MenuItem(
                 icon: Icons.palette_outlined,
@@ -314,6 +326,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 16),
 
             // 应用锁
+            CodeComment(text: '隐私安全'),
+            const SizedBox(height: 4),
             _buildMenuGroup([
               _MenuItem(
                 icon: Icons.lock_outline,
@@ -336,6 +350,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 16),
 
             // 时间胶囊
+            CodeComment(text: '时间胶囊'),
+            const SizedBox(height: 4),
             _buildMenuGroup([
               _MenuItem(
                 icon: Icons.mark_email_unread_outlined,
@@ -348,6 +364,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 16),
 
             // 个性化设置
+            CodeComment(text: '个性化设置'),
+            const SizedBox(height: 4),
             _buildMenuGroup([
               _MenuItem(
                 icon: Icons.sentiment_satisfied_outlined,
@@ -370,6 +388,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 16),
 
             // 关于 - 彩蛋
+            CodeComment(text: '关于'),
+            const SizedBox(height: 4),
             _buildMenuGroup([
               _MenuItem(
                 icon: Icons.info_outline,
@@ -394,10 +414,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildBadgeSection(ThemeScheme scheme) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
+      decoration: AppTheme.bentoDecoration(
         color: scheme.cardColor,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: AppTheme.softShadow,
+        borderRadius: 20.0,
+        elevated: true,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1510,10 +1530,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (!context.mounted) return;
 
-    Widget buildThemeCard(ThemeScheme colorScheme, {String? label, String? emoji}) {
-      final isSelected =
-          themeProvider.currentScheme.primaryColor.value ==
-              colorScheme.primaryColor.value;
+    Widget buildThemeCard(ThemeScheme colorScheme,
+        {String? label, String? emoji}) {
+      final isSelected = themeProvider.currentScheme.primaryColor.value ==
+          colorScheme.primaryColor.value;
       return GestureDetector(
         onTap: () async {
           HapticFeedback.mediumImpact();
@@ -1623,9 +1643,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                color: isSelected
-                    ? scheme.primaryColor
-                    : scheme.textMediumColor,
+                color:
+                    isSelected ? scheme.primaryColor : scheme.textMediumColor,
               ),
             ),
           ],
@@ -1671,9 +1690,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Wrap(
                     spacing: 12,
                     runSpacing: 16,
-                    children: presetSchemes
-                        .map((s) => buildThemeCard(s))
-                        .toList(),
+                    children:
+                        presetSchemes.map((s) => buildThemeCard(s)).toList(),
                   ),
                   if (unlockedThemeIds.isNotEmpty) ...[
                     const SizedBox(height: 24),
@@ -1695,12 +1713,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         if (themeColors == null) {
                           return const SizedBox.shrink();
                         }
-                        final themeName =
-                            GachaService.profileThemeShop[themeId]?['name'] ??
-                                '特殊主题';
-                        final preview =
-                            GachaService.profileThemeShop[themeId]?['preview'] ??
-                                '🎨';
+                        final themeName = GachaService.profileThemeShop[themeId]
+                                ?['name'] ??
+                            '特殊主题';
+                        final preview = GachaService.profileThemeShop[themeId]
+                                ?['preview'] ??
+                            '🎨';
                         final ts = ThemeScheme(
                           primaryColor: Color(themeColors['primary'] as int),
                           backgroundColor:
@@ -1710,8 +1728,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               : Colors.white,
                           lightColor: Color(themeColors['light'] as int),
                           darkColor: Color(themeColors['dark'] as int),
-                          textDarkColor:
-                              Color(themeColors['textDark'] as int),
+                          textDarkColor: Color(themeColors['textDark'] as int),
                           textMediumColor:
                               Color(themeColors['textMedium'] as int),
                           textLightColor:
@@ -2226,10 +2243,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildMenuGroup(List<_MenuItem> items, ThemeScheme scheme) {
     return Container(
-      decoration: BoxDecoration(
+      decoration: AppTheme.bentoDecoration(
         color: scheme.cardColor,
-        borderRadius: BorderRadius.circular(AppTheme.radius16),
-        boxShadow: AppTheme.softShadow,
+        borderRadius: 16.0,
       ),
       child: Column(
         children: items.asMap().entries.map((entry) {
@@ -2973,7 +2989,8 @@ class DebugScreen extends StatelessWidget {
       }
 
       if (context.mounted) {
-        context.showSuccess('✅ 已解锁全部 ${allBadges.length} 个徽章（新增: $unlockedCount 个）');
+        context.showSuccess(
+            '✅ 已解锁全部 ${allBadges.length} 个徽章（新增: $unlockedCount 个）');
       }
     } catch (e) {
       if (context.mounted) {
@@ -2983,22 +3000,31 @@ class DebugScreen extends StatelessWidget {
   }
 
   Widget _buildSectionTitle(String title, ThemeScheme scheme) {
-    return Text(
-      title,
-      style: TextStyle(
-        fontSize: 20,
-        fontWeight: FontWeight.bold,
-        color: scheme.textDarkColor,
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CodeComment(
+          text: title,
+          color: AppTheme.codeComment,
+          padding: const EdgeInsets.only(bottom: 4),
+        ),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: scheme.textDarkColor,
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildCard(List<Widget> children, ThemeScheme scheme) {
     return Container(
-      decoration: BoxDecoration(
+      decoration: AppTheme.bentoDecoration(
         color: scheme.cardColor,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: AppTheme.softShadow,
+        borderRadius: 16.0,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

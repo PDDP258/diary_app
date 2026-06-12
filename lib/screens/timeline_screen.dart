@@ -10,6 +10,8 @@ import '../providers/settings_provider.dart';
 import '../providers/theme_provider.dart';
 import '../utils/platform_helpers.dart';
 import '../widgets/widgets.dart';
+import '../widgets/code_comment.dart';
+import '../widgets/scroll_reveal.dart';
 import '../services/database_service.dart';
 import 'diary_detail_screen.dart';
 import 'write_diary_screen.dart';
@@ -85,7 +87,8 @@ class _TimelineScreenState extends State<TimelineScreen>
               ),
               ListTile(
                 leading: Icon(Icons.edit_outlined, color: scheme.primaryColor),
-                title: Text('编辑日记', style: TextStyle(color: scheme.textDarkColor)),
+                title:
+                    Text('编辑日记', style: TextStyle(color: scheme.textDarkColor)),
                 onTap: () {
                   Navigator.pop(context);
                   _editDiary(diary);
@@ -143,7 +146,9 @@ class _TimelineScreenState extends State<TimelineScreen>
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('删除', style: TextStyle(color: scheme.errorColor, fontWeight: FontWeight.bold)),
+            child: Text('删除',
+                style: TextStyle(
+                    color: scheme.errorColor, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -154,11 +159,13 @@ class _TimelineScreenState extends State<TimelineScreen>
         await DatabaseService.deleteDiary(diary.id!);
         if (mounted) {
           context.read<DiaryProvider>().loadDiaries();
-          ToastManager().show(context, message: '日记已删除', type: ToastType.success);
+          ToastManager()
+              .show(context, message: '日记已删除', type: ToastType.success);
         }
       } catch (e) {
         if (mounted) {
-          ToastManager().show(context, message: '删除失败：$e', type: ToastType.error);
+          ToastManager()
+              .show(context, message: '删除失败：$e', type: ToastType.error);
         }
       }
     }
@@ -245,8 +252,12 @@ class _TimelineScreenState extends State<TimelineScreen>
                                 );
                               }
 
-                              // 其他日记直接显示，不应用动画
-                              return _buildDiaryItem(diary, prevDiary, scheme);
+                              // 其他日记使用滚动揭示动画
+                              return ScrollReveal(
+                                key: ValueKey('diary_${diary.id}'),
+                                child:
+                                    _buildDiaryItem(diary, prevDiary, scheme),
+                              );
                             },
                           ),
                         ),
@@ -312,27 +323,27 @@ class _TimelineScreenState extends State<TimelineScreen>
                         ),
                       ),
                       child: customAvatarPath != null
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: Image.file(
-                              File(customAvatarPath),
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Center(
-                                  child: Text(
-                                    userEmoji,
-                                    style: const TextStyle(fontSize: 28),
-                                  ),
-                                );
-                              },
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Image.file(
+                                File(customAvatarPath),
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Center(
+                                    child: Text(
+                                      userEmoji,
+                                      style: const TextStyle(fontSize: 28),
+                                    ),
+                                  );
+                                },
+                              ),
+                            )
+                          : Center(
+                              child: Text(
+                                userEmoji,
+                                style: const TextStyle(fontSize: 28),
+                              ),
                             ),
-                          )
-                        : Center(
-                            child: Text(
-                              userEmoji,
-                              style: const TextStyle(fontSize: 28),
-                            ),
-                          ),
                     ),
                     const SizedBox(width: 14),
                     // 昵称和签名（上下关系）
@@ -409,7 +420,7 @@ class _TimelineScreenState extends State<TimelineScreen>
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const GachaScreen()),
+                          builder: (context) => const GachaScreen()),
                     );
                   },
                 ),
@@ -490,7 +501,8 @@ class _TimelineScreenState extends State<TimelineScreen>
             children: [
               Icon(icon,
                   size: 14,
-                  color: isPrimary ? scheme.primaryColor : scheme.textMediumColor),
+                  color:
+                      isPrimary ? scheme.primaryColor : scheme.textMediumColor),
               const SizedBox(width: 4),
               Text(
                 label,
@@ -715,8 +727,8 @@ class _TimelineScreenState extends State<TimelineScreen>
                               scheme.lightColor.withValues(alpha: 0.2),
                             ],
                           ),
-                          borderRadius: BorderRadius.circular(
-                              AppTheme.mediumRadius),
+                          borderRadius:
+                              BorderRadius.circular(AppTheme.mediumRadius),
                         ),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -740,175 +752,171 @@ class _TimelineScreenState extends State<TimelineScreen>
                         ),
                       ),
                       const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // 标题
-                                  if (diary.title != null &&
-                                      diary.title!.isNotEmpty)
-                                    Text(
-                                      diary.title!,
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                        color: scheme.textDarkColor,
-                                        letterSpacing: -0.3,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    )
-                                  else
-                                    Text(
-                                      '无标题',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                        color: scheme.textLightColor,
-                                      ),
-                                    ),
-                                  const SizedBox(height: 6),
-                                  // 心情表情
-                                  if (diary.moodEmoji != null)
-                                    Row(
-                                      children: [
-                                        Text(
-                                          diary.moodEmoji!,
-                                          style: const TextStyle(fontSize: 18),
-                                        ),
-                                        if (diary.moodName != null) ...[
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            diary.moodName!,
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: scheme.textMediumColor,
-                                            ),
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-                                ],
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // 标题
+                            if (diary.title != null && diary.title!.isNotEmpty)
+                              Text(
+                                diary.title!,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: scheme.textDarkColor,
+                                  letterSpacing: -0.3,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              )
+                            else
+                              Text(
+                                '无标题',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: scheme.textLightColor,
+                                ),
                               ),
-                            ),
-                            // 收藏标记
-                            if (diary.isFavorite)
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.red.withValues(alpha: 0.1),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.favorite_rounded,
-                                  color: Colors.red,
-                                  size: 18,
-                                ),
+                            const SizedBox(height: 6),
+                            // 心情表情
+                            if (diary.moodEmoji != null)
+                              Row(
+                                children: [
+                                  Text(
+                                    diary.moodEmoji!,
+                                    style: const TextStyle(fontSize: 18),
+                                  ),
+                                  if (diary.moodName != null) ...[
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      diary.moodName!,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: scheme.textMediumColor,
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
                           ],
                         ),
-
-                        // 内容
-                        if (diary.content != null && diary.content!.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 16),
-                            child: Text(
-                              diary.content!,
-                              style: TextStyle(
-                                fontSize: 15,
-                                color: scheme.textMediumColor,
-                                height: 1.6,
-                              ),
-                              maxLines: 3,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                      ),
+                      // 收藏标记
+                      if (diary.isFavorite)
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
                           ),
+                          child: const Icon(
+                            Icons.favorite_rounded,
+                            color: Colors.red,
+                            size: 18,
+                          ),
+                        ),
+                    ],
+                  ),
 
-                        // 图片预览
-                        if (diary.images != null && diary.images!.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 16),
-                            child: SizedBox(
+                  // 内容
+                  if (diary.content != null && diary.content!.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: Text(
+                        diary.content!,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: scheme.textMediumColor,
+                          height: 1.6,
+                        ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+
+                  // 图片预览
+                  if (diary.images != null && diary.images!.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: SizedBox(
+                        height: 100,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: diary.imageList.length.clamp(0, 4),
+                          itemBuilder: (context, index) {
+                            final imagePath = diary.imageList[index];
+                            return Container(
+                              margin: const EdgeInsets.only(right: 12),
+                              width: 100,
                               height: 100,
-                              child: ListView.builder(
-                                scrollDirection: Axis.horizontal,
-                                itemCount: diary.imageList.length.clamp(0, 4),
-                                itemBuilder: (context, index) {
-                                  final imagePath = diary.imageList[index];
-                                  return Container(
-                                    margin: const EdgeInsets.only(right: 12),
-                                    width: 100,
-                                    height: 100,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(
-                                          AppTheme.mediumRadius),
-                                      color: scheme.lightColor.withValues(alpha: 0.3),
-                                    ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(
-                                          AppTheme.mediumRadius),
-                                      child: imagePath.startsWith('assets/')
-                                          ? Image.asset(
-                                              imagePath,
-                                              fit: BoxFit.cover,
-                                              cacheWidth: 200,
-                                              errorBuilder: (context, error,
-                                                      stackTrace) =>
-                                                  Icon(Icons.image,
-                                                      color:
-                                                          scheme.primaryColor),
-                                            )
-                                          : PlatformImage(
-                                              path: imagePath,
-                                              width: 100,
-                                              height: 100,
-                                              fit: BoxFit.cover,
-                                              cacheWidth: 200,
-                                              cacheHeight: 200,
-                                            ),
-                                    ),
-                                  );
-                                },
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(
+                                    AppTheme.mediumRadius),
+                                color: scheme.lightColor.withValues(alpha: 0.3),
                               ),
-                            ),
-                          ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(
+                                    AppTheme.mediumRadius),
+                                child: imagePath.startsWith('assets/')
+                                    ? Image.asset(
+                                        imagePath,
+                                        fit: BoxFit.cover,
+                                        cacheWidth: 200,
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                                Icon(Icons.image,
+                                                    color: scheme.primaryColor),
+                                      )
+                                    : PlatformImage(
+                                        path: imagePath,
+                                        width: 100,
+                                        height: 100,
+                                        fit: BoxFit.cover,
+                                        cacheWidth: 200,
+                                        cacheHeight: 200,
+                                      ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
 
-                        // 底部信息
-                        Padding(
-                          padding: const EdgeInsets.only(top: 16),
-                          child: Row(
-                            children: [
-                              if (diary.images != null &&
-                                  diary.images!.isNotEmpty)
-                                _buildInfoChip(
-                                  Icons.image_outlined,
-                                  '${diary.imageList.length}张',
-                                  scheme,
-                                ),
-                              if (diary.weather != null) ...[
-                                if (diary.images != null &&
-                                    diary.images!.isNotEmpty)
-                                  const SizedBox(width: 8),
-                                _buildInfoChip(
-                                  Icons.wb_sunny_outlined,
-                                  diary.weather!,
-                                  scheme,
-                                ),
-                              ],
-                              const Spacer(),
-                              Text(
-                                '${diary.wordCount} 字',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: scheme.textLightColor.withValues(alpha: 0.8),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
+                  // 底部信息
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: Row(
+                      children: [
+                        if (diary.images != null && diary.images!.isNotEmpty)
+                          _buildInfoChip(
+                            Icons.image_outlined,
+                            '${diary.imageList.length}张',
+                            scheme,
+                          ),
+                        if (diary.weather != null) ...[
+                          if (diary.images != null && diary.images!.isNotEmpty)
+                            const SizedBox(width: 8),
+                          _buildInfoChip(
+                            Icons.wb_sunny_outlined,
+                            diary.weather!,
+                            scheme,
+                          ),
+                        ],
+                        const Spacer(),
+                        Text(
+                          '${diary.wordCount} 字',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: scheme.textLightColor.withValues(alpha: 0.8),
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
                     ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
