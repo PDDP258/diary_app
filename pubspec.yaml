@@ -1,7 +1,7 @@
 name: diary_app
 description: "一个支持日历视图的日记软件"
 publish_to: 'none'
-version: 1.3.0+130
+version: 2.1.0+2100
 
 environment:
   sdk: ^3.5.0
@@ -24,6 +24,8 @@ dependencies:
   http: ^1.2.0  # HTTP请求
   archive: ^3.4.10  # ZIP解压
   file_picker: ^8.1.0  # 文件选择
+  excel: ^4.0.6  # Excel 课表模板解析
+  charset_converter: ^2.3.0  # GBK CSV 兼容（Excel 中文导出）
   flutter_secure_storage: ^9.2.2  # 安全存储
   encrypt: ^5.0.3  # 数据加密
   crypto: ^3.0.3  # 哈希计算
@@ -39,8 +41,13 @@ dependencies:
   local_auth: ^3.0.1
   record: ^6.2.0
   flutter_local_notifications: ^17.2.4  # 浮窗系统通知
+  timezone: ^0.9.4  # 课表课前提醒调度
+  # 桌面小组件改为 App 模块内自绘 RemoteViews（android/app/src/main/kotlin/.../CourseWidget*）
+  # 不再依赖 glance_widget：它的 Calendar 模板布局/文案写死（"+N more events"），
+  # 且 updatePeriodMillis=0 → 跨天不刷新；它还有个「pub 缓存补丁会被 pub get 冲掉」的老坑
   device_info_plus: ^10.1.2  # 设备信息（权限判断用）
   visibility_detector: ^0.4.0  # 滚动可见性检测（ScrollReveal 组件）
+  flutter_inappwebview: ^6.1.5
 
 dev_dependencies:
   flutter_test:

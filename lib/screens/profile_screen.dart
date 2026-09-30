@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -27,6 +27,7 @@ import 'backup_manager_screen.dart';
 import 'badge_detail_screen.dart';
 import 'custom_sticker_screen.dart';
 import 'data_management_screen.dart';
+import 'course_schedule_screen.dart';
 import 'icon_theme_screen.dart';
 import 'main_screen.dart';
 import 'quick_notes_screen.dart';
@@ -262,6 +263,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             const SizedBox(height: 16),
 
+            CodeComment(text: '课表'),
+            const SizedBox(height: 4),
+            _buildMenuGroup([
+              _MenuItem(
+                icon: Icons.school_outlined,
+                title: '课程表',
+                subtitle: '管理课程、学期与上课提醒',
+                onTap: () => _navigateTo(const CourseScheduleScreen()),
+              ),
+            ], scheme),
+
+            const SizedBox(height: 16),
+
             CodeComment(text: '主题配色'),
             const SizedBox(height: 4),
             _buildMenuGroup([
@@ -394,7 +408,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _MenuItem(
                 icon: Icons.info_outline,
                 title: '关于日记',
-                subtitle: '版本 1.3.0',
+                subtitle: '版本 2.1.0',
                 onTap: () => _showAboutWithEasterEgg(context),
               ),
               _MenuItem(
@@ -2097,7 +2111,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '版本 1.3.0',
+                            '版本 2.1.0',
                             style: TextStyle(
                               fontSize: 14,
                               color: scheme.textLightColor,
@@ -2409,7 +2423,7 @@ class _AboutEasterEgg {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  '版本 1.3.0',
+                                  '版本 2.1.0',
                                   style: TextStyle(
                                     fontSize: 14,
                                     color: scheme.textLightColor,
@@ -2434,14 +2448,14 @@ class _AboutEasterEgg {
                         ),
                         const SizedBox(height: 12),
                         _buildVersionItem(
-                          'v1.3.0',
-                          '☁️ 云备份重构 + 🎨 UI优化',
+                          'v2.1.0',
+                          '📚 课表与桌面小组件',
                           [
-                            '云备份按密钥分文件夹存储，支持多设备共存',
-                            '新增云端备份扫描，可发现其他设备备份',
-                            '支持从其他设备备份导入（合并不覆盖）',
-                            '时间轴顶部卡片显示用户头像和签名',
-                            '扭蛋入口缩小至80%，整体布局优化',
+                            '课表网格 + 学期配置（周次/节次），支持单双周与冲突显示',
+                            '课表导入：Excel/CSV 模板、ICS、教务系统（金智 ehall，内置西农）',
+                            '教务系统在 App 内 WebView 登录后取数，内置桌面模式与自由缩放',
+                            '课前提醒采用滚动窗口调度（14 天），支持单双周',
+                            '今日课程桌面小组件：自绘 RemoteViews，开机/每日 11 点/每 30 分钟自动刷新',
                           ],
                           scheme,
                         ),
@@ -2888,7 +2902,7 @@ class DebugScreen extends StatelessWidget {
             ListTile(
               title: Text('版本号', style: TextStyle(color: scheme.textDarkColor)),
               trailing:
-                  Text('1.3.0', style: TextStyle(color: scheme.textLightColor)),
+                  Text('2.1.0', style: TextStyle(color: scheme.textLightColor)),
             ),
             Divider(
                 height: 1,

@@ -1,0 +1,13 @@
+{
+  "name": "diary-course-ocr-proxy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "小记日记课表图片识别中转云函数（腾讯云 SCF + 表格识别 V3）",
+  "main": "index.js",
+  "engines": {
+    "node": ">=16"
+  },
+  "dependencies": {
+    "tencentcloud-sdk-nodejs-ocr": "^4.0.900"
+  }
+}

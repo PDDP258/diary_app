@@ -1,7 +1,9 @@
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
+import 'dart:convert';
 import '../models/anniversary.dart';
+import '../models/course.dart';
 import '../models/diary.dart';
 import '../models/mood.dart';
 import '../models/tag.dart';
@@ -15,7 +17,7 @@ import 'encryption_service.dart';
 class DatabaseService {
   static Database? _database;
   static const String _databaseName = 'diary_app.db';
-  static const int _databaseVersion = 13; // 版本13：自言自语表添加 replied_to_sender_type 实现系统回复精确定位
+  static const int _databaseVersion = 15; // 版本15：学期配置增加固定课时模式与课时时长
 
   // 表名
   static const String tableDiaries = 'diaries';
@@ -26,6 +28,9 @@ class DatabaseService {
   static const String tableSelfTalkMessages = 'self_talk_messages';
   static const String tableSelfTalkTasks = 'self_talk_tasks';
   static const String tableQuickNotes = 'quick_notes';
+  static const String tableCourses = 'courses';
+  static const String tableCourseSessions = 'course_sessions';
+  static const String tableSemesterConfig = 'semester_config';
 
   // 获取数据库实例
   static Future<Database> get database async {
@@ -164,8 +169,48 @@ class DatabaseService {
       )
     ''');
 
+    await _createCourseTables(db);
+
     // 插入默认心情
     await _insertDefaultMoods(db);
+  }
+
+  /// 课表模块建表（v14）
+  static Future<void> _createCourseTables(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $tableCourses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        teacher TEXT,
+        color INTEGER DEFAULT 0,
+        note TEXT,
+        created_at TEXT
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $tableCourseSessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        course_id INTEGER NOT NULL,
+        day_of_week INTEGER NOT NULL,
+        start_section INTEGER NOT NULL,
+        section_count INTEGER DEFAULT 1,
+        weeks TEXT NOT NULL,
+        location TEXT,
+        FOREIGN KEY (course_id) REFERENCES $tableCourses (id) ON DELETE CASCADE
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $tableSemesterConfig (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        start_date TEXT NOT NULL,
+        total_weeks INTEGER DEFAULT 20,
+        sections TEXT NOT NULL,
+        is_active INTEGER DEFAULT 1,
+        fixed_duration_mode INTEGER DEFAULT 1,
+        class_minutes INTEGER DEFAULT 45
+      )
+    ''');
   }
 
   // 插入默认心情
@@ -316,6 +361,17 @@ class DatabaseService {
       } catch (e) {
         // 列已存在时忽略错误
       }
+    }
+    if (oldVersion < 14) {
+      // 版本14：新增课表模块
+      await _createCourseTables(db);
+    }
+    if (oldVersion < 15) {
+      // 版本15：学期配置增加固定课时模式与课时时长
+      await db.execute(
+          'ALTER TABLE $tableSemesterConfig ADD COLUMN fixed_duration_mode INTEGER DEFAULT 1');
+      await db.execute(
+          'ALTER TABLE $tableSemesterConfig ADD COLUMN class_minutes INTEGER DEFAULT 45');
     }
   }
 
@@ -1156,5 +1212,103 @@ class DatabaseService {
     final db = await database;
     final result = await db.rawQuery('SELECT COUNT(*) FROM $tableQuickNotes');
     return Sqflite.firstIntValue(result) ?? 0;
+  }
+
+  // ==================== 课表操作 ====================
+
+  /// 新增课程（连同其上课安排），返回课程 id
+  static Future<int> insertCourse(
+      Course course, List<CourseSession> sessions) async {
+    final db = await database;
+    late int courseId;
+    await db.transaction((txn) async {
+      final map = course.toMap()..remove('id');
+      courseId = await txn.insert(tableCourses, map);
+      for (final s in sessions) {
+        final sMap = s.copyWith(courseId: courseId).toMap()..remove('id');
+        await txn.insert(tableCourseSessions, sMap);
+      }
+    });
+    return courseId;
+  }
+
+  /// 更新课程并整体替换其上课安排
+  static Future<int> updateCourse(
+      Course course, List<CourseSession> sessions) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.update(tableCourses, course.toMap(),
+          where: 'id = ?', whereArgs: [course.id]);
+      await txn.delete(tableCourseSessions,
+          where: 'course_id = ?', whereArgs: [course.id]);
+      for (final s in sessions) {
+        final sMap = s.copyWith(courseId: course.id).toMap()..remove('id');
+        await txn.insert(tableCourseSessions, sMap);
+      }
+    });
+    return 1;
+  }
+
+  /// 删除课程及其全部上课安排
+  static Future<int> deleteCourse(int id) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete(tableCourseSessions,
+          where: 'course_id = ?', whereArgs: [id]);
+      await txn.delete(tableCourses, where: 'id = ?', whereArgs: [id]);
+    });
+    return 1;
+  }
+
+  /// 获取全部课程（已组装各自的上课安排）
+  static Future<List<Course>> getAllCourses() async {
+    final db = await database;
+    final courseMaps = await db.query(tableCourses, orderBy: 'created_at ASC');
+    final sessionMaps = await db.query(tableCourseSessions);
+    final sessions =
+        sessionMaps.map((m) => CourseSession.fromMap(m)).toList();
+    return courseMaps.map((m) {
+      final course = Course.fromMap(m);
+      return course.copyWith(
+          sessions:
+              sessions.where((s) => s.courseId == course.id).toList());
+    }).toList();
+  }
+
+  static Future<SemesterConfig?> getSemesterConfig() async {
+    final db = await database;
+    final maps = await db.query(tableSemesterConfig,
+        where: 'is_active = 1', limit: 1);
+    if (maps.isEmpty) return null;
+    return _semesterConfigFromRow(maps.first);
+  }
+
+  /// 保存学期配置（同时只有一个配置，整体覆盖）
+  static Future<void> saveSemesterConfig(SemesterConfig config) async {
+    final db = await database;
+    final row = _semesterConfigToRow(config);
+    await db.transaction((txn) async {
+      await txn.delete(tableSemesterConfig);
+      await txn.insert(tableSemesterConfig, row);
+    });
+  }
+
+  /// 学期配置行转换：sections 列表以 JSON 文本存储
+  static Map<String, dynamic> _semesterConfigToRow(SemesterConfig config) {
+    return {
+      'name': config.name,
+      'start_date': config.startDate,
+      'total_weeks': config.totalWeeks,
+      'sections': jsonEncode(config.sections.map((s) => s.toMap()).toList()),
+      'is_active': config.isActive ? 1 : 0,
+      'fixed_duration_mode': config.fixedDurationMode ? 1 : 0,
+      'class_minutes': config.classMinutes,
+    };
+  }
+
+  static SemesterConfig _semesterConfigFromRow(Map<String, dynamic> row) {
+    final mutable = Map<String, dynamic>.from(row);
+    mutable['sections'] = jsonDecode(row['sections'] as String? ?? '[]');
+    return SemesterConfig.fromMap(mutable);
   }
 }

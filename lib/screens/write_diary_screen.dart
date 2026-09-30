@@ -10,6 +10,7 @@ import '../models/diary.dart';
 import '../models/mood.dart';
 import '../services/database_service.dart';
 import '../providers/diary_provider.dart';
+import '../providers/course_provider.dart';
 import '../providers/theme_provider.dart';
 import '../services/badge_service.dart';
 import '../services/cloud_sync_service.dart';
@@ -31,6 +32,7 @@ import '../widgets/diary_interactions.dart';
 import '../widgets/animated_feedback.dart';
 import '../widgets/smart_notifications.dart';
 import '../utils/design_extensions.dart';
+import '../utils/week_parser.dart';
 import '../services/voice_diary_service.dart';
 import '../services/image_persistence_service.dart';
 import 'dart:io';
@@ -951,7 +953,11 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
               children: [
                 // 日期卡片
                 _buildDateCard(),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
+
+                // 当日课程卡片（课表联动）
+                _buildDayCoursesCard(scheme),
+                const SizedBox(height: 8),
 
                 CodeComment(text: '心情'),
                 // 心情选择 - 使用新的动画选择器
@@ -1091,6 +1097,76 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  /// 当日课程卡片（课表联动，T8）
+  /// 显示所选日期当天的课程；无课表数据或无课时自动隐藏
+  Widget _buildDayCoursesCard(ThemeScheme scheme) {
+    return Consumer<CourseProvider>(
+      builder: (context, provider, _) {
+        final semester = provider.semester;
+        if (semester == null) return const SizedBox.shrink();
+        final week = WeekParser.currentWeek(
+          semesterStart: DateTime.parse(semester.startDate),
+          totalWeeks: semester.totalWeeks,
+          date: _selectedDate,
+        );
+        if (week == null) return const SizedBox.shrink();
+        final courses = provider.coursesForDay(week, _selectedDate.weekday);
+        if (courses.isEmpty) return const SizedBox.shrink();
+
+        final sectionTimes = {
+          for (final s in semester.sections) s.section: s,
+        };
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: scheme.primaryColor.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.school_outlined,
+                      size: 15, color: scheme.primaryColor),
+                  const SizedBox(width: 6),
+                  Text('这一天有 ${courses.length} 节课 · 第 $week 周',
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: scheme.primaryColor)),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final item in courses)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Color(item.course.color)
+                            .withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '${sectionTimes[item.session.startSection]?.startTime ?? ''} ${item.course.name}',
+                        style: TextStyle(
+                            fontSize: 11, color: scheme.textDarkColor),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

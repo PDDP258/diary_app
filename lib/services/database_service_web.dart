@@ -8,6 +8,7 @@ import '../models/tag.dart';
 import '../models/self_talk_message.dart';
 import '../models/quick_note.dart';
 import '../models/self_talk_task.dart';
+import '../models/course.dart';
 import 'encryption_service.dart';
 
 /// Web 版本数据库服务（使用 SharedPreferences 持久化存储）
@@ -28,6 +29,9 @@ class DatabaseService {
   static const String _selfTalkMessagesKey = 'self_talk_messages_data';
   static const String _selfTalkTasksKey = 'self_talk_tasks_data';
   static const String _quickNotesKey = 'quick_notes_data';
+  static const String _coursesKey = 'courses_data';
+  static const String _courseSessionsKey = 'course_sessions_data';
+  static const String _semesterConfigKey = 'semester_config_data';
 
   static List<Diary> _diaries = [];
   static List<Mood> _moods = [];
@@ -38,6 +42,9 @@ class DatabaseService {
   static List<SelfTalkMessage> _selfTalkMessages = [];
   static List<SelfTalkTask> _selfTalkTasks = [];
   static List<QuickNote> _quickNotes = [];
+  static List<Course> _courses = [];
+  static List<CourseSession> _courseSessions = [];
+  static SemesterConfig? _semesterConfig;
   static int _diaryIdCounter = 1;
   static int _moodIdCounter = 1;
   static int _tagIdCounter = 1;
@@ -45,6 +52,8 @@ class DatabaseService {
   static int _selfTalkMessageIdCounter = 1;
   static int _selfTalkTaskIdCounter = 1;
   static int _quickNoteIdCounter = 1;
+  static int _courseIdCounter = 1;
+  static int _courseSessionIdCounter = 1;
   static bool _initialized = false;
   static SharedPreferences? _prefs;
 
@@ -188,6 +197,34 @@ class DatabaseService {
                   .reduce((a, b) => a > b ? a : b) +
               1;
         }
+      }
+
+      // 加载课程与上课安排（课表模块）
+      final coursesJson = _prefs?.getString(_coursesKey);
+      if (coursesJson != null) {
+        final List<dynamic> coursesList = jsonDecode(coursesJson);
+        _courses = coursesList.map((e) => Course.fromMap(e)).toList();
+        if (_courses.isNotEmpty) {
+          _courseIdCounter =
+              _courses.map((c) => c.id ?? 0).reduce((a, b) => a > b ? a : b) +
+                  1;
+        }
+      }
+      final sessionsJson = _prefs?.getString(_courseSessionsKey);
+      if (sessionsJson != null) {
+        final List<dynamic> sessionsList = jsonDecode(sessionsJson);
+        _courseSessions =
+            sessionsList.map((e) => CourseSession.fromMap(e)).toList();
+        if (_courseSessions.isNotEmpty) {
+          _courseSessionIdCounter = _courseSessions
+                  .map((s) => s.id ?? 0)
+                  .reduce((a, b) => a > b ? a : b) +
+              1;
+        }
+      }
+      final semesterJson = _prefs?.getString(_semesterConfigKey);
+      if (semesterJson != null) {
+        _semesterConfig = SemesterConfig.fromMap(jsonDecode(semesterJson));
       }
     } catch (e) {
       print('加载数据失败: $e');
@@ -1198,5 +1235,90 @@ class DatabaseService {
   static Future<int> getQuickNoteCount() async {
     await _ensureInitialized();
     return _quickNotes.length;
+  }
+
+  // ==================== 课表操作 ====================
+
+  static Future<void> _saveCourses() async {
+    final json = jsonEncode(_courses.map((c) => c.toMap()).toList());
+    await _prefs?.setString(_coursesKey, json);
+  }
+
+  static Future<void> _saveCourseSessions() async {
+    final json = jsonEncode(_courseSessions.map((s) => s.toMap()).toList());
+    await _prefs?.setString(_courseSessionsKey, json);
+  }
+
+  static Future<void> _saveSemesterConfig() async {
+    if (_semesterConfig == null) {
+      await _prefs?.remove(_semesterConfigKey);
+    } else {
+      await _prefs?.setString(
+          _semesterConfigKey, jsonEncode(_semesterConfig!.toMap()));
+    }
+  }
+
+  /// 新增课程（连同其上课安排），返回课程 id
+  static Future<int> insertCourse(
+      Course course, List<CourseSession> sessions) async {
+    await _ensureInitialized();
+    final courseId = _courseIdCounter++;
+    _courses.add(course.copyWith(id: courseId));
+    for (final s in sessions) {
+      _courseSessions
+          .add(s.copyWith(id: _courseSessionIdCounter++, courseId: courseId));
+    }
+    await _saveCourses();
+    await _saveCourseSessions();
+    return courseId;
+  }
+
+  /// 更新课程并整体替换其上课安排
+  static Future<int> updateCourse(
+      Course course, List<CourseSession> sessions) async {
+    await _ensureInitialized();
+    final index = _courses.indexWhere((c) => c.id == course.id);
+    if (index < 0) return 0;
+    _courses[index] = course.copyWith(sessions: const []);
+    _courseSessions.removeWhere((s) => s.courseId == course.id);
+    for (final s in sessions) {
+      _courseSessions
+          .add(s.copyWith(id: _courseSessionIdCounter++, courseId: course.id));
+    }
+    await _saveCourses();
+    await _saveCourseSessions();
+    return 1;
+  }
+
+  /// 删除课程及其全部上课安排
+  static Future<int> deleteCourse(int id) async {
+    await _ensureInitialized();
+    _courses.removeWhere((c) => c.id == id);
+    _courseSessions.removeWhere((s) => s.courseId == id);
+    await _saveCourses();
+    await _saveCourseSessions();
+    return 1;
+  }
+
+  /// 获取全部课程（已组装各自的上课安排）
+  static Future<List<Course>> getAllCourses() async {
+    await _ensureInitialized();
+    return _courses
+        .map((c) => c.copyWith(
+            sessions:
+                _courseSessions.where((s) => s.courseId == c.id).toList()))
+        .toList();
+  }
+
+  static Future<SemesterConfig?> getSemesterConfig() async {
+    await _ensureInitialized();
+    return _semesterConfig;
+  }
+
+  /// 保存学期配置（同时只有一个配置）
+  static Future<void> saveSemesterConfig(SemesterConfig config) async {
+    await _ensureInitialized();
+    _semesterConfig = config;
+    await _saveSemesterConfig();
   }
 }

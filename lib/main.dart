@@ -6,6 +6,7 @@ import 'providers/diary_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/custom_goal_provider.dart';
+import 'providers/course_provider.dart';
 import 'screens/splash_screen.dart';
 import 'screens/protection_violation_screen.dart';
 import 'screens/main_screen.dart';
@@ -18,6 +19,7 @@ import 'services/app_protection_service.dart';
 import 'services/floating_window_service.dart';
 import 'services/floating_settings_service.dart';
 import 'services/floating_permission_service.dart';
+import 'services/course_widget_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -46,6 +48,15 @@ void main() async {
   // 预加载主题设置（确保启动时主题已加载）
   final themeProvider = ThemeProvider();
   await themeProvider.loadSettings();
+
+  // 课表桌面小组件：注册后台入口点（开机/每日定时由原生侧拉起 Dart
+  // 续排提醒窗口 + 重算计划），并缓存主题配色
+  await CourseWidgetService.initialize();
+
+  // 用户切主题 → 桌面小组件跟着换肤（计划里内嵌配色，所以要重推一次）
+  themeProvider.addListener(() {
+    CourseWidgetService.updateTheme(themeProvider.currentScheme);
+  });
 
   // 检查并执行自动备份（在后台执行，不阻塞启动）
   AutoBackupService.checkAndBackup().then((success) {
@@ -105,6 +116,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
             create: (_) => SettingsProvider()..loadSettings()),
         ChangeNotifierProvider(create: (_) => CustomGoalProvider()..loadGoals()),
+        ChangeNotifierProvider(create: (_) => CourseProvider()..load()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {

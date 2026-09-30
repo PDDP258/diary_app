@@ -15,5 +15,9 @@ class MainActivity : FlutterFragmentActivity() {
         // 注册速记浮窗插件
         // 原生 Android View 实现系统级悬浮窗
         FloatingWindowPlugin(this).registerWith(flutterEngine)
+
+        // 注册课表小组件插件
+        // Dart 侧推「未来两周课表计划」进来，原生侧落盘并重画小组件
+        CourseWidgetPlugin.install(flutterEngine, this)
     }
 }

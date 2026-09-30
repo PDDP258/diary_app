@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 小组件里的一节课（由 CourseWidgetRenderer 逐行 addView） -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/row_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingTop="5dp"
+    android:paddingBottom="5dp">
+
+    <!-- 课程色条：圆角由渲染器画位图实现 -->
+    <ImageView
+        android:id="@+id/row_bar"
+        android:layout_width="3dp"
+        android:layout_height="30dp"
+        android:scaleType="fitXY"
+        android:contentDescription="@null" />
+
+    <TextView
+        android:id="@+id/row_time"
+        android:layout_width="42dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="9dp"
+        android:textSize="11.5sp"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:textColor="#8A7D6F"
+        android:text="08:00" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginStart="2dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/row_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="13sp"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textColor="#2C241F"
+            android:text="课程名" />
+
+        <TextView
+            android:id="@+id/row_loc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textSize="10.5sp"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textColor="#8A7D6F"
+            android:text="" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/row_badge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="6dp"
+        android:textSize="10sp"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:textColor="#C4956A"
+        android:visibility="gone"
+        android:text="" />
+</LinearLayout>

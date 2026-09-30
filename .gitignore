@@ -61,3 +61,12 @@ web/.dart_tool/
 # Windows
 windows/flutter/ephemeral/
 windows/.dart_tool/
+
+# 本地数据采集 / 临时备份 —— 含真实教务数据（学号、姓名、课表），一律不进仓库
+.capture/
+.rollback/
+
+# 本地工具环境 / Agent 工作数据 —— 机器相关，不进仓库
+.venv_removebg/
+.superpowers/
+.workbuddy/
