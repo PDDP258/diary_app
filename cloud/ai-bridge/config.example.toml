@@ -20,7 +20,11 @@ client_session = "diary-app"
 user_name = "小记"
 
 # 收到第一条回复后，静默多久算本轮结束（秒）
-reply_quiet_seconds = 1.6
+#
+# ⚠️ 不要设太小。麦麦会把一段话拆成多条发，实测两条之间能隔 3 秒
+# （13:46:56 一条、13:46:59 一条）。设 1.6 秒时，桥在第一条后就收尾，
+# 后面的分段全部丢掉 —— 表现是"她明明说了很多，App 只显示半句"。
+reply_quiet_seconds = 3.5
 
 # 单轮最长等待（秒）
 reply_timeout_seconds = 75.0
