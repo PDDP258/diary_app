@@ -1,0 +1,26 @@
+# 小记日记 · 麦麦对话桥配置示例
+#
+# 复制成 config.toml 再填 app_token。config.toml 含凭据，不要入库。
+
+# 麦麦 WebUI 的本地地址（同机回环，不走 nginx，不需要 basic auth）
+webui_base = "http://127.0.0.1:8001"
+
+# 麦麦的访问令牌文件（内含 access_token，本桥只读不写）
+webui_token_file = "/opt/maibot/data/webui.json"
+
+# 桥的监听地址。只监听回环，公网入口交给 nginx 反代
+listen_host = "127.0.0.1"
+listen_port = 8021
+
+# App 侧 Bearer token。用 `openssl rand -hex 24` 生成，与麦麦的任何凭据无关
+app_token = ""
+
+# 投递到麦麦网页聊天室时使用的会话标识与昵称
+client_session = "diary-app"
+user_name = "小记"
+
+# 收到第一条回复后，静默多久算本轮结束（秒）
+reply_quiet_seconds = 1.6
+
+# 单轮最长等待（秒）
+reply_timeout_seconds = 75.0

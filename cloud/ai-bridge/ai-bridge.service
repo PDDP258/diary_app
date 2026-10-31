@@ -1,0 +1,19 @@
+[Unit]
+Description=Diary AI Bridge (Maibot internal chat -> App)
+Documentation=https://github.com/PDDP258/diary_app
+After=network.target maibot.service
+Wants=maibot.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/ai-bridge
+ExecStart=/opt/maibot-venv/bin/python3 /opt/ai-bridge/bridge.py --config /opt/ai-bridge/config.toml
+Restart=always
+RestartSec=5
+# 只监听回环，公网入口由 nginx 反代
+Environment=PYTHONUNBUFFERED=1
+StandardOutput=append:/var/log/ai-bridge.log
+StandardError=append:/var/log/ai-bridge.log
+
+[Install]
+WantedBy=multi-user.target

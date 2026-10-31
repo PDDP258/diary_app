@@ -1,0 +1,5 @@
+httpx>=0.27
+websockets>=12
+fastapi>=0.110
+uvicorn>=0.29
+tomli>=2.0; python_version < "3.11"

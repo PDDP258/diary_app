@@ -33,6 +33,7 @@ import 'main_screen.dart';
 import 'quick_notes_screen.dart';
 import 'tag_management_screen_v3.dart';
 import 'time_capsule_list_screen_v2.dart';
+import 'ai_chat_screen.dart';
 import '../services/floating_settings_service.dart';
 import '../services/floating_window_service.dart';
 import '../services/floating_permission_service.dart';
@@ -359,6 +360,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   trailing: _buildBiometricToggle(),
                   onTap: () => _toggleBiometric(),
                 ),
+            ], scheme),
+
+            const SizedBox(height: 16),
+
+            // 麦麦
+            CodeComment(text: '麦麦'),
+            const SizedBox(height: 4),
+            _buildMenuGroup([
+              _MenuItem(
+                icon: Icons.auto_awesome_outlined,
+                title: '和麦麦说话',
+                subtitle: '她在服务器那边，说两句吧',
+                onTap: () => _navigateTo(const AiChatScreen()),
+              ),
             ], scheme),
 
             const SizedBox(height: 16),
