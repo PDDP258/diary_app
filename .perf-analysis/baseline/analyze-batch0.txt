@@ -1,0 +1,386 @@
+﻿Analyzing lib...
+
+warning - screens\backup_manager_screen.dart:1:8 - Unused import: 'dart:convert'. Try removing the import directive. - unused_import
+warning - screens\backup_test_screen.dart:1:8 - Unused import: 'dart:convert'. Try removing the import directive. - unused_import
+warning - screens\badge_detail_screen.dart:389:7 - This default clause is covered by the previous cases. Try removing the default clause, or restructuring the preceding patterns. - unreachable_switch_default
+warning - screens\calendar_screen.dart:12:8 - Unused import: '../models/custom_goal.dart'. Try removing the import directive. - unused_import
+warning - screens\calendar_screen.dart:77:16 - The declaration '_loadCalendarState' isn't referenced. Try removing the declaration of '_loadCalendarState'. - unused_element
+warning - screens\calendar_screen.dart:509:8 - The declaration '_showYearPicker' isn't referenced. Try removing the declaration of '_showYearPicker'. - unused_element
+warning - screens\calendar_screen.dart:602:8 - The declaration '_showMonthPicker' isn't referenced. Try removing the declaration of '_showMonthPicker'. - unused_element
+warning - screens\calendar_screen.dart:708:10 - The declaration '_buildDiaryPreview' isn't referenced. Try removing the declaration of '_buildDiaryPreview'. - unused_element
+warning - screens\custom_sticker_screen.dart:148:16 - The declaration '_addEmojiSticker' isn't referenced. Try removing the declaration of '_addEmojiSticker'. - unused_element
+warning - screens\data_management_screen.dart:768:16 - The declaration '_restoreFromCloud' isn't referenced. Try removing the declaration of '_restoreFromCloud'. - unused_element
+warning - screens\data_management_screen.dart:1193:11 - The value of the local variable 'scheme' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - screens\data_management_screen.dart:1222:8 - The declaration '_showInfo' isn't referenced. Try removing the declaration of '_showInfo'. - unused_element
+warning - screens\diary_detail_screen.dart:33:8 - The value of the field '_isLoading' isn't used. Try removing the field, or using it. - unused_field
+warning - screens\diary_detail_screen.dart:34:21 - The value of the field '_anniversaries' isn't used. Try removing the field, or using it. - unused_field
+warning - screens\diary_detail_screen.dart:1192:11 - The value of the local variable 'scheme' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - screens\diary_search_enhanced_screen.dart:44:13 - The value of the field '_tags' isn't used. Try removing the field, or using it. - unused_field
+warning - screens\emotion_stats_screen.dart:7:8 - Unused import: '../widgets/interactive_button.dart'. Try removing the import directive. - unused_import
+warning - screens\icon_theme_screen.dart:4:8 - Unused import: '../services/gacha_service.dart'. Try removing the import directive. - unused_import
+warning - screens\main_screen.dart:65:10 - The value of the field '_lastScrollPixels' isn't used. Try removing the field, or using it. - unused_field
+warning - screens\main_screen.dart:76:8 - The value of the field '_longPressTriggered' isn't used. Try removing the field, or using it. - unused_field
+warning - screens\main_screen.dart:207:11 - The value of the local variable 'result' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - screens\profile_screen.dart:19:8 - Unused import: '../services/icon_theme_service.dart'. Try removing the import directive. - unused_import
+warning - screens\profile_screen.dart:26:8 - Unused import: 'backup_manager_screen.dart'. Try removing the import directive. - unused_import
+warning - screens\profile_screen.dart:1781:11 - The value of the local variable 'scheme' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - screens\profile_screen.dart:2363:14 - The value of the field '_titleTapCount' isn't used. Try removing the field, or using it. - unused_field
+warning - screens\profile_screen.dart:2364:20 - The value of the field '_lastTitleTap' isn't used. Try removing the field, or using it. - unused_field
+warning - screens\profile_screen.dart:3051:11 - The value of the local variable 'scheme' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - screens\profile_screen_min.dart:21:29 - The value of the field '_unlockedBadges' isn't used. Try removing the field, or using it. - unused_field
+warning - screens\profile_screen_min.dart:22:8 - The value of the field '_hasNewBadge' isn't used. Try removing the field, or using it. - unused_field
+warning - screens\profile_screen_min.dart:323:10 - A value for optional parameter 'trailing' isn't ever given. Try removing the unused parameter. - unused_element_parameter
+warning - screens\self_talk_screen.dart:12:8 - Unused import: '../widgets/code_comment.dart'. Try removing the import directive. - unused_import
+warning - screens\smart_recall_screen_v2.dart:5:8 - Unused import: '../models/diary.dart'. Try removing the import directive. - unused_import
+warning - screens\smart_recall_screen_v2.dart:7:8 - Unused import: '../providers/theme_provider.dart'. Try removing the import directive. - unused_import
+warning - screens\splash_screen.dart:396:11 - The value of the local variable 'screenSize' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - screens\tag_management_screen_v3.dart:33:16 - The declaration '_saveTagSystem' isn't referenced. Try removing the declaration of '_saveTagSystem'. - unused_element
+warning - screens\tags_classification_screen.dart:6:8 - Unused import: '../services/database_service.dart'. Try removing the import directive. - unused_import
+warning - screens\time_capsule_list_screen.dart:7:8 - Unused import: '../providers/theme_provider.dart'. Try removing the import directive. - unused_import
+warning - screens\time_capsule_list_screen.dart:25:20 - The value of the field '_stats' isn't used. Try removing the field, or using it. - unused_field
+warning - screens\time_capsule_list_screen_v2.dart:6:8 - Unused import: '../providers/theme_provider.dart'. Try removing the import directive. - unused_import
+warning - screens\timeline_screen.dart:13:8 - Unused import: '../widgets/code_comment.dart'. Try removing the import directive. - unused_import
+warning - screens\write_diary_screen.dart:38:8 - Unused import: '../services/voice_diary_service.dart'. Try removing the import directive. - unused_import
+warning - screens\write_diary_screen.dart:80:11 - The value of the field '_titleError' isn't used. Try removing the field, or using it. - unused_field
+warning - screens\write_diary_screen.dart:81:11 - The value of the field '_contentError' isn't used. Try removing the field, or using it. - unused_field
+warning - screens\write_diary_screen.dart:82:11 - The value of the field '_imageError' isn't used. Try removing the field, or using it. - unused_field
+warning - screens\write_diary_screen.dart:729:13 - The value of the local variable 'diaryDateStr' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - screens\write_diary_screen.dart:1488:10 - The declaration '_buildMoodSelector' isn't referenced. Try removing the declaration of '_buildMoodSelector'. - unused_element
+warning - screens\write_diary_screen.dart:2583:11 - The value of the local variable 'scheme' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - services\app_lock_service.dart:9:8 - Unused import: 'package:permission_handler/permission_handler.dart'. Try removing the import directive. - unused_import
+warning - services\backup_reader.dart:17:11 - The value of the field '_backupPath' isn't used. Try removing the field, or using it. - unused_field
+warning - services\badge_service.dart:2373:26 - The value of the field '_shineAnimation' isn't used. Try removing the field, or using it. - unused_field
+warning - services\biometric_auth_service.dart:283:9 - This default clause is covered by the previous cases. Try removing the default clause, or restructuring the preceding patterns. - unreachable_switch_default
+warning - services\cloud_sync_service.dart:20:8 - Unused import: 'dart:math'. Try removing the import directive. - unused_import
+warning - services\cloud_sync_service.dart:28:11 - The value of the field '_accessToken' isn't used. Try removing the field, or using it. - unused_field
+warning - services\cloud_sync_service.dart:459:23 - The declaration '_getAuthHeaders' isn't referenced. Try removing the declaration of '_getAuthHeaders'. - unused_element
+warning - services\cloud_sync_service.dart:1379:16 - The declaration '_restoreEncryptedImageArchive' isn't referenced. Try removing the declaration of '_restoreEncryptedImageArchive'. - unused_element
+warning - services\course_reminder_service.dart:98:9 - The value of the local variable 'scheduled' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - services\database_service_native.dart:4:8 - Unused import: 'dart:convert'. Try removing the import directive. - unused_import
+warning - services\encryption_service.dart:125:13 - The value of the local variable 'salt' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - services\encryption_service.dart:130:13 - The value of the local variable 'encrypted' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - services\encryption_service.dart:155:15 - The value of the local variable 'salt' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - services\font_download_service.dart:12:23 - The value of the field '_fontVersionKey' isn't used. Try removing the field, or using it. - unused_field
+warning - services\font_download_service.dart:227:33 - The exception variable 'e' isn't used, so the 'catch' clause can be removed. Try removing the catch clause. - unused_catch_clause
+warning - services\gacha_service.dart:8:8 - Unused import: '../screens/custom_sticker_screen.dart'. Try removing the import directive. - unused_import
+warning - services\gacha_service.dart:10:8 - Unused import: '../models/tag_system.dart'. Try removing the import directive. - unused_import
+warning - services\goal_service.dart:125:23 - The value of the field '_goalHistoryKey' isn't used. Try removing the field, or using it. - unused_field
+warning - services\goal_service.dart:271:11 - The value of the local variable 'prefs' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - services\incremental_sync_service.dart:20:23 - The value of the field '_syncMetadataKey' isn't used. Try removing the field, or using it. - unused_field
+warning - services\pdf_export_service.dart:21:15 - The value of the field '_isDownloading' isn't used. Try removing the field, or using it. - unused_field
+warning - services\pdf_export_service.dart:289:31 - The declaration '_getChineseTextStyle' isn't referenced. Try removing the declaration of '_getChineseTextStyle'. - unused_element
+warning - services\smart_recall_service.dart:78:16 - The value of the field '_random' isn't used. Try removing the field, or using it. - unused_field
+warning - services\tag_system_service.dart:102:7 - Two keys in a map literal shouldn't be equal. Change or remove the duplicate key. - equal_keys_in_map
+warning - services\tag_system_service.dart:132:17 - The value of the local variable 'newSub' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - services\text_analysis_service.dart:56:29 - Two elements in a set literal shouldn't be equal. Change or remove the duplicate element. - equal_elements_in_set
+warning - services\text_analysis_service.dart:77:21 - Two elements in a set literal shouldn't be equal. Change or remove the duplicate element. - equal_elements_in_set
+warning - services\text_analysis_service.dart:77:29 - Two elements in a set literal shouldn't be equal. Change or remove the duplicate element. - equal_elements_in_set
+warning - services\text_analysis_service.dart:77:37 - Two elements in a set literal shouldn't be equal. Change or remove the duplicate element. - equal_elements_in_set
+warning - services\text_analysis_service.dart:83:21 - Two elements in a set literal shouldn't be equal. Change or remove the duplicate element. - equal_elements_in_set
+warning - services\text_analysis_service.dart:83:29 - Two elements in a set literal shouldn't be equal. Change or remove the duplicate element. - equal_elements_in_set
+warning - services\text_analysis_service.dart:90:13 - Two elements in a set literal shouldn't be equal. Change or remove the duplicate element. - equal_elements_in_set
+warning - services\text_analysis_service.dart:93:29 - Two elements in a set literal shouldn't be equal. Change or remove the duplicate element. - equal_elements_in_set
+warning - services\text_analysis_service.dart:94:5 - Two elements in a set literal shouldn't be equal. Change or remove the duplicate element. - equal_elements_in_set
+warning - services\text_analysis_service.dart:101:21 - Two elements in a set literal shouldn't be equal. Change or remove the duplicate element. - equal_elements_in_set
+warning - services\text_analysis_service.dart:106:29 - Two elements in a set literal shouldn't be equal. Change or remove the duplicate element. - equal_elements_in_set
+warning - services\text_analysis_service.dart:107:21 - Two elements in a set literal shouldn't be equal. Change or remove the duplicate element. - equal_elements_in_set
+warning - services\text_analysis_service.dart:112:29 - Two elements in a set literal shouldn't be equal. Change or remove the duplicate element. - equal_elements_in_set
+warning - services\text_analysis_service.dart:118:21 - Two elements in a set literal shouldn't be equal. Change or remove the duplicate element. - equal_elements_in_set
+warning - services\text_analysis_service.dart:118:29 - Two elements in a set literal shouldn't be equal. Change or remove the duplicate element. - equal_elements_in_set
+warning - services\text_analysis_service.dart:118:37 - Two elements in a set literal shouldn't be equal. Change or remove the duplicate element. - equal_elements_in_set
+warning - services\text_analysis_service.dart:119:5 - Two elements in a set literal shouldn't be equal. Change or remove the duplicate element. - equal_elements_in_set
+warning - services\text_analysis_service.dart:119:21 - Two elements in a set literal shouldn't be equal. Change or remove the duplicate element. - equal_elements_in_set
+warning - services\text_analysis_service.dart:119:29 - Two elements in a set literal shouldn't be equal. Change or remove the duplicate element. - equal_elements_in_set
+warning - services\text_analysis_service.dart:119:37 - Two elements in a set literal shouldn't be equal. Change or remove the duplicate element. - equal_elements_in_set
+warning - services\text_analysis_service.dart:119:45 - Two elements in a set literal shouldn't be equal. Change or remove the duplicate element. - equal_elements_in_set
+warning - services\text_analysis_service.dart:126:21 - Two elements in a set literal shouldn't be equal. Change or remove the duplicate element. - equal_elements_in_set
+warning - services\text_analysis_service.dart:126:37 - Two elements in a set literal shouldn't be equal. Change or remove the duplicate element. - equal_elements_in_set
+warning - services\text_analysis_service.dart:131:5 - Two elements in a set literal shouldn't be equal. Change or remove the duplicate element. - equal_elements_in_set
+warning - services\text_analysis_service.dart:131:13 - Two elements in a set literal shouldn't be equal. Change or remove the duplicate element. - equal_elements_in_set
+warning - services\text_analysis_service.dart:132:5 - Two elements in a set literal shouldn't be equal. Change or remove the duplicate element. - equal_elements_in_set
+warning - services\text_analysis_service.dart:132:21 - Two elements in a set literal shouldn't be equal. Change or remove the duplicate element. - equal_elements_in_set
+warning - services\text_analysis_service.dart:132:29 - Two elements in a set literal shouldn't be equal. Change or remove the duplicate element. - equal_elements_in_set
+warning - services\text_analysis_service.dart:133:29 - Two elements in a set literal shouldn't be equal. Change or remove the duplicate element. - equal_elements_in_set
+warning - services\text_analysis_service.dart:137:29 - Two elements in a set literal shouldn't be equal. Change or remove the duplicate element. - equal_elements_in_set
+warning - services\text_analysis_service.dart:145:5 - Two elements in a set literal shouldn't be equal. Change or remove the duplicate element. - equal_elements_in_set
+warning - services\text_analysis_service.dart:145:29 - Two elements in a set literal shouldn't be equal. Change or remove the duplicate element. - equal_elements_in_set
+warning - utils\performance_optimizations.dart:2:8 - Unused import: 'dart:developer'. Try removing the import directive. - unused_import
+warning - utils\performance_optimizations.dart:142:9 - The value of the field '_maxMemorySize' isn't used. Try removing the field, or using it. - unused_field
+warning - utils\safe_area_helper.dart:2:8 - Unused import: 'dart:io'. Try removing the import directive. - unused_import
+warning - utils\utils.dart:19:5 - The library 'package:diary_app/utils/design_extensions.dart' doesn't export a member with the shown name 'Radius'. Try removing the name from the list of shown members. - undefined_shown_name
+warning - utils\utils.dart:22:5 - The library 'package:diary_app/utils/design_extensions.dart' doesn't export a member with the shown name 'Curves'. Try removing the name from the list of shown members. - undefined_shown_name
+warning - widgets\custom_goal_card.dart:754:14 - The value of the field '_isCustomInput' isn't used. Try removing the field, or using it. - unused_field
+warning - widgets\paged_diary_list.dart:383:11 - The value of the local variable 'dateStr' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - widgets\skeleton_loading.dart:226:11 - The value of the local variable 'scheme' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - widgets\swipeable_list_item.dart:107:11 - The value of the local variable 'scheme' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - widgets\widgets.dart:52:5 - The library 'package:diary_app/widgets/diary_interactions.dart' doesn't export a member with the shown name 'MoodData'. Try removing the name from the list of shown members. - undefined_shown_name
+   info - main.dart:64:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - main.dart:67:5 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - main.dart:92:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - main.dart:94:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - main.dart:98:5 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - models\time_capsule.dart:112:24 - Unnecessary braces in a string interpolation. Try removing the braces. - unnecessary_brace_in_string_interps
+   info - providers\theme_provider.dart:466:31 - 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - providers\theme_provider.dart:466:51 - 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - providers\theme_provider.dart:495:31 - 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - providers\theme_provider.dart:495:46 - 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - providers\theme_provider.dart:501:31 - 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - providers\theme_provider.dart:501:46 - 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - providers\theme_provider.dart:512:31 - 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - providers\theme_provider.dart:512:46 - 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - providers\theme_provider.dart:517:31 - 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - providers\theme_provider.dart:517:46 - 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - providers\theme_provider.dart:531:62 - 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - providers\theme_provider.dart:554:50 - 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\app_lock_screen.dart:2:8 - The import of 'dart:typed_data' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/services.dart'. Try removing the import directive. - unnecessary_import
+   info - screens\app_lock_screen.dart:819:30 - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext. - use_build_context_synchronously
+   info - screens\backup_manager_screen.dart:259:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - screens\backup_manager_screen.dart:264:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - screens\backup_manager_screen.dart:378:43 - Use interpolation to compose strings and values. Try using string interpolation to build the composite string. - prefer_interpolation_to_compose_strings
+   info - screens\calendar_screen.dart:49:7 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - screens\data_management_screen.dart:743:22 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - screens\data_management_screen.dart:774:9 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - screens\data_management_screen.dart:801:37 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - screens\data_management_screen.dart:895:24 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - screens\data_management_screen.dart:1020:52 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - screens\data_management_screen.dart:1044:9 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - screens\data_management_screen.dart:1068:24 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - screens\data_management_screen.dart:1260:9 - Uses 'await' on an instance of 'bool', which is not a subtype of 'Future'. Try removing the 'await' or changing the expression. - await_only_futures
+   info - screens\data_management_screen.dart:1262:45 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - screens\data_management_screen.dart:1276:7 - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext. - use_build_context_synchronously
+   info - screens\data_management_screen.dart:1324:38 - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext. - use_build_context_synchronously
+   info - screens\data_management_screen.dart:1331:29 - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext. - use_build_context_synchronously
+   info - screens\emotion_stats_screen.dart:2:8 - The import of 'package:flutter/services.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart'. Try removing the import directive. - unnecessary_import
+   info - screens\gacha_screen.dart:340:17 - 'scale' is deprecated and shouldn't be used. Use scaleByVector3, scaleByVector4, or scaleByDouble instead. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\gacha_screen.dart:819:9 - Use a 'SizedBox' to add whitespace to a layout. Try using a 'SizedBox' rather than a 'Container'. - sized_box_for_whitespace
+   info - screens\gacha_screen.dart:862:38 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - screens\gacha_screen.dart:867:7 - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext. - use_build_context_synchronously
+   info - screens\gacha_screen.dart:925:41 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - screens\gacha_screen.dart:926:40 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - screens\gacha_screen.dart:1061:38 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - screens\gacha_screen.dart:1083:7 - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext. - use_build_context_synchronously
+   info - screens\gacha_screen.dart:1887:11 - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext. - use_build_context_synchronously
+   info - screens\gacha_screen.dart:1891:23 - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext. - use_build_context_synchronously
+   info - screens\gacha_screen.dart:1896:28 - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext. - use_build_context_synchronously
+   info - screens\gacha_screen.dart:1997:39 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - screens\gacha_screen.dart:1998:23 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - screens\gacha_screen.dart:2153:31 - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext. - use_build_context_synchronously
+   info - screens\gacha_screen.dart:2171:11 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - screens\gacha_screen.dart:2175:23 - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext. - use_build_context_synchronously
+   info - screens\gacha_screen.dart:2177:22 - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext. - use_build_context_synchronously
+   info - screens\gacha_screen.dart:2185:28 - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext. - use_build_context_synchronously
+   info - screens\gacha_screen.dart:2290:39 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - screens\gacha_screen.dart:2291:23 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - screens\profile_screen.dart:2:8 - The import of 'dart:ui' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart'. Try removing the import directive. - unnecessary_import
+   info - screens\profile_screen.dart:1017:29 - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext. - use_build_context_synchronously
+   info - screens\profile_screen.dart:1032:29 - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext. - use_build_context_synchronously
+   info - screens\profile_screen.dart:1263:35 - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext. - use_build_context_synchronously
+   info - screens\profile_screen.dart:1549:67 - 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\profile_screen.dart:1550:36 - 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\profile_screen.dart:1857:38 - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext. - use_build_context_synchronously
+   info - screens\profile_screen.dart:1860:7 - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext. - use_build_context_synchronously
+   info - screens\profile_screen.dart:2009:47 - 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\profile_screen.dart:2013:31 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - screens\quick_note_editor_screen.dart:70:30 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - screens\quick_note_editor_screen.dart:85:23 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - screens\semester_settings_screen.dart:163:53 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\semester_settings_screen.dart:183:11 - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\semester_settings_screen.dart:379:38 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - screens\tag_management_screen_v3.dart:376:46 - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext. - use_build_context_synchronously
+   info - screens\tag_management_screen_v3.dart:471:44 - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext. - use_build_context_synchronously
+   info - screens\tag_management_screen_v3.dart:537:46 - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext. - use_build_context_synchronously
+   info - screens\tag_management_screen_v3.dart:603:44 - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext. - use_build_context_synchronously
+   info - screens\tag_management_screen_v3.dart:670:46 - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext. - use_build_context_synchronously
+   info - screens\tag_management_screen_v3.dart:737:44 - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext. - use_build_context_synchronously
+   info - screens\tag_management_screen_v3.dart:777:42 - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext. - use_build_context_synchronously
+   info - screens\tag_management_screen_v3.dart:863:42 - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext. - use_build_context_synchronously
+   info - screens\time_capsule_list_screen_v2.dart:2:8 - The import of 'package:flutter/services.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart'. Try removing the import directive. - unnecessary_import
+   info - screens\time_capsule_write_screen.dart:27:16 - The private field _images could be 'final'. Try making the field 'final'. - prefer_final_fields
+   info - screens\timeline_screen.dart:689:15 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - screens\write_diary_screen.dart:602:22 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - screens\write_diary_screen.dart:772:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - screens\write_diary_screen.dart:952:24 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - services\app_protection_service.dart:50:5 - Use 'const' for final variables initialized to a constant value. Try replacing 'final' with 'const'. - prefer_const_declarations
+   info - services\auto_backup_service.dart:42:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\auto_backup_service.dart:108:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\auto_backup_service.dart:111:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\auto_backup_service.dart:153:11 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\auto_backup_service.dart:156:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\auto_backup_service.dart:222:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\auto_backup_service.dart:225:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\auto_backup_service.dart:249:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\badge_service.dart:2356:29 - 'WillPopScope' is deprecated and shouldn't be used. Use PopScope instead. The Android predictive back feature will not work with WillPopScope. This feature was deprecated after v3.12.0-1.0.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - services\badge_service.dart:2575:29 - 'WillPopScope' is deprecated and shouldn't be used. Use PopScope instead. The Android predictive back feature will not work with WillPopScope. This feature was deprecated after v3.12.0-1.0.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - services\biometric_auth_service.dart:6:8 - The imported package 'local_auth_android' isn't a dependency of the importing package. Try adding a dependency for 'local_auth_android' in the 'pubspec.yaml' file. - depend_on_referenced_packages
+   info - services\cloud_sync_service.dart:4:8 - The import of 'dart:typed_data' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/foundation.dart'. Try removing the import directive. - unnecessary_import
+   info - services\custom_goal_service.dart:24:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\database_service_web.dart:230:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\database_service_web.dart:264:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\encryption_service.dart:104:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\encryption_service.dart:136:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\encryption_service.dart:170:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\encryption_service.dart:195:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\encryption_service.dart:229:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\encryption_service.dart:314:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\encryption_service.dart:341:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\encryption_service.dart:353:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\encryption_service.dart:372:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\encryption_service.dart:407:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\encryption_service.dart:435:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\encryption_service.dart:447:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\encryption_service.dart:452:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\encryption_service.dart:457:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\encryption_service.dart:463:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\encryption_service.dart:466:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\encryption_service.dart:469:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\encryption_service.dart:472:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\encryption_service.dart:475:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\encryption_service.dart:487:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\encryption_service.dart:490:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\encryption_service.dart:491:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\encryption_service.dart:520:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\encryption_service.dart:529:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\encryption_service.dart:545:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\font_download_service.dart:3:8 - The import of 'dart:typed_data' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/services.dart'. Try removing the import directive. - unnecessary_import
+   info - services\font_download_service.dart:92:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\font_download_service.dart:103:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\font_download_service.dart:105:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\font_download_service.dart:142:5 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\font_download_service.dart:159:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\font_download_service.dart:180:13 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\font_download_service.dart:190:13 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\font_download_service.dart:196:13 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\font_download_service.dart:206:11 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\font_download_service.dart:220:11 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\font_download_service.dart:274:11 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\font_download_service.dart:282:11 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\font_download_service.dart:286:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\font_download_service.dart:292:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\font_download_service.dart:298:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\font_download_service.dart:307:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\font_download_service.dart:328:11 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\font_download_service.dart:345:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\gacha_service.dart:1260:59 - Unnecessary braces in a string interpolation. Try removing the braces. - unnecessary_brace_in_string_interps
+   info - services\gacha_service.dart:1271:44 - Unnecessary braces in a string interpolation. Try removing the braces. - unnecessary_brace_in_string_interps
+   info - services\gacha_service.dart:1294:62 - Unnecessary braces in a string interpolation. Try removing the braces. - unnecessary_brace_in_string_interps
+   info - services\gacha_service.dart:1303:52 - Unnecessary braces in a string interpolation. Try removing the braces. - unnecessary_brace_in_string_interps
+   info - services\gacha_service.dart:1319:73 - Unnecessary braces in a string interpolation. Try removing the braces. - unnecessary_brace_in_string_interps
+   info - services\gacha_service.dart:1331:81 - Unnecessary braces in a string interpolation. Try removing the braces. - unnecessary_brace_in_string_interps
+   info - services\gacha_service.dart:1333:59 - Unnecessary braces in a string interpolation. Try removing the braces. - unnecessary_brace_in_string_interps
+   info - services\gacha_service.dart:1343:42 - Unnecessary braces in a string interpolation. Try removing the braces. - unnecessary_brace_in_string_interps
+   info - services\gacha_service.dart:1359:54 - Unnecessary braces in a string interpolation. Try removing the braces. - unnecessary_brace_in_string_interps
+   info - services\gacha_service.dart:1363:55 - Unnecessary braces in a string interpolation. Try removing the braces. - unnecessary_brace_in_string_interps
+   info - services\gacha_service.dart:1367:54 - Unnecessary braces in a string interpolation. Try removing the braces. - unnecessary_brace_in_string_interps
+   info - services\gacha_service.dart:1370:28 - Unnecessary braces in a string interpolation. Try removing the braces. - unnecessary_brace_in_string_interps
+   info - services\gacha_service.dart:1383:65 - Unnecessary braces in a string interpolation. Try removing the braces. - unnecessary_brace_in_string_interps
+   info - services\gacha_service.dart:1392:55 - Unnecessary braces in a string interpolation. Try removing the braces. - unnecessary_brace_in_string_interps
+   info - services\gacha_service.dart:1401:55 - Unnecessary braces in a string interpolation. Try removing the braces. - unnecessary_brace_in_string_interps
+   info - services\gacha_service.dart:1410:55 - Unnecessary braces in a string interpolation. Try removing the braces. - unnecessary_brace_in_string_interps
+   info - services\gacha_service.dart:1417:47 - Unnecessary braces in a string interpolation. Try removing the braces. - unnecessary_brace_in_string_interps
+   info - services\gacha_service.dart:1424:48 - Unnecessary braces in a string interpolation. Try removing the braces. - unnecessary_brace_in_string_interps
+   info - services\gacha_service.dart:1441:66 - Unnecessary braces in a string interpolation. Try removing the braces. - unnecessary_brace_in_string_interps
+   info - services\gacha_service.dart:1455:55 - Unnecessary braces in a string interpolation. Try removing the braces. - unnecessary_brace_in_string_interps
+   info - services\gacha_service.dart:1472:66 - Unnecessary braces in a string interpolation. Try removing the braces. - unnecessary_brace_in_string_interps
+   info - services\gacha_service.dart:1513:7 - Use 'const' for final variables initialized to a constant value. Try replacing 'final' with 'const'. - prefer_const_declarations
+   info - services\gacha_service.dart:1526:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\gacha_service.dart:1562:5 - Use 'const' for final variables initialized to a constant value. Try replacing 'final' with 'const'. - prefer_const_declarations
+   info - services\gacha_service.dart:1589:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\gacha_service.dart:1599:7 - Use 'const' for final variables initialized to a constant value. Try replacing 'final' with 'const'. - prefer_const_declarations
+   info - services\gacha_service.dart:1618:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\gacha_service.dart:1666:7 - Use 'const' for final variables initialized to a constant value. Try replacing 'final' with 'const'. - prefer_const_declarations
+   info - services\gacha_service.dart:1691:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\gacha_service.dart:1818:15 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\gacha_service.dart:1852:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\gacha_service.dart:1854:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\icon_theme_service.dart:29:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\icon_theme_service.dart:44:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\icon_theme_service.dart:61:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\incremental_sync_service.dart:150:11 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\incremental_sync_service.dart:224:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\incremental_sync_service.dart:248:13 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\incremental_sync_service.dart:253:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\motion_photo_service.dart:20:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\motion_photo_service.dart:30:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\motion_photo_service.dart:38:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\motion_photo_service.dart:59:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\motion_photo_service.dart:69:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\motion_photo_service.dart:73:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\motion_photo_service.dart:76:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\motion_photo_service.dart:98:13 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\motion_photo_service.dart:103:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\motion_photo_service.dart:129:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pdf_export_service.dart:2:8 - The import of 'dart:typed_data' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/services.dart'. Try removing the import directive. - unnecessary_import
+   info - services\pdf_export_service.dart:21:15 - The private field _isDownloading could be 'final'. Try making the field 'final'. - prefer_final_fields
+   info - services\pdf_export_service.dart:80:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pdf_export_service.dart:86:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pdf_export_service.dart:134:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pdf_export_service.dart:144:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pdf_export_service.dart:148:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pdf_export_service.dart:151:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pdf_export_service.dart:154:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pdf_export_service.dart:159:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pdf_export_service.dart:163:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pdf_export_service.dart:167:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pdf_export_service.dart:172:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pdf_export_service.dart:175:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pdf_export_service.dart:179:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pdf_export_service.dart:184:5 - Use 'const' for final variables initialized to a constant value. Try replacing 'final' with 'const'. - prefer_const_declarations
+   info - services\pdf_export_service.dart:185:5 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pdf_export_service.dart:212:11 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pdf_export_service.dart:233:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pdf_export_service.dart:238:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pdf_export_service.dart:242:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pdf_export_service.dart:247:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pdf_export_service.dart:252:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pdf_export_service.dart:256:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pdf_export_service.dart:274:11 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pdf_export_service.dart:283:5 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pdf_export_service.dart:319:5 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pdf_export_service.dart:330:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\pdf_export_service.dart:333:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\sync_log_service.dart:30:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\sync_log_service.dart:49:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\sync_log_service.dart:51:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\sync_log_service.dart:65:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\sync_log_service.dart:108:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\voice_diary_service.dart:169:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\voice_diary_service.dart:183:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\voice_diary_service.dart:197:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\voice_diary_service.dart:232:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\voice_diary_service.dart:255:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\voice_diary_service.dart:269:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - services\voice_diary_service.dart:333:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - utils\performance_optimizations.dart:397:29 - 'renderViewElement' is deprecated and shouldn't be used. Use rootElement instead. This feature was deprecated after v3.9.0-16.0.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - utils\security_utils.dart:4:8 - The import of 'dart:typed_data' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/foundation.dart'. Try removing the import directive. - unnecessary_import
+   info - utils\security_utils.dart:238:5 - Use 'const' for final variables initialized to a constant value. Try replacing 'final' with 'const'. - prefer_const_declarations
+   info - utils\security_utils.dart:260:5 - Use 'const' for final variables initialized to a constant value. Try replacing 'final' with 'const'. - prefer_const_declarations
+   info - utils\security_utils.dart:266:5 - Use 'const' for final variables initialized to a constant value. Try replacing 'final' with 'const'. - prefer_const_declarations
+   info - utils\testing_utils.dart:2:8 - The imported package 'flutter_test' isn't a dependency of the importing package. Try adding a dependency for 'flutter_test' in the 'pubspec.yaml' file. - depend_on_referenced_packages
+   info - utils\utils.dart:1:1 - Dangling library doc comment. Add a 'library' directive after the library comment. - dangling_library_doc_comments
+   info - widgets\accessibility_components.dart:329:26 - 'announce' is deprecated and shouldn't be used. Use sendAnnouncement instead. This API is incompatible with multiple windows. This feature was deprecated after v3.35.0-0.1.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\accessibility_components.dart:331:29 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - widgets\accessibility_components.dart:542:22 - 'announce' is deprecated and shouldn't be used. Use sendAnnouncement instead. This API is incompatible with multiple windows. This feature was deprecated after v3.35.0-0.1.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\custom_goal_card.dart:662:7 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - widgets\custom_goal_card.dart:1185:21 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - widgets\custom_goal_card.dart:1187:28 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - widgets\custom_goal_card.dart:1221:21 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - widgets\custom_goal_card.dart:1222:28 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - widgets\custom_goal_card.dart:1248:31 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - widgets\custom_goal_card.dart:1249:38 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - widgets\diary_interactions.dart:67:17 - 'scale' is deprecated and shouldn't be used. Use scaleByVector3, scaleByVector4, or scaleByDouble instead. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\diary_interactions.dart:196:17 - 'scale' is deprecated and shouldn't be used. Use scaleByVector3, scaleByVector4, or scaleByDouble instead. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\diary_templates.dart:328:14 - Unnecessary 'const' keyword. Try removing the keyword. - unnecessary_const
+   info - widgets\diary_templates.dart:349:14 - Unnecessary 'const' keyword. Try removing the keyword. - unnecessary_const
+   info - widgets\diary_templates.dart:370:14 - Unnecessary 'const' keyword. Try removing the keyword. - unnecessary_const
+   info - widgets\motion_photo_widget.dart:91:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - widgets\motion_photo_widget.dart:295:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - widgets\pattern_lock.dart:411:15 - Invalid use of a private type in a public API. Try making the private type public, or making the API that uses the private type also be private. - library_private_types_in_public_api
+   info - widgets\random_sticker_overlay.dart:28:30 - The private field _stickers could be 'final'. Try making the field 'final'. - prefer_final_fields
+   info - widgets\real_page_turn.dart:93:19 - 'translate' is deprecated and shouldn't be used. Use translateByVector3, translateByVector4, or translateByDouble instead. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\real_page_turn.dart:377:15 - 'translate' is deprecated and shouldn't be used. Use translateByVector3, translateByVector4, or translateByDouble instead. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - widgets\theme_backgrounds.dart:514:5 - Use 'const' for final variables initialized to a constant value. Try replacing 'final' with 'const'. - prefer_const_declarations
+   info - widgets\theme_backgrounds.dart:1120:5 - Use 'const' for final variables initialized to a constant value. Try replacing 'final' with 'const'. - prefer_const_declarations
+   info - widgets\theme_backgrounds.dart:2114:14 - Invalid use of a private type in a public API. Try making the private type public, or making the API that uses the private type also be private. - library_private_types_in_public_api
+   info - widgets\widgets.dart:1:1 - Dangling library doc comment. Add a 'library' directive after the library comment. - dangling_library_doc_comments
+
+382 issues found.

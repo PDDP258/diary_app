@@ -4,6 +4,13 @@
 
 > **注意**：本文档版本号仅用于 AI 协作记录，软件实际版本号以 `pubspec.yaml` 和软件内显示为准。
 
+> 📌 **本文只管 Flutter 端**。日记侧的服务器 / WebDAV / MCP / 部署通道 / 排障速查，
+> 见 **[`docs/agent-working-doc.md`](docs/agent-working-doc.md)**（Agent 工作文档）。
+>
+> 🤖 **麦麦（MaiBot）已独立成仓 `E:\main\work\bot`**（补丁 / 插件 / 运维脚本 / 服务器文档）。
+> 本仓的 `cloud/maibot-*` 已迁走，只剩 `cloud/diary-mcp`、`cloud/diary-webdav`、`cloud/ocr-proxy`。
+> 两套系统只通过 WebDAV + MCP 相连，动服务器前先读那份。
+
 ## 快速开始
 
 ```bash
