@@ -70,3 +70,17 @@ windows/.dart_tool/
 .venv_removebg/
 .superpowers/
 .workbuddy/
+
+# Flutter tool 崩溃报告 / 临时目录 —— 本机沙箱产物，不进仓库
+flutter_*.log
+.dart_tmp/
+
+# Python 虚拟环境与字节码 —— cloud/diary-mcp 等本地服务（.venv 约 91MB）
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# 编辑器 / 工具本机设置
+.arts/
