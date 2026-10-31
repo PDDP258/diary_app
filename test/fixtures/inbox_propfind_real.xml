@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<d:multistatus xmlns:d="DAV:">
+<d:response>
+<d:href>/dav/inbox/</d:href>
+<d:propstat><d:prop>
+<d:displayname>inbox</d:displayname>
+<d:resourcetype><d:collection/></d:resourcetype>
+<d:getlastmodified>Thu, 29 Oct 2026 04:41:58 GMT</d:getlastmodified>
+</d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat>
+</d:response>
+<d:response>
+<d:href>/dav/inbox/draft_20261029-124158_d768.mbk</d:href>
+<d:propstat><d:prop>
+<d:displayname>draft_20261029-124158_d768.mbk</d:displayname>
+<d:resourcetype/>
+<d:getcontentlength>539</d:getcontentlength>
+<d:getlastmodified>Thu, 29 Oct 2026 04:41:58 GMT</d:getlastmodified>
+</d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat>
+</d:response>
+</d:multistatus>

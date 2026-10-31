@@ -1,0 +1,41 @@
+# 复制成 config.toml 再改。config.toml 不要提交到 git（含密码和密钥）。
+
+[webdav]
+# 坚果云：https://dav.jianguoyun.com/dav/
+url = "https://dav.jianguoyun.com/dav/"
+username = "你的账号@example.com"
+# 坚果云要求用「应用密码」，不是登录密码
+password = ""
+# App 上传备份的根目录，默认就是 diary_backups
+remote_root = "diary_backups"
+
+[crypto]
+# App → 设置 → 云同步 → 云端备份密钥，复制那串 base64
+# 留空只能读未加密的明文备份，线上备份读不了
+cloud_key = ""
+
+[storage]
+db_path = "data/diary.db"
+outbox_dir = "data/outbox"
+
+[inbox]
+# 收件箱：把麦麦写的草稿加密后 PUT 到 WebDAV 的 inbox/ 目录，
+# App 在「数据管理 → 麦麦写来的日记」里拉取、逐条确认导入。
+# 关掉后退回旧行为（只写本地 outbox，App 读不到）。
+enabled = true
+remote_dir = "inbox"
+
+[sync]
+# 建议同步间隔（分钟）。实际由 cron / 计划任务触发，这里只作为参考值。
+interval_minutes = 360
+# 超长日记写入索引时截断，防止个别长文拖慢检索
+max_content_chars = 8000
+# 备份没变化就不重新下载。WebDAV 按流量计费，一次全量下载几 MB，
+# 每 6 小时拉一次会白烧流量；判断只看 PROPFIND 里已有的 ETag / mtime+size。
+skip_unchanged = true
+
+[privacy]
+# 关掉后 diary_write_draft 会直接拒绝，适合先在群里试水
+enable_write = true
+# false 时搜索结果只回标题和日期，模型需要再调 diary_read 才看得到正文
+expose_snippet = true
