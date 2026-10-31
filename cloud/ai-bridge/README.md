@@ -77,6 +77,35 @@ Authorization: Bearer <app_token>
 `ok=false` 且 `error` 有值时，通常是麦麦这一轮没给出可见回复（被 stale 判定丢弃、
 或模型空转）。桥不会重试——重试只会让用户等更久。
 
+## 情景与人设（只作用于这条流）
+
+App 里的她不是群里的她：刚合上日记本，坐在旁边，说话短。
+
+这段提示通过 `bot_config.toml` 的 `[[chat.reply_style.chat_prompts]]` 精确挂在
+`internal / owner / private` 上——**不碰全局人设，也碰不到 QQ 的任何会话**。
+`platform=qq` 的 5 条现有条目一行没动。
+
+```toml
+[[chat.reply_style.chat_prompts]]
+platform = "internal"
+item_id = "owner"
+rule_type = "private"
+prompt = "你现在在小记日记 App 里…"
+```
+
+安装/更新走官方接口（tomlkit 改写 + 热重载，不重启）：
+
+```bash
+python3 install_session_prompt.py plan    # 看现状与将写入的内容
+python3 install_session_prompt.py apply   # 新增或更新（自动备份 + 读回校验）
+python3 install_session_prompt.py check   # 确认线上内容与脚本一致
+```
+
+实测（装完第一句）：用户说「今天没什么好写的，就坐着发了会儿呆」→
+回复「发呆也挺好，啥也不想」。不追问、不分析，像随手写在页边。
+
+改词只需编辑脚本里的 `PROMPT` 常量再 `apply`。
+
 ## 已知边界
 
 - **回复延迟 5~15 秒**：这是麦麦规划链路的固有开销，桥不额外增加。
