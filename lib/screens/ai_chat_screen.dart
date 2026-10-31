@@ -122,7 +122,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
   }
 
   Future<void> _clearHistory() async {
-    final scheme = AppTheme.schemeOf(context);
+    final scheme = AppTheme.readSchemeOf(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -151,12 +151,25 @@ class _AiChatScreenState extends State<AiChatScreen> {
   }
 
   Future<void> _openSettings() async {
-    final scheme = AppTheme.schemeOf(context);
-    final currentBase = await _service.baseUrl;
-    final currentToken = await _service.token;
+    final scheme = AppTheme.readSchemeOf(context);
+
+    // 读不到就用默认值：设置界面必须能打开，
+    // 存储层出问题时不能让按钮变成「点了没反应」。
+    var currentBase = MaibotService.defaultBaseUrl;
+    var currentToken = '';
+    try {
+      currentBase = await _service.baseUrl;
+      currentToken = await _service.token;
+    } catch (_) {
+      // 忽略，回落到默认值
+    }
     if (!mounted) return;
-    final baseController = TextEditingController(text: currentBase);
-    final tokenController = TextEditingController(text: currentToken);
+    // 不用 TextEditingController：弹窗的退场动画还在跑时 controller 就 dispose 了，
+    // 动画期间重建 TextField 会撞上「used after being disposed」。
+    // 用 TextFormField + 局部变量，值一样拿得到，也不牵扯生命周期。
+    var baseInput = currentBase;
+    var tokenInput = currentToken;
+    String? saveError;
     final saved = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -172,8 +185,9 @@ class _AiChatScreenState extends State<AiChatScreen> {
                 style: TextStyle(fontSize: 12, color: scheme.textLightColor),
               ),
               const SizedBox(height: 16),
-              TextField(
-                controller: baseController,
+              TextFormField(
+                initialValue: currentBase,
+                onChanged: (value) => baseInput = value,
                 style: TextStyle(color: scheme.textDarkColor),
                 decoration: InputDecoration(
                   labelText: '桥地址',
@@ -182,8 +196,9 @@ class _AiChatScreenState extends State<AiChatScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              TextField(
-                controller: tokenController,
+              TextFormField(
+                initialValue: currentToken,
+                onChanged: (value) => tokenInput = value,
                 style: TextStyle(color: scheme.textDarkColor),
                 obscureText: true,
                 decoration: InputDecoration(
@@ -201,17 +216,24 @@ class _AiChatScreenState extends State<AiChatScreen> {
           ),
           TextButton(
             onPressed: () async {
-              await _service.setBaseUrl(baseController.text);
-              await _service.setToken(tokenController.text);
-              if (context.mounted) Navigator.pop(context, true);
+              try {
+                await _service.setBaseUrl(baseInput);
+                await _service.setToken(tokenInput);
+              } catch (e) {
+                // 安全存储不可用（如 keystore 异常）时，不能让弹窗僵在这里
+                saveError = '保存失败：$e';
+              }
+              if (context.mounted) Navigator.pop(context, saveError == null);
             },
             child: Text('保存', style: TextStyle(color: scheme.primaryColor)),
           ),
         ],
       ),
     );
-    baseController.dispose();
-    tokenController.dispose();
+
+    if (saveError != null && mounted) {
+      setState(() => _hint = saveError);
+    }
 
     if (saved == true && mounted) {
       final configured = await _service.isConfigured();

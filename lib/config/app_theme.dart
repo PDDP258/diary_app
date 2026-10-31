@@ -147,10 +147,29 @@ class AppTheme {
   static const Duration elaborateDuration =
       Duration(milliseconds: 800); // 复杂动画：3D/视差
 
-  // 获取动态主题颜色（用于 StatelessWidget）
+  // 获取动态主题颜色
+  //
+  // build 期间走 watch：主题切换时这个页面会自动重建。
+  // build 之外（按钮 onPressed、Future 方法、showDialog 前的准备）一律走 read：
+  // Provider 6 的 watch 其实就是 listen: true，在非 build 上下文调用会触发
+  //   'context.owner!.debugBuilding || listen == false' 断言，
+  // 整段回调当场中断 —— 表现是「点了完全没反应」，不弹窗、不报错、日志里也只有
+  // 一条 assertion。debug 包必现；release 包因为 assert 被剥离不崩，但会白白
+  // 给这个 widget 注册一个依赖，主题一变就触发无关重建。
+  //
+  // 所以这里一次性判断上下文，调用方不用再区分：
   static ThemeScheme schemeOf(BuildContext context) {
-    return context.watch<ThemeProvider>().currentScheme;
+    final owner = context.owner;
+    if (owner != null && owner.debugBuilding) {
+      return context.watch<ThemeProvider>().currentScheme;
+    }
+    return context.read<ThemeProvider>().currentScheme;
   }
+
+  /// 明确表示「只取一次快照，不跟随主题变化」。
+  /// 事件回调里读主题用这个，意图更清楚。
+  static ThemeScheme readSchemeOf(BuildContext context) =>
+      context.read<ThemeProvider>().currentScheme;
 
   static Color primaryOf(BuildContext context) =>
       schemeOf(context).primaryColor;
