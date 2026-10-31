@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart' hide Badge;
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -619,9 +621,11 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
           if (syncService.isLoggedIn && syncService.autoSyncEnabled) {
             // 获取日记标签关联
             final diaryTags = await DatabaseService.getAllDiaryTags();
+            // 用数据库全量日记，不能用 provider.diaries（分页只有 20 篇）
+            final allDiaries = await CloudSyncService.loadAllDiariesForBackup();
             // 在后台线程执行同步
             await syncService.syncToCloud(
-              diaries: provider.diaries,
+              diaries: allDiaries,
               moods: provider.moods,
               tags: provider.tags,
               diaryTags: diaryTags,
@@ -645,19 +649,71 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
       // 播放保存成功音效
       SoundService.playSuccess();
 
-      // 检查是否触发扭蛋奖励
-      if (!_isEditing) {
-        await GachaService.onDiarySaved();
-      }
-      // 检查是否触发里程碑
-      await _checkMilestoneAfterSave();
-      if (mounted) {
-        Navigator.pop(context, true);
-      }
+      // ⚠️ 性能优化（2026-10-28 B0-6）：**先返回，再做后续检查**。
+      //
+      // 原来这里是串行 `await GachaService.onDiarySaved()` →
+      // `await _checkMilestoneAfterSave()` → 然后才 `Navigator.pop()`，
+      // 于是用户点「保存」后要**等完 8 组徽章全量检查**（含对全量日记取
+      // `wordCount`，每次都编译正则）才能退出页面，实测可感知 200~800ms。
+      //
+      // 现在：立刻 pop，把检查和弹窗放到返回之后。
+      // 弹窗必须用**根导航器** —— 本页 pop 之后 State 会被 dispose，
+      // 原来的 `context` 已失效，直接拿来 showDialog 会抛异常。
+      // 传 NavigatorState 而不是 BuildContext：State 自带 `mounted`，
+      // 能在每次弹窗前确认导航器仍然活着，比跨异步传 context 更安全。
+      final rootNavigator = Navigator.of(context, rootNavigator: true);
+
+      // 先把检查需要的数据抓在手里（pop 后 provider 仍在，但 State 已没了）
+      final diariesSnapshot = List<Diary>.unmodifiable(
+        context.read<DiaryProvider>().diaries,
+      );
+      final savedDiarySnapshot = _savedDiary;
+      final wasEditing = _isEditing;
+
+      Navigator.pop(context, true);
+
+      // 返回之后在后台继续跑，不阻塞用户
+      unawaited(_runPostSaveChecks(
+        rootNavigator: rootNavigator,
+        diaries: diariesSnapshot,
+        savedDiary: savedDiarySnapshot,
+        wasEditing: wasEditing,
+      ));
     } else if (mounted) {
       // 播放错误音效
       SoundService.playError();
       _showSnackBar(provider.error ?? '保存失败', type: ToastType.error);
+    }
+  }
+
+  /// 保存成功并**已返回**之后要做的非关键工作。
+  ///
+  /// 抽出来单独跑的原因见 [_saveDiary] 里的说明：这些检查是 O(全量日记)
+  /// 的 CPU 密集操作，绝不该出现在「用户等页面关闭」的关键路径上。
+  /// 内部全部 try/catch —— 后台任务失败不能影响用户体验。
+  Future<void> _runPostSaveChecks({
+    required NavigatorState rootNavigator,
+    required List<Diary> diaries,
+    required Diary? savedDiary,
+    required bool wasEditing,
+  }) async {
+    try {
+      // 扭蛋奖励（仅新建时）
+      if (!wasEditing) {
+        await GachaService.onDiarySaved();
+      }
+    } catch (e) {
+      debugPrint('保存后扭蛋检查失败: $e');
+    }
+
+    try {
+      await _checkMilestoneAfterSave(
+        rootNavigator: rootNavigator,
+        diaries: diaries,
+        savedDiary: savedDiary,
+      );
+    } catch (e) {
+      debugPrint('保存后徽章/里程碑检查失败: $e');
     }
   }
 
@@ -788,11 +844,18 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
     return Anniversary.generateCountdownText(countdown, diaryDate);
   }
 
-  /// 保存后检查里程碑和徽章
-  Future<void> _checkMilestoneAfterSave() async {
-    final provider = context.read<DiaryProvider>();
-    final diaries = provider.diaries;
-
+  /// 保存后检查里程碑和徽章。
+  ///
+  /// [rootNavigator] 必须是**根导航器**：本页在调用前已经 pop，
+  ///   自己的 `context` 已失效，拿它 showDialog 会抛异常。
+  ///   用 `NavigatorState` 而非 `BuildContext`，每次弹窗前可查 `mounted`。
+  /// [diaries] / [savedDiary] 由调用方在 pop **之前**快照好 ——
+  ///   因为 pop 之后 State 已 dispose，不能再读 `this._savedDiary` 或 provider。
+  Future<void> _checkMilestoneAfterSave({
+    required NavigatorState rootNavigator,
+    required List<Diary> diaries,
+    required Diary? savedDiary,
+  }) async {
     // 计算实际记载日记的唯一天数
     final uniqueDates = diaries.map((d) => d.date).toSet();
     final uniqueDays = uniqueDates.length;
@@ -803,8 +866,8 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
     // 检查是否触发里程碑动画
     final milestone = await MilestoneService.checkMilestone(uniqueDays);
 
-    if (milestone != null && mounted) {
-      await MilestoneDialog.show(context, milestone);
+    if (milestone != null && rootNavigator.mounted) {
+      await MilestoneDialog.show(rootNavigator.context, milestone);
     }
 
     // 收集所有新获得的徽章
@@ -820,10 +883,10 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
     allNewBadges.addAll(await BadgeService.checkTotalCountBadges(totalCount));
 
     // 4. 检查刚保存的日记相关内容徽章
-    if (_savedDiary != null) {
+    if (savedDiary != null) {
       // 内容徽章（字数、标题、多照片）
       allNewBadges.addAll(await BadgeService.checkContentBadges(
-        _savedDiary!,
+        savedDiary,
         writeTime: DateTime.now(),
         allDiaries: diaries,
       ));
@@ -833,7 +896,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
 
       // 情感徽章
       allNewBadges.addAll(await BadgeService.checkEmotionBadges(
-        _savedDiary!,
+        savedDiary,
         allDiaries: diaries,
       ));
     }
@@ -848,8 +911,8 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
     final uniqueBadges = allNewBadges.toSet().toList();
 
     // 批量显示新获得的徽章（替代逐个显示，大幅提升速度）
-    if (uniqueBadges.isNotEmpty && mounted) {
-      await BatchBadgeUnlockDialog.show(context, uniqueBadges);
+    if (uniqueBadges.isNotEmpty && rootNavigator.mounted) {
+      await BatchBadgeUnlockDialog.show(rootNavigator.context, uniqueBadges);
     }
   }
 

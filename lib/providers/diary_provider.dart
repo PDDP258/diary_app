@@ -61,7 +61,22 @@ class DiaryProvider extends ChangeNotifier {
     try {
       // 1. 先加载最近的日记（快速显示首页）
       await loadRecentDiaries(limit: 20);
-      
+
+      // ⚠️ 2026-10-28 修复：「搜索能搜到、主界面没有」。
+      //
+      // `loadRecentDiaries` 走 `getRecentDiaries`，它只读内存里的 `_diaries`。
+      // 若此刻数据层尚未完成初始化（或初始化异常被吞），它拿到的是空列表
+      // 且**不会抛错** → 主界面永远空着。
+      // 而搜索页调 `getAllDiaries()` 会 `await _ensureInitialized()`，
+      // 所以它能正确读到 —— 这正是两者表现不一致的根因。
+      //
+      // 兜底：快速路径拿到空列表、但磁盘上确实有数据时，
+      // 切换到会强制初始化的全量加载。
+      if (_diaries.isEmpty && await DatabaseService.hasDiaryDataOnDisk()) {
+        debugPrint('⚠️ 快速路径为空但磁盘有数据，改用全量加载');
+        await loadDiaries();
+      }
+
       // 2. 并行加载心情和标签（数据量小，不影响启动速度）
       await Future.wait([
         loadMoods(),
@@ -69,8 +84,9 @@ class DiaryProvider extends ChangeNotifier {
       ]);
       
       _error = null;
-    } catch (e) {
+    } catch (e, st) {
       _error = e.toString();
+      debugPrint('❌ loadAllData 失败: $e\n$st');
     } finally {
       _setLoading(false);
     }
@@ -82,13 +98,32 @@ class DiaryProvider extends ChangeNotifier {
       _diaries = await DatabaseService.getRecentDiaries(limit: limit);
       _currentPage = 0;
       _hasMoreData = _diaries.length >= limit;
-      
+
       // 后台预加载图片（不阻塞）
       _preloadImagesAsync();
-      
+
       notifyListeners();
-    } catch (e) {
+    } catch (e, st) {
+      // ⚠️ 2026-10-28：「搜索能搜到、主界面没有」的排查经验表明，
+      // 这里如果静默失败，用户只会看到一个空列表，完全不知道出了错。
+      // 记下带堆栈的错误，并**主动尝试一次全量加载**作为兜底 ——
+      // `getRecentDiaries` 走的是分页快速路径，万一它出错，
+      // 全量 `getAllDiaries` 往往仍能成功。
       _error = '加载日记失败: $e';
+      debugPrint('❌ loadRecentDiaries 失败: $e\n$st');
+
+      try {
+        final all = await DatabaseService.getAllDiaries();
+        if (all.isNotEmpty) {
+          _diaries = all;
+          _currentPage = 0;
+          _hasMoreData = false;
+          debugPrint('✅ 已通过全量加载兜底，取回 ${all.length} 篇');
+        }
+      } catch (e2) {
+        debugPrint('❌ 全量兜底也失败: $e2');
+      }
+
       notifyListeners();
     }
   }
@@ -212,12 +247,13 @@ class DiaryProvider extends ChangeNotifier {
       
       // 关联标签（新的三级标签系统）
       await DatabaseService.insertDiaryTagsV3(id, tagIds);
-      
-      // 更新标签使用次数
-      for (final tagId in tagIds) {
-        await TagSystemService.incrementTagUsage(tagId);
-      }
-      
+
+      // 更新标签使用次数：**批量写盘一次**（B0-3）。
+      // 原先对每个 tagId 单独 await，每个都会把整个标签系统 JSON 全量
+      // 重写一遍 SharedPreferences（commit 同步 fsync）→ 带 3 个标签
+      // 就是 3 次全量写盘。
+      await TagSystemService.incrementTagUsages(tagIds);
+
       // 重新加载最近的日记
       await loadRecentDiaries(limit: (_currentPage + 1) * _pageSize);
       return diaryWithId;
@@ -235,12 +271,10 @@ class DiaryProvider extends ChangeNotifier {
       // 更新标签关联（新的三级标签系统）
       await DatabaseService.deleteDiaryTagsV3(diary.id!);
       await DatabaseService.insertDiaryTagsV3(diary.id!, tagIds);
-      
-      // 更新标签使用次数
-      for (final tagId in tagIds) {
-        await TagSystemService.incrementTagUsage(tagId);
-      }
-      
+
+      // 更新标签使用次数：批量写盘一次（B0-3，理由同 addDiary）
+      await TagSystemService.incrementTagUsages(tagIds);
+
       await loadDiaries();
       return true;
     } catch (e) {

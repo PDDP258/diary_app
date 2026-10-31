@@ -84,10 +84,18 @@ abstract class CloudSyncService {
   }
 
   /// 验证数据完整性
+  ///
+  /// ⚠️ 算哈希前必须把 `_encrypted` 也剔掉。`uploadBackup` 里哈希是对**纯 backupData**
+  /// 算的（那时还没有 `_encrypted` 字段），`_encrypted` 是算完哈希才贴上去的。
+  /// 早期这里只 remove 了 `_hash`，于是恢复了 `_encrypted` 的副本参与计算，
+  /// 算出来永远和存储值不等 —— 云端恢复一路报「备份数据可能已被篡改」并返回 null，
+  /// 恢复功能等于形同虚设。历史备份同样能通过，不需要重新上传。
   bool _verifyDataIntegrity(Map<String, dynamic> data) {
     if (!data.containsKey('_hash')) return true; // 旧版本数据不做校验
     final storedHash = data['_hash'] as String;
-    final dataCopy = Map<String, dynamic>.from(data)..remove('_hash');
+    final dataCopy = Map<String, dynamic>.from(data)
+      ..remove('_hash')
+      ..remove('_encrypted');
     final computedHash = _generateDataHash(dataCopy);
     return storedHash == computedHash;
   }
@@ -109,6 +117,16 @@ abstract class CloudSyncService {
 
   /// 下载加密图片包
   Future<List<int>?> downloadImageArchive(String fileName);
+
+  /// 备份要用的全量日记。
+  ///
+  /// ⚠️ **绝对不要传 `DiaryProvider.diaries`**：首页是分页加载的（每页 20 篇），
+  /// 那个 list 里永远只有「用户滑到过的那些」。
+  /// 2026-10-28 真实踩到：云端备份里只有 id 286–305 这 20 篇，更早的 240+ 篇
+  /// 从来没上过云，而 `diary_tags` 里还留着 id 10/12/13/81… 的关联，一比对就露馅。
+  /// 备份是整体覆盖上传，少一篇就是永久丢一篇。
+  static Future<List<Diary>> loadAllDiariesForBackup() =>
+      DatabaseService.getAllDiaries();
 
   /// 同步数据（上传本地数据）
   Future<SyncResult> syncToCloud({
@@ -146,6 +164,14 @@ abstract class CloudSyncService {
   /// 合并备份数据到本地（不覆盖，只添加）
   /// [folderName] 可选，指定云端备份文件夹名，用于恢复图片
   Future<SyncResult> mergeBackupToLocal(Map<String, dynamic> backupData, {String? folderName});
+
+  /// 云端凭证（收件箱功能要用）。
+  ///
+  /// 只有 WebDAV 实现能提供；其它实现返回 null，
+  /// 调用方（收件箱页面）据此判断「当前云服务不支持收件箱」。
+  String? get syncServerUrl => null;
+  String? get syncUsername => null;
+  String? get syncPassword => null;
 }
 
 /// 云端备份信息
@@ -257,6 +283,15 @@ class WebDAVSyncService extends CloudSyncService {
 
   @override
   String get serviceIcon => '☁️';
+
+  @override
+  String? get syncServerUrl => _serverUrl;
+
+  @override
+  String? get syncUsername => _username;
+
+  @override
+  String? get syncPassword => _password;
 
   @override
   Future<void> _loadAuthInfo() async {

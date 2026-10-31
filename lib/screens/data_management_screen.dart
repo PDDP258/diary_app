@@ -21,6 +21,7 @@ import '../services/encryption_service.dart';
 import '../services/app_lock_service.dart';
 import 'backup_decrypt_screen.dart';
 import 'backup_manager_screen.dart';
+import 'inbox_screen.dart';
 
 /// 数据管理页面
 class DataManagementScreen extends StatefulWidget {
@@ -79,6 +80,21 @@ class _DataManagementScreenState extends State<DataManagementScreen> {
             _buildSectionTitle('云同步', scheme),
             const SizedBox(height: 12),
             _buildCloudSyncCard(scheme),
+
+            const SizedBox(height: 24),
+
+            // 麦麦写来的日记（收件箱）
+            _buildSectionTitle('收件箱', scheme),
+            const SizedBox(height: 12),
+            _buildCard([
+              _buildMenuItem(
+                icon: Icons.mark_email_unread_outlined,
+                title: '麦麦写来的日记',
+                subtitle: '确认后才会计入你的日记',
+                onTap: _showInbox,
+                scheme: scheme,
+              ),
+            ], scheme),
 
             const SizedBox(height: 24),
 
@@ -693,10 +709,13 @@ class _DataManagementScreenState extends State<DataManagementScreen> {
     setState(() => _isSyncing = true);
 
     final provider = context.read<DiaryProvider>();
+    // 必须从数据库取全量：provider.diaries 只是首页已加载的那一页（20 篇），
+    // 拿它备份会把云端覆盖成「最近 20 篇」。
+    final allDiaries = await CloudSyncService.loadAllDiariesForBackup();
     final diaryTags = await DatabaseService.getAllDiaryTags();
 
     final result = await _syncService.syncToCloud(
-      diaries: provider.diaries,
+      diaries: allDiaries,
       moods: provider.moods,
       tags: provider.tags,
       diaryTags: diaryTags,
@@ -738,10 +757,12 @@ class _DataManagementScreenState extends State<DataManagementScreen> {
     setState(() => _isSyncing = true);
 
     final provider = context.read<DiaryProvider>();
+    // 同上：图片包也按全量日记生成，否则只有最近 20 篇的图片会被打包
+    final allDiaries = await CloudSyncService.loadAllDiariesForBackup();
     final diaryTags = await DatabaseService.getAllDiaryTags();
 
     final result = await _syncService.syncToCloud(
-      diaries: provider.diaries,
+      diaries: allDiaries,
       moods: provider.moods,
       tags: provider.tags,
       diaryTags: diaryTags,
@@ -888,11 +909,14 @@ class _DataManagementScreenState extends State<DataManagementScreen> {
 
     try {
       final provider = context.read<DiaryProvider>();
+      // 同样必须全量：provider.diaries 只有已分页加载的那些，
+      // 用它导出会让「导出备份」悄悄只导 20 篇。
+      final allDiaries = await CloudSyncService.loadAllDiariesForBackup();
 
       final backupData = {
         'version': '1.3.0',
         'exportTime': DateTime.now().toIso8601String(),
-        'diaries': provider.diaries.map((d) => d.toMap()).toList(),
+        'diaries': allDiaries.map((d) => d.toMap()).toList(),
         'moods': provider.moods.map((m) => m.toMap()).toList(),
         'tags': provider.tags.map((t) => t.toMap()).toList(),
       };
@@ -1231,6 +1255,21 @@ class _DataManagementScreenState extends State<DataManagementScreen> {
         builder: (context) => const BackupDecryptScreen(),
       ),
     );
+  }
+
+  /// 打开收件箱（「麦麦写来的日记」）。
+  ///
+  /// 页面返回 true 表示有内容被导入，日记数据变了。
+  Future<void> _showInbox() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const InboxScreen(),
+      ),
+    );
+    if (mounted && result == true) {
+      setState(() => _dataChanged = true);
+    }
   }
 
   Future<void> _showBackupManager(BuildContext context) async {

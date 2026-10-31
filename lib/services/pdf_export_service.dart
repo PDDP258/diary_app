@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show compute, debugPrint;
 import 'package:flutter/services.dart';
+import 'package:image/image.dart' as img;
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
@@ -17,6 +19,51 @@ class PdfExportService {
   static pw.Font? _chineseBoldFont;
   static bool _fontLoadFailed = false;
   static bool _isDownloading = false;
+
+  /// 单篇日记导出 PDF 时的图片张数上限。
+  ///
+  /// 原先 `exportSingleDiary` 是不限张数的（单篇最多 20 张），每张原图
+  /// 完整读进内存 → 峰值可达数百 MB，是「导出 PDF 闪退」的直接原因。
+  static const int _maxImagesPerDiary = 4;
+
+  /// PDF 体内图片的目标解码宽度（px）。
+  ///
+  /// A4 页面正文宽度约 515pt，按 150dpi 换算约 1073px，取 1200 已足够清晰。
+  static const int _pdfImageMaxWidth = 1200;
+
+  /// 在 isolate 里把图片降到 [_pdfImageMaxWidth]，返回 JPEG 字节。
+  ///
+  /// 为什么要 isolate：`decodeImage` 会把整张原图解成位图（4000×3000 ≈ 48MB）
+  /// 再缩放重编码，放主 isolate 会卡住 UI 且抬高主线程峰值。
+  ///
+  /// 失败（格式不支持 / 非图片）时返回 null，调用方降级用原图。
+  static Future<Uint8List?> _shrinkImageForPdf(Uint8List original) async {
+    try {
+      return await compute(_shrinkImageForPdfSync, original);
+    } catch (e) {
+      debugPrint('PDF: 图片降采样失败，降级使用原图: $e');
+      return null;
+    }
+  }
+
+  /// [_shrinkImageForPdf] 的 isolate 入口（必须是顶层函数，且参数/返回可发送）。
+  static Uint8List? _shrinkImageForPdfSync(Uint8List original) {
+    try {
+      final decoded = img.decodeImage(original);
+      if (decoded == null) return null;
+      // 已经比目标还小就不动它，避免无谓的重编码损失
+      if (decoded.width <= _pdfImageMaxWidth) return null;
+
+      final resized = img.copyResize(
+        decoded,
+        width: _pdfImageMaxWidth,
+        interpolation: img.Interpolation.linear,
+      );
+      return Uint8List.fromList(img.encodeJpg(resized, quality: 82));
+    } catch (_) {
+      return null;
+    }
+  }
 
   /// 预加载字体（在导出前调用）
   static Future<bool> preloadFonts({Function(double)? onProgress}) async {
@@ -499,13 +546,24 @@ class PdfExportService {
         pw.TextStyle(font: chineseFont, fontSize: 10, color: PdfColors.grey500);
 
     // 处理图片
+    //
+    // ⚠️ 性能/内存（2026-10-28 优化 B0-5）：这里有两个必须守住的约束：
+    //   1. **必须有张数上限**：原来是 `for (final imagePath in diary.imageList)`
+    //      不限张数，单篇最多 20 张。每张走 `readAsBytes` 把**原始相机图**
+    //      （常见 3~8MB）整张读进内存交给 `pw.MemoryImage`，20 张轻松到
+    //      数百 MB → 中低端机直接 OOM 闪退。
+    //   2. **必须先降采样再进 PDF**：PDF 页面按 150dpi 排版，1200px 宽完全够用，
+    //      而原图 4000px 只在内存里放大峰值。缩图走 `compute`（isolate），
+    //      不阻塞 UI 线程。
     final List<pw.Widget> imageWidgets = [];
-    for (final imagePath in diary.imageList) {
+    for (final imagePath in diary.imageList.take(_maxImagesPerDiary)) {
       try {
         final file = File(imagePath);
         if (await file.exists()) {
           final bytes = await file.readAsBytes();
-          final image = pw.MemoryImage(bytes);
+          // 缩到 1200px 再交给 PDF；缩图失败时降级用原图（宁可慢也不要出白页）
+          final shrunk = await _shrinkImageForPdf(bytes) ?? bytes;
+          final image = pw.MemoryImage(shrunk);
           imageWidgets.add(
             pw.Container(
               margin: const pw.EdgeInsets.only(bottom: 10),

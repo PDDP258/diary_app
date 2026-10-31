@@ -143,11 +143,20 @@ class _StatsScreenState extends State<StatsScreen>
     }
     
     // 统计标签分布
+    //
+    // ⚠️ 性能优化（2026-10-28 B0-8）：原来是
+    //   `for (final diary in diaries) { await getTagsByDiaryId(diary.id!); }`
+    // —— 每篇一次查询，而该查询内部还要全表扫描 `_diaryTags` + 内层
+    // `tagIds.contains`，整体 O(N×M×K)。N=1000 时是上百万次比较，
+    // 统计页进入明显卡顿。
+    // 现在一次批量取回「diaryId → 标签名」，只扫一遍，O(N + M)。
     _tagDistribution = {};
+    final tagNamesByDiaryId = await DatabaseService.getTagNamesByDiaryIds();
     for (final diary in diaries) {
-      final tags = await DatabaseService.getTagsByDiaryId(diary.id!);
-      for (final tag in tags) {
-        _tagDistribution[tag.name] = (_tagDistribution[tag.name] ?? 0) + 1;
+      final tagNames = tagNamesByDiaryId[diary.id];
+      if (tagNames == null) continue;
+      for (final name in tagNames) {
+        _tagDistribution[name] = (_tagDistribution[name] ?? 0) + 1;
       }
     }
     

@@ -193,6 +193,45 @@ class TagSystemService {
   static Future<void> incrementTagUsage(String tagId) async {
     await recordTagUsage(tagId);
   }
+
+  /// **批量**增加多个标签的使用次数：只在最后写盘一次。
+  ///
+  /// ⚠️ 性能优化（2026-10-28 B0-3）：原先写日记时是
+  /// ```dart
+  /// for (final tagId in tagIds) { await TagSystemService.incrementTagUsage(tagId); }
+  /// ```
+  /// 而 `incrementTagUsage` → `recordTagUsage` → `_saveTagSystem` 每次都会把
+  /// **整个标签系统 JSON 全量重写一遍 SharedPreferences**，且 `setString` 走
+  /// `commit()`（主线程同步 fsync）。带 3 个标签的一次保存就有 3 次全量写盘，
+  /// 每次约 80ms —— 这是「保存日记要 1~3 秒」里除了全量日记重加密之外的第二大头。
+  ///
+  /// 现在：内存里把次数累加完，**只写一次盘**。
+  static Future<void> incrementTagUsages(Iterable<String> tagIds) async {
+    final ids = tagIds.toList();
+    if (ids.isEmpty) return;
+
+    final system = await getTagSystem();
+
+    var changed = false;
+    // 同一 tagId 可能出现多次，先聚合成次数
+    final counts = <String, int>{};
+    for (final id in ids) {
+      counts[id] = (counts[id] ?? 0) + 1;
+    }
+
+    for (final entry in counts.entries) {
+      final tag = system.findTagById(entry.key);
+      if (tag != null) {
+        tag.incrementUsage(by: entry.value);
+        changed = true;
+      }
+    }
+
+    // 只有真的改到了才写盘
+    if (changed) {
+      await _saveTagSystem(system);
+    }
+  }
   
   /// 获取日记的标签ID列表
   static Future<List<String>> getDiaryTagIds(int diaryId) async {

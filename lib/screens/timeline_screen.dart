@@ -204,6 +204,13 @@ class _TimelineScreenState extends State<TimelineScreen>
                             controller: _scrollController,
                             padding: const EdgeInsets.only(
                                 left: 16, right: 16, top: 8, bottom: 16),
+                            // ⚠️ 2026-10-28 修复（图片加载卡顿）：
+                            // ListView 默认 cacheExtent 是 250 像素，
+                            // 会预构建屏幕外的 item；每个 item 都带图片，
+                            // 于是快速滚动时会有大量图片**同时**进入解码队列，
+                            // 造成明显卡顿与内存尖峰。
+                            // 这里显式收紧到一屏以内，让图片解码与滚动解耦。
+                            cacheExtent: 600,
                             itemCount:
                                 diaries.length + (provider.hasMoreData ? 1 : 0),
                             itemBuilder: (context, index) {
@@ -328,6 +335,11 @@ class _TimelineScreenState extends State<TimelineScreen>
                               child: Image.file(
                                 File(customAvatarPath),
                                 fit: BoxFit.cover,
+                                // 显示尺寸只有 62px，必须限解码宽度，
+                                // 否则用户选的高分辨率头像会被按原图解码
+                                cacheWidth: 160,
+                                cacheHeight: 160,
+                                gaplessPlayback: true,
                                 errorBuilder: (context, error, stackTrace) {
                                   return Center(
                                     child: Text(
@@ -621,6 +633,75 @@ class _TimelineScreenState extends State<TimelineScreen>
                 ],
               ),
             ),
+          ),
+
+          // 🛟 数据自愈入口（2026-10-28 数据丢失事故后加）
+          //
+          // 「列表显示 0 篇」有两种完全不同的情况：
+          //   a) 用户确实还没有日记 → 上面的引导是对的；
+          //   b) **磁盘上有数据但读取失败** → 这时显示「还没有日记」是
+          //      严重误导，用户会以为数据没了。
+          //
+          // 这里检测磁盘上是否真的存在日记数据。如果存在，说明是读取
+          // 出了问题而非数据为空，直接给出「修复并恢复」按钮。
+          FutureBuilder<bool>(
+            future: DatabaseService.hasDiaryDataOnDisk(),
+            builder: (context, snapshot) {
+              if (snapshot.data != true) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(top: 24),
+                child: Column(
+                  children: [
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 32),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.orange.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.warning_amber_rounded,
+                              color: Colors.orange, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '检测到本地仍有日记数据，但未能加载出来',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: scheme.textDarkColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextButton.icon(
+                      onPressed: () async {
+                        final count =
+                            await DatabaseService.recoverFromDisk();
+                        if (!context.mounted) return;
+                        await context.read<DiaryProvider>().loadDiaries();
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(count > 0
+                                ? '已恢复 $count 篇日记'
+                                : '磁盘上未找到可恢复的数据'),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.restore, size: 18),
+                      label: const Text('修复并恢复日记'),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
         ],
       ),

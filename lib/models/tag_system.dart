@@ -46,8 +46,12 @@ class TagLevel3 {
         : null,
   );
   
-  void incrementUsage() {
-    usageCount++;
+  /// 累加使用次数。
+  ///
+  /// [by] 允许批量累加：保存一篇带多个标签的日记时，先在内存里聚合再
+  /// 统一写盘，避免「每个标签都全量重写一次标签系统」（见 B0-3）。
+  void incrementUsage({int by = 1}) {
+    usageCount += by;
     lastUsedAt = DateTime.now();
   }
   

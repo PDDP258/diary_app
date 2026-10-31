@@ -9,6 +9,7 @@ import '../widgets/theme_backgrounds.dart';
 import '../services/badge_service.dart';
 import '../services/milestone_service.dart';
 import '../services/image_cache_service.dart';
+import '../services/database_service.dart';
 import '../services/sound_service.dart';
 // import '../services/quick_note_service.dart';
 import '../config/app_theme.dart';
@@ -233,25 +234,58 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _loadData() async {
+    // 「日记显示不出来但搜索能搜到」的根因（2026-10-28）：
+    //
+    // 原写法把两个完全独立、重要性天差地别的步骤放在同一个 try 里：
+    // ```dart
+    // try {
+    //   await ImageCacheService().initialize();   // ← 图片缓存（可失败、非关键）
+    //   await provider.loadAllData();             // ← 日记数据（关键！）
+    // } catch (e) { debugPrint('加载数据失败: $e'); }
+    // ```
+    // 只要**图片缓存**第一次初始化抛异常（临时目录不可用等），
+    // `loadAllData()` 就永远不会执行，而异常被吞掉只留一行日志。
+    // 结果就是：`DiaryProvider.diaries` 永远为空 → 主界面/日历一片空白；
+    // 搜索页因为直接查 `DatabaseService.getAllDiaries()`，所以照样能搜到
+    // —— 这正是用户反馈「搜索能搜到、主界面没有」的原因。
+    //
+    // 修复：**每一步独立容错，关键步骤绝不被非关键步骤阻断**。
+    final provider = context.read<DiaryProvider>();
+
+    // 1) 图片缓存：失败也不影响日记加载
     try {
-      final provider = context.read<DiaryProvider>();
-      
-      // 初始化图片缓存服务
       await ImageCacheService().initialize();
-      
-      // 加载核心数据（只加载最近的日记，快速启动）
-      await provider.loadAllData();
-      
-      // 延迟执行非关键操作（避免阻塞启动）
-      if (mounted) {
-        _runDeferredTasks(provider);
-      }
     } catch (e) {
-      debugPrint('加载数据失败: $e');
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
+      debugPrint('图片缓存初始化失败（不影响日记加载）: $e');
+    }
+
+    // 2) 日记数据：关键步骤，失败要有可见反馈 + 重试
+    try {
+      await provider.loadAllData();
+
+      // 如果加载后仍然是空，但磁盘上确实有数据 —— 说明加载被静默吞掉了。
+      // 这里主动兜底再拉一次全量，避免用户永远卡在空列表。
+      if (provider.diaries.isEmpty && await DatabaseService.hasDiaryDataOnDisk()) {
+        debugPrint('⚠️ Provider 为空但磁盘有数据，强制重新加载');
+        await provider.loadDiaries();
       }
+    } catch (e, st) {
+      debugPrint('❌ 日记数据加载失败: $e\n$st');
+      // 关键步骤失败 → 尝试一次强制恢复，仍失败则让 UI 显示错误态
+      try {
+        await provider.loadDiaries();
+      } catch (_) {
+        // 保留 error，交由 UI 展示
+      }
+    }
+
+    // 3) 延迟执行非关键操作（避免阻塞启动）
+    if (mounted) {
+      _runDeferredTasks(provider);
+    }
+
+    if (mounted) {
+      setState(() => _isLoading = false);
     }
   }
   

@@ -134,11 +134,36 @@ class _BackupManagerScreenState extends State<BackupManagerScreen> {
     try {
       await AutoBackupService.restoreFromBackup(filePath);
       await _loadBackups();
-      
+
+      // 🐛 修复（2026-10-28）：「恢复成功但哪都看不到日记」。
+      //
+      // 数据层 `restoreDiaries` 已经把日记写进内存并落盘了，但
+      // **`DiaryProvider` 里仍然是旧的那份空列表** —— 时间线/日历都订阅
+      // Provider，所以界面上一片空白；而统计页是直接向 `DatabaseService`
+      // 重新查询的，于是出现「统计有数字、列表看不到」的诡异现象。
+      //
+      // 云端导入路径（`_importCloudBackup`）本来就有这一步刷新，
+      // 本地备份恢复却漏了。这里补齐，并且用 `loadDiaries()`（全量）
+      // 而不是 `loadRecentDiaries`，确保恢复的数据全部进入 Provider。
       if (mounted) {
+        await context.read<DiaryProvider>().loadDiaries();
+      }
+
+      // 成功路径也要复位 loading，否则转圈一直不停
+      if (mounted) {
+        setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('恢复成功')),
         );
+        // ⚠️ 必须通知上层「数据已变化」。
+        // 原实现恢复完只弹一个 SnackBar，从不给调用方返回值，
+        // 于是 `data_management_screen._showBackupManager` 永远拿不到
+        // `result == true`，外层也就不会标记数据变更 —— 用户返回后
+        // 看到的仍是旧状态。云端导入路径有 `Navigator.pop(context, true)`，
+        // 本地恢复这里补齐。
+        Navigator.pop(context, true);
+      } else {
+        _isLoading = false;
       }
     } catch (e) {
       setState(() => _isLoading = false);

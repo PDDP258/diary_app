@@ -98,25 +98,68 @@ class Diary {
     );
   }
 
-  // 获取图片列表
+  // ==================== 派生字段缓存 ====================
+  //
+  // `Diary` 的所有字段都是 final，实例不可变，所以派生值可以安全地缓存。
+  // 此前 `imageList` / `wordCount` 每次访问都重新计算：
+  //   - `imageList`：`split(',')` + `where().toList()` 每次都新建 List
+  //   - `wordCount`：**每次都 new RegExp** 再对全文 `replaceAll`
+  // 全仓库 `.imageList` 命中 38 处、`.wordCount` 命中 17 处，其中统计页 /
+  // 徽章 / 目标 / 文本分析都是对**全量日记**做 fold —— N=1000 时等于每次
+  // 上千次正则编译 + 上千次全文替换，是统计类页面卡顿的固定成本。
+
+  /// 纪念日文字的正则：**提成 static final，只编译一次**。
+  /// 原先写在 getter 里，每次访问都重新构造 RegExp。
+  static final RegExp _anniversaryPattern = RegExp(
+    r'[\n]*[🎉⏰][^\n]*(?:纪念日|倒数日)[^\n]*',
+    multiLine: true,
+  );
+
+  List<String>? _imageListCache;
+  int? _wordCountCache;
+
+  // 获取图片列表（带缓存）
   List<String> get imageList {
-    if (images == null || images!.isEmpty) return [];
-    return images!.split(',').where((path) => path.isNotEmpty).toList();
+    final cached = _imageListCache;
+    if (cached != null) return cached;
+
+    final raw = images;
+    final List<String> result;
+    if (raw == null || raw.isEmpty) {
+      result = const <String>[];
+    } else {
+      result = List<String>.unmodifiable(
+        raw.split(',').where((path) => path.isNotEmpty),
+      );
+    }
+    _imageListCache = result;
+    return result;
   }
 
-  // 计算内容字数（排除纪念日文字）
+  // 计算内容字数（排除纪念日文字，带缓存）
   int get wordCount {
+    final cached = _wordCountCache;
+    if (cached != null) return cached;
+
     int count = 0;
-    if (title != null) count += title!.length;
-    if (content != null) {
+    final t = title;
+    if (t != null) count += t.length;
+    final c = content;
+    if (c != null) {
       // 排除纪念日文字
-      final anniversaryPattern = RegExp(
-        r'[\n]*[🎉⏰][^\n]*(?:纪念日|倒数日)[^\n]*',
-        multiLine: true,
-      );
-      final userContent = content!.replaceAll(anniversaryPattern, '').trim();
+      final userContent = c.replaceAll(_anniversaryPattern, '').trim();
       count += userContent.length;
     }
+    _wordCountCache = count;
     return count;
+  }
+
+  /// 清除派生缓存。
+  ///
+  /// 仅用于「极少数就地修改最终字段」的防御路径 —— 正常代码走 `copyWith`
+  /// 生成新实例，缓存会自然重算，不需要调这个。
+  void invalidateDerivedCache() {
+    _imageListCache = null;
+    _wordCountCache = null;
   }
 }

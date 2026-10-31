@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'dart:io';
 import '../services/image_cache_service.dart';
 
 /// 平台相关的图片显示组件 - 带缩略图缓存优化
@@ -18,6 +17,12 @@ class PlatformImage extends StatelessWidget {
   final double? width;
   final double? height;
   final BoxFit fit;
+
+  /// 解码目标像素尺寸。传了就按它降采样解码，避免「显示 100px 却解 300px」。
+  ///
+  /// ⚠️ 2026-10-28 修复：这两个参数以前**声明了但从未使用**（死参数），
+  /// 14 处调用方传的 `cacheWidth: 200` 全部被静默丢弃 —— 这是列表图片
+  /// 加载卡顿、内存偏高的一个原因。
   final int? cacheWidth;
   final int? cacheHeight;
 
@@ -46,44 +51,24 @@ class PlatformImage extends StatelessWidget {
       );
     }
 
-    // Native 版本 - 检查文件存在性后再加载
-    return FutureBuilder<bool>(
-      future: File(path).exists(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return _buildLoadingWidget();
-        }
-        
-        if (snapshot.data != true) {
-          // 文件不存在，显示占位图
-          return _buildPlaceholder();
-        }
-        
-        // 文件存在，使用优化的缩略图缓存
-        return OptimizedCachedImage(
-          path: path,
-          width: width,
-          height: height,
-          fit: fit,
-          quality: CacheQuality.small,
-        );
-      },
-    );
-  }
-
-  /// 构建加载占位图
-  Widget _buildLoadingWidget() {
-    return Container(
+    // ⚠️ 2026-10-28：不再用 `FutureBuilder(File(path).exists())`。
+    //
+    // 原写法有两个问题：
+    //  1. future 建在 `build` 里 → **每次 rebuild 都重新发一次磁盘 IO**，
+    //     并且会先回到 waiting 态显示加载占位 → 图片「闪白块」；
+    //  2. 白做一次 exists 检查 —— `Image.file` 本身就有 `errorBuilder`
+    //     能兜住文件不存在的情况。
+    //
+    // 现在直接渲染，把「文件不存在」交给 errorBuilder，既省一次 IO
+    // 又消除闪烁。
+    return OptimizedCachedImage(
+      path: path,
       width: width,
       height: height,
-      color: Colors.grey[200],
-      child: const Center(
-        child: SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-      ),
+      fit: fit,
+      quality: CacheQuality.small,
+      cacheWidth: cacheWidth,
+      cacheHeight: cacheHeight,
     );
   }
 

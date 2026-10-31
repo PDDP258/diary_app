@@ -737,6 +737,31 @@ class DatabaseService {
     return maps.map((map) => Tag.fromMap(map)).toList();
   }
 
+  /// **批量**取每篇日记的标签名：单次 JOIN 查询，O(1) 次往返。
+  ///
+  /// 对应 web 实现的同名方法（2026-10-28 B0-8）。统计页原本对每篇日记
+  /// 调一次 [getTagsByDiaryId]，N 篇就是 N 次查询（N+1 问题的极端形式）。
+  /// 这里一条 SQL 全部取回。
+  ///
+  /// 返回：`diaryId → 标签名列表`。
+  static Future<Map<int, List<String>>> getTagNamesByDiaryIds() async {
+    final db = await database;
+    final rows = await db.rawQuery('''
+      SELECT dt.diary_id AS diary_id, t.name AS tag_name
+      FROM $tableDiaryTags dt
+      INNER JOIN $tableTags t ON t.id = dt.tag_id
+    ''');
+
+    final result = <int, List<String>>{};
+    for (final row in rows) {
+      final diaryId = row['diary_id'];
+      final tagName = row['tag_name'];
+      if (diaryId is! int || tagName is! String) continue;
+      (result[diaryId] ??= <String>[]).add(tagName);
+    }
+    return result;
+  }
+
   // ==================== 统计操作 ====================
 
   static Future<Map<String, int>> getMoodDistribution() async {

@@ -277,10 +277,19 @@ class BackupExportService {
   }
   
   /// 验证数据完整性
+  ///
+  /// ⚠️ 导出时哈希是对**原始 backupData** 算的，`encrypted` / `encryptAlgorithm` /
+  /// `exportTime` 是算完哈希之后才展开进 exportData 的。校验必须把这几个也剔除，
+  /// 否则算出来必然和存储值不等 —— 老版本一律报「密码可能不正确或文件已损坏」，
+  /// 等于导出的加密备份永远导不回来。历史文件同样能通过，不需要重新导出。
   static bool _verifyDataIntegrity(Map<String, dynamic> data) {
     if (!data.containsKey('_hash')) return true;
     final storedHash = data['_hash'] as String;
-    final dataCopy = Map<String, dynamic>.from(data)..remove('_hash');
+    final dataCopy = Map<String, dynamic>.from(data)
+      ..remove('_hash')
+      ..remove('encrypted')
+      ..remove('encryptAlgorithm')
+      ..remove('exportTime');
     final computedHash = _generateDataHash(dataCopy);
     return storedHash == computedHash;
   }

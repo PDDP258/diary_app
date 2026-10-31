@@ -1,10 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import '../config/app_theme.dart';
 import '../models/diary.dart';
-import '../providers/diary_provider.dart';
 import '../providers/theme_provider.dart';
+import '../services/database_service.dart';
 import 'diary_detail_screen.dart';
 
 /// 日记搜索页面
@@ -21,7 +22,28 @@ class _DiarySearchScreenState extends State<DiarySearchScreen> {
   List<Diary> _searchResults = [];
   bool _isSearching = false;
   String _lastQuery = '';
-  
+
+  /// 可取消的防抖 timer。
+  ///
+  /// ⚠️ 优化（2026-10-28 B0-7）：原来用的是
+  /// `Future.delayed(300ms, ...)` —— **它无法取消**，每敲一个字符就排一个
+  /// 300ms 后的回调（靠比较文本过滤过期结果）。快速输入 10 个字会排 10 个
+  /// Timer + 10 个闭包，且最后一个必然执行。改为真正的可取消 Timer。
+  Timer? _debounce;
+
+  /// 搜索序号：用于丢弃过期结果。
+  ///
+  /// 搜索现在是异步的（要读数据库全量），若用户连续输入，先发的查询可能
+  /// 后返回并**覆盖掉更新的结果** —— 这是正确性 bug，不只是性能问题。
+  int _searchSeq = 0;
+
+  /// 全量日记缓存。
+  ///
+  /// ⚠️ 关键修正（2026-10-28 B0-7）：原来搜的是 `provider.diaries`，
+  /// 而 Provider 是**分页加载**的 —— 通常只有最近 20 篇。于是第 21 篇以后
+  /// 永远搜不到，用户会以为日记丢了。搜索必须用数据库全量。
+  List<Diary>? _allDiariesCache;
+
   @override
   void initState() {
     super.initState();
@@ -29,18 +51,38 @@ class _DiarySearchScreenState extends State<DiarySearchScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
     });
+    // 进页面就把全量日记加载好（一次），后续每次查询都复用
+    unawaited(_ensureAllDiaries());
   }
-  
+
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchController.dispose();
     _focusNode.dispose();
     super.dispose();
   }
-  
-  /// 执行搜索
-  void _performSearch(String query) {
-    if (query.trim().isEmpty) {
+
+  /// 加载全量日记（只加载一次，失败下次再试）。
+  Future<List<Diary>> _ensureAllDiaries() async {
+    final cached = _allDiariesCache;
+    if (cached != null) return cached;
+
+    final all = await DatabaseService.getAllDiaries();
+    // 排序只做一次，后续查询结果直接在这个有序列表上过滤
+    all.sort((a, b) => b.date.compareTo(a.date));
+    _allDiariesCache = all;
+    return all;
+  }
+
+  /// 执行搜索（异步、带序号校验）
+  Future<void> _performSearch(String query) async {
+    // 每次搜索递增序号，回调里比对，丢弃过期结果
+    final seq = ++_searchSeq;
+    final keyword = query.trim();
+
+    if (keyword.isEmpty) {
+      if (!mounted) return;
       setState(() {
         _searchResults = [];
         _isSearching = false;
@@ -48,32 +90,67 @@ class _DiarySearchScreenState extends State<DiarySearchScreen> {
       });
       return;
     }
-    
-    setState(() {
-      _isSearching = true;
-      _lastQuery = query.trim();
-    });
-    
-    final provider = context.read<DiaryProvider>();
-    final allDiaries = provider.diaries;
-    final lowerQuery = query.toLowerCase();
-    
-    // 搜索标题和内容
-    final results = allDiaries.where((diary) {
-      final titleMatch = diary.title?.toLowerCase().contains(lowerQuery) ?? false;
-      final contentMatch = diary.content?.toLowerCase().contains(lowerQuery) ?? false;
-      return titleMatch || contentMatch;
-    }).toList();
-    
-    // 按日期排序（最新的在前）
-    results.sort((a, b) => b.date.compareTo(a.date));
-    
+
+    if (mounted) {
+      setState(() {
+        _isSearching = true;
+        _lastQuery = keyword;
+      });
+    }
+
+    final allDiaries = await _ensureAllDiaries();
+
+    // 过期结果直接丢弃（用户已经又输入了新的关键字）
+    if (!mounted || seq != _searchSeq) return;
+
+    final lowerQuery = keyword.toLowerCase();
+
+    // 搜索标题和内容。注意：标题/内容先 toLowerCase 再 contains，
+    // 全量 N 篇每篇做 2 次小写化 —— 这是 O(N·L)，但有 300ms 防抖兜住。
+    final results = <Diary>[];
+    for (final diary in allDiaries) {
+      final title = diary.title;
+      final content = diary.content;
+      final titleMatch = title != null && title.toLowerCase().contains(lowerQuery);
+      if (titleMatch) {
+        results.add(diary);
+        continue;
+      }
+      final contentMatch =
+          content != null && content.toLowerCase().contains(lowerQuery);
+      if (contentMatch) results.add(diary);
+    }
+
+    // allDiaries 已按日期倒序，过滤后天然有序，无需再 sort
+
+    if (!mounted || seq != _searchSeq) return;
     setState(() {
       _searchResults = results;
       _isSearching = false;
     });
   }
-  
+
+  /// 输入变化：真防抖（可取消）
+  void _onQueryChanged(String value) {
+    setState(() {}); // 只为更新清除按钮的显隐
+
+    _debounce?.cancel();
+    // 单字搜索意义不大且会把结果炸成几百条，限制最少 2 个字
+    if (value.trim().length < 2) {
+      if (_searchResults.isNotEmpty || _isSearching) {
+        _searchSeq++; // 使在途查询失效
+        setState(() {
+          _searchResults = [];
+          _isSearching = false;
+        });
+      }
+      return;
+    }
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) _performSearch(value);
+    });
+  }
+
   /// 高亮搜索关键词
   List<TextSpan> _highlightText(String text, String query, Color textColor) {
     if (query.isEmpty) {
@@ -212,15 +289,7 @@ class _DiarySearchScreenState extends State<DiarySearchScreen> {
                         )
                       : null,
                 ),
-                onChanged: (value) {
-                  setState(() {});
-                  // 防抖搜索
-                  Future.delayed(const Duration(milliseconds: 300), () {
-                    if (_searchController.text == value) {
-                      _performSearch(value);
-                    }
-                  });
-                },
+                onChanged: _onQueryChanged,
                 textInputAction: TextInputAction.search,
                 onSubmitted: _performSearch,
               ),
@@ -467,6 +536,8 @@ class _DiarySearchScreenState extends State<DiarySearchScreen> {
     );
     
     if (result == true) {
+      // 详情页可能改过日记内容 → 让全量缓存失效，否则会拿旧数据搜
+      _allDiariesCache = null;
       // 刷新搜索结果
       _performSearch(_lastQuery);
     }

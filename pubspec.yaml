@@ -9,8 +9,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.8
-  table_calendar: ^3.1.2  # 日历组件
+  # 已移除（2026-10-28 性能优化 B0-10，实测 lib/test/windows/web 全部零 import）：
+  #   cupertino_icons        —— 唯一内容是 251.6KB 的 CupertinoIcons.ttf，直接进包
+  #   table_calendar         —— 日历页是手写 GridView.count，从未使用
+  #   turn_page_transition   —— Splash 翻页用的是自研 SplashPageTurn（real_page_turn.dart）
   sqflite: ^2.3.3        # 本地数据库
   # sqflite_common_ffi: ^2.3.3  # 桌面平台支持（暂时禁用，避免GitHub下载问题）
   path_provider: ^2.1.4  # 文件路径
@@ -30,7 +32,6 @@ dependencies:
   encrypt: ^5.0.3  # 数据加密
   crypto: ^3.0.3  # 哈希计算
   clipboard: ^3.0.14  # 剪贴板功能
-  turn_page_transition: ^0.3.0  # 书本翻页效果
   pdf: ^3.11.1  # PDF生成
   printing: ^5.13.1  # PDF打印/导出
   audioplayers: ^6.1.0  # 音效播放
