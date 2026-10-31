@@ -597,6 +597,9 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
       moodName: _selectedMood?.name,
       moodEmoji: _selectedMood?.emoji,
       isFavorite: widget.diary?.isFavorite ?? false,
+      // 来源必须跟着走：编辑一篇「麦麦写的」日记，不能因为重新保存一次
+      // 就把来源洗成本人——那等于把唯一的区分依据弄丢了。
+      source: widget.diary?.source,
     );
 
     final provider = context.read<DiaryProvider>();

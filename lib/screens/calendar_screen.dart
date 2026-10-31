@@ -28,7 +28,15 @@ class CalendarScreen extends StatefulWidget {
   State<CalendarScreen> createState() => _CalendarScreenState();
 }
 
-class _CalendarScreenState extends State<CalendarScreen> {
+class _CalendarScreenState extends State<CalendarScreen>
+    with AutomaticKeepAliveClientMixin {
+  // ⚠️ 2026-10-31：切 tab 卡顿。日历页 initState 会 `_resetToToday()`
+  // （每次切回都把选中日期重置到今天，体验也差）+ `_loadAnniversaries()`
+  // + `_loadGoal()` 三次 IO/DB 调用。keepAlive 后切回不再重跑，
+  // 用户停留在原来查看的月份。
+  @override
+  bool get wantKeepAlive => true;
+
   late DateTime _selectedDate;
   late DateTime _currentMonth;
   List<Anniversary> _anniversaries = [];
@@ -88,6 +96,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // keepAlive 必须调 super.build，否则不生效
+    super.build(context);
+
     final scheme = AppTheme.schemeOf(context);
 
     return Consumer<DiaryProvider>(
@@ -1272,6 +1283,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        // 来源标记（本人手写时不渲染）
+                        if (diary.isFromMaibot) ...[
+                          const SizedBox(width: 6),
+                          DiarySourceBadge(diary: diary),
+                        ],
+                        const SizedBox(width: 4),
                         Icon(
                           Icons.chevron_right_rounded,
                           size: 20,

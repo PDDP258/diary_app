@@ -17,7 +17,7 @@ import 'encryption_service.dart';
 class DatabaseService {
   static Database? _database;
   static const String _databaseName = 'diary_app.db';
-  static const int _databaseVersion = 15; // 版本15：学期配置增加固定课时模式与课时时长
+  static const int _databaseVersion = 16; // 版本16：日记增加来源标记（source）
 
   // 表名
   static const String tableDiaries = 'diaries';
@@ -69,6 +69,7 @@ class DatabaseService {
         mood_emoji TEXT,
         weather TEXT,
         is_favorite INTEGER DEFAULT 0,
+        source TEXT,
         created_at TEXT,
         updated_at TEXT,
         is_encrypted INTEGER DEFAULT 1
@@ -372,6 +373,15 @@ class DatabaseService {
           'ALTER TABLE $tableSemesterConfig ADD COLUMN fixed_duration_mode INTEGER DEFAULT 1');
       await db.execute(
           'ALTER TABLE $tableSemesterConfig ADD COLUMN class_minutes INTEGER DEFAULT 45');
+    }
+    if (oldVersion < 16) {
+      // 版本16：日记增加来源标记。老数据一律为 null（= 本人手写），
+      // 无需回填；只有收件箱导入（麦麦写的）才会写入 'maibot'。
+      try {
+        await db.execute('ALTER TABLE $tableDiaries ADD COLUMN source TEXT');
+      } catch (e) {
+        // 列已存在时忽略错误（防止重复升级导致的启动失败）
+      }
     }
   }
 

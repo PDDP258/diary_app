@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../config/app_theme.dart';
+import '../models/diary.dart';
 import '../providers/diary_provider.dart';
 import '../providers/theme_provider.dart';
 import '../services/cloud_sync_service.dart';
@@ -266,8 +267,8 @@ class _InboxScreenState extends State<InboxScreen> {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              '共 ${_items.length} 条待确认。导入后会在对应日期生成日记；'
-              '服务器上的原件会被删除。',
+              '共 ${_items.length} 条待确认。导入后会在对应日期生成日记，'
+              '并把来源标成「麦麦」；服务器上的原件会被删除。',
               style: TextStyle(
                 fontSize: 13,
                 color: scheme.textMediumColor,
@@ -477,19 +478,26 @@ class _DetailDialogState extends State<_DetailDialog> {
     final content = _payload!['content'] as String? ?? '';
     final date = _payload!['date'] as String? ?? '';
     final mood = _payload!['mood'] as String? ?? '';
+    final rawSource = _payload!['source'] as String? ?? '';
+    // 认不出来就按「麦麦写的」展示 —— 能进这个收件箱的本来就是她写的，
+    // 而且导入时也是这么兜底的（见 InboxService.buildDiaryFromPayload）。
+    final sourceLabel =
+        (DiarySource.fromCode(rawSource) ?? DiarySource.maibot).detailLabel;
 
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (date.isNotEmpty || mood.isNotEmpty) ...[
+          if (date.isNotEmpty || mood.isNotEmpty || sourceLabel.isNotEmpty) ...[
             Wrap(
               spacing: 8,
+              runSpacing: 6,
               children: [
                 if (date.isNotEmpty)
                   _chip(Icons.calendar_today_outlined, date, scheme),
                 if (mood.isNotEmpty) _chip(Icons.mood_outlined, mood, scheme),
+                _chip(Icons.auto_awesome, sourceLabel, scheme),
               ],
             ),
             const SizedBox(height: 14),

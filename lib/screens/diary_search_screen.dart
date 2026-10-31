@@ -6,6 +6,7 @@ import '../config/app_theme.dart';
 import '../models/diary.dart';
 import '../providers/theme_provider.dart';
 import '../services/database_service.dart';
+import '../widgets/diary_source_badge.dart';
 import 'diary_detail_screen.dart';
 
 /// 日记搜索页面
@@ -468,7 +469,13 @@ class _DiarySearchScreenState extends State<DiarySearchScreen> {
                     color: scheme.textLightColor,
                   ),
                 ),
-                
+
+                // 来源标记（本人手写时不渲染）
+                if (diary.isFromMaibot) ...[
+                  const SizedBox(width: 8),
+                  DiarySourceBadge(diary: diary),
+                ],
+
                 const Spacer(),
                 
                 // 字数

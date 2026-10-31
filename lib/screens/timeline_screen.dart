@@ -11,6 +11,7 @@ import '../providers/theme_provider.dart';
 import '../utils/platform_helpers.dart';
 import '../widgets/widgets.dart';
 import '../widgets/code_comment.dart';
+import '../widgets/diary_source_badge.dart';
 import '../widgets/scroll_reveal.dart';
 import '../services/database_service.dart';
 import 'diary_detail_screen.dart';
@@ -28,7 +29,13 @@ class TimelineScreen extends StatefulWidget {
 }
 
 class _TimelineScreenState extends State<TimelineScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+  // ⚠️ 2026-10-31：切 tab 卡顿。时间线是主页面，每次切回原来都会
+  // dispose → initState → 重建整个列表（含入场动画重播、滚动位置归零）。
+  // keepAlive 后切回保持滚动位置与已构建的子项，切换几乎瞬时。
+  @override
+  bool get wantKeepAlive => true;
+
   final ScrollController _scrollController = ScrollController();
   late AnimationController _animationController;
 
@@ -173,6 +180,9 @@ class _TimelineScreenState extends State<TimelineScreen>
 
   @override
   Widget build(BuildContext context) {
+    // keepAlive 必须调 super.build，否则不生效
+    super.build(context);
+
     final scheme = AppTheme.schemeOf(context);
 
     return Consumer<DiaryProvider>(
@@ -204,13 +214,16 @@ class _TimelineScreenState extends State<TimelineScreen>
                             controller: _scrollController,
                             padding: const EdgeInsets.only(
                                 left: 16, right: 16, top: 8, bottom: 16),
-                            // ⚠️ 2026-10-28 修复（图片加载卡顿）：
-                            // ListView 默认 cacheExtent 是 250 像素，
-                            // 会预构建屏幕外的 item；每个 item 都带图片，
-                            // 于是快速滚动时会有大量图片**同时**进入解码队列，
-                            // 造成明显卡顿与内存尖峰。
-                            // 这里显式收紧到一屏以内，让图片解码与滚动解耦。
-                            cacheExtent: 600,
+                            // ⚠️ 2026-10-31 修正：上一轮我把 cacheExtent 设成 600，
+                            // 注释写的是「收紧」，实际 Flutter 默认是 **250**
+                            // （`RenderAbstractViewport.defaultCacheExtent`）——
+                            // 我把它扩大了 2.4 倍，屏幕外预构建区域翻倍，
+                            // 更多带图 item 同时构建 → 帧率反而更差。
+                            //
+                            // 现在显式收回默认值。真正要省的是
+                            // 「屏幕外 item 的图片解码」，那个应由 item 自身
+                            // 按可见性决定，而不是靠扩大缓存区。
+                            cacheExtent: 250,
                             itemCount:
                                 diaries.length + (provider.hasMoreData ? 1 : 0),
                             itemBuilder: (context, index) {
@@ -860,21 +873,36 @@ class _TimelineScreenState extends State<TimelineScreen>
                                 ),
                               ),
                             const SizedBox(height: 6),
-                            // 心情表情
-                            if (diary.moodEmoji != null)
+                            // 来源标记 + 心情表情
+                            //
+                            // 来源放在标题下面这一行而不是塞进右上角：
+                            // 「这篇是麦麦写的」比「我什么时候写的」更需要被一眼看到。
+                            if (diary.isFromMaibot || diary.moodEmoji != null)
                               Row(
                                 children: [
-                                  Text(
-                                    diary.moodEmoji!,
-                                    style: const TextStyle(fontSize: 18),
-                                  ),
-                                  if (diary.moodName != null) ...[
-                                    const SizedBox(width: 4),
+                                  if (diary.isFromMaibot) ...[
+                                    DiarySourceBadge(diary: diary),
+                                    const SizedBox(width: 8),
+                                  ],
+                                  if (diary.moodEmoji != null)
                                     Text(
-                                      diary.moodName!,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: scheme.textMediumColor,
+                                      diary.moodEmoji!,
+                                      style: const TextStyle(fontSize: 18),
+                                    ),
+                                  if (diary.moodEmoji != null &&
+                                      diary.moodName != null) ...[
+                                    const SizedBox(width: 4),
+                                    // 加了来源徽标后这一行更挤了，心情名用
+                                    // Flexible 兜住，长名字省略而不是撑爆 Row
+                                    Flexible(
+                                      child: Text(
+                                        diary.moodName!,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: scheme.textMediumColor,
+                                        ),
                                       ),
                                     ),
                                   ],

@@ -12,6 +12,7 @@ import '../providers/diary_provider.dart';
 import '../services/image_cache_service.dart';
 import '../services/motion_photo_service.dart';
 import '../widgets/motion_photo_widget.dart';
+import '../widgets/diary_source_badge.dart';
 import '../widgets/random_sticker_overlay.dart';
 import 'write_diary_screen.dart';
 import 'dart:io';
@@ -389,8 +390,14 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                // 星期和心情
-                Row(
+                // 星期、心情和来源
+                //
+                // 用 Wrap 而不是 Row：来源徽标是后加的，星期 + 心情 + 来源
+                // 三样在窄屏上会挤爆 Row（溢出条纹）。Wrap 会自动换行。
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Text(
                       weekDay,
@@ -400,8 +407,7 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
                         color: scheme.textMediumColor,
                       ),
                     ),
-                    if (_currentDiary.moodName != null) ...[
-                      const SizedBox(width: 12),
+                    if (_currentDiary.moodName != null)
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 4),
@@ -428,7 +434,11 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
                           ],
                         ),
                       ),
-                    ],
+                    // 来源：本人手写时不渲染（见 DiarySourceBadge）
+                    DiarySourceBadge(
+                      diary: _currentDiary,
+                      verbose: true,
+                    ),
                   ],
                 ),
               ],

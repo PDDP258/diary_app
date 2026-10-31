@@ -242,42 +242,68 @@ class InboxService {
       final content = payload['content'];
       if (content is! String || content.trim().isEmpty) return false;
 
-      final day = payload['date'];
-      final title = payload['title'];
       final moodName = payload['mood'];
 
-      int? moodId;
-      String? resolvedMoodName;
-      String? moodEmoji;
+      Mood? matchedMood;
       if (moodName is String && moodName.trim().isNotEmpty) {
         final moods = await DatabaseService.getAllMoods();
         for (final Mood m in moods) {
           if (m.name == moodName.trim()) {
-            moodId = m.id;
-            resolvedMoodName = m.name;
-            moodEmoji = m.emoji;
+            matchedMood = m;
             break;
           }
         }
       }
 
-      final diary = Diary(
-        title: (title is String && title.trim().isNotEmpty) ? title.trim() : null,
-        content: content.trim(),
-        date: (day is String && day.isNotEmpty) ? day : _today(),
-        moodId: moodId,
-        moodName: resolvedMoodName,
-        moodEmoji: moodEmoji,
-      );
+      final diary = buildDiaryFromPayload(payload, mood: matchedMood);
 
       await DatabaseService.insertDiary(diary);
-      debugPrint('[Inbox] 已导入日记: ${diary.date} ${diary.title ?? ''}');
+      debugPrint('[Inbox] 已导入日记: ${diary.date} ${diary.title ?? ''} '
+          '(来源 ${diary.source ?? '-'})');
       return true;
     } catch (e) {
       debugPrint('[Inbox] 导入失败: $e');
       SyncLogService.log('收件箱导入失败: $e', level: 'ERROR');
       return false;
     }
+  }
+
+  /// 收件箱条目的兜底来源：这个收件箱里的东西本来就是麦麦写的。
+  static const String fallbackSourceCode = 'maibot';
+
+  /// 用解密后的 payload 拼出一篇待入库的日记（**纯函数，不碰数据库**）。
+  ///
+  /// 抽出来是为了能被单测直接调用 —— 来源标记是这条链路唯一不能错的东西，
+  /// 一旦丢了，用户在列表里就再也分不清哪篇是麦麦写的。
+  ///
+  /// 来源取值顺序：
+  ///   1. payload 里的 `source`（diary-mcp 上传时会写 `maibot`）
+  ///   2. 缺失 / 不是字符串 / 空 → [fallbackSourceCode]
+  /// 注意：这里不过滤「不认识的来源」。认不出来时原样存下，
+  /// 由 UI 决定怎么展示，避免信息在导入这一步就被抹掉。
+  @visibleForTesting
+  static Diary buildDiaryFromPayload(
+    Map<String, dynamic> payload, {
+    Mood? mood,
+  }) {
+    final content = payload['content'] as String? ?? '';
+    final day = payload['date'];
+    final title = payload['title'];
+
+    final rawSource = payload['source'];
+    final source = (rawSource is String && rawSource.trim().isNotEmpty)
+        ? rawSource.trim()
+        : fallbackSourceCode;
+
+    return Diary(
+      title: (title is String && title.trim().isNotEmpty) ? title.trim() : null,
+      content: content.trim(),
+      date: (day is String && day.isNotEmpty) ? day : _today(),
+      moodId: mood?.id,
+      moodName: mood?.name,
+      moodEmoji: mood?.emoji,
+      source: source,
+    );
   }
 
   /// 标记某条已处理（无论导入还是丢弃），并尝试删掉服务器原件。

@@ -1,3 +1,38 @@
+/// 日记的来源。
+///
+/// 只回答一个问题：这篇是谁写的。
+/// 落库用字符串（`source` 列），不用 int 枚举序号 —— 以后加来源不必改表，
+/// 也能容忍「老版本 App 读到不认识的值」：认不出来就当作没有标记。
+enum DiarySource {
+  /// 用户自己在 App 里写的。
+  ///
+  /// 历史数据没有 `source` 列（null），语义上等同于本人手写。
+  self('self', '我', '我写的'),
+
+  /// 麦麦（MaiBot）写进收件箱、用户确认后导入的。
+  maibot('maibot', '麦麦', '麦麦写的');
+
+  const DiarySource(this.code, this.label, this.detailLabel);
+
+  /// 存储用的字符串标识（写进 DB / 备份 JSON）。
+  final String code;
+
+  /// 展示用短名（列表里的紧凑徽标）。
+  final String label;
+
+  /// 详情页用的完整说法。
+  final String detailLabel;
+
+  /// 从存储值解析；null / 空 / 不认识 → null（= 没有来源标记）。
+  static DiarySource? fromCode(String? code) {
+    if (code == null || code.isEmpty) return null;
+    for (final value in DiarySource.values) {
+      if (value.code == code) return value;
+    }
+    return null;
+  }
+}
+
 /// 日记模型（完善版）
 class Diary {
   final int? id;
@@ -11,6 +46,14 @@ class Diary {
   final String? weather; // 天气
   final String? location; // 位置
   final bool isFavorite; // 是否收藏
+
+  /// 来源标识，见 [DiarySource] 的 `code`。
+  ///
+  /// null 表示「没有标记」（历史数据 / 本人手写）。
+  /// 存原始字符串而不是枚举，是为了让不认识的来源能原样带回去，
+  /// 不会在「读一次再写一次」的过程中被悄悄抹掉。
+  final String? source;
+
   final String? createdAt;
   final String? updatedAt;
 
@@ -26,9 +69,16 @@ class Diary {
     this.weather,
     this.location,
     this.isFavorite = false,
+    this.source,
     this.createdAt,
     this.updatedAt,
   });
+
+  /// 解析后的来源；null 表示没有标记或认不出来。
+  DiarySource? get sourceType => DiarySource.fromCode(source);
+
+  /// 是否是麦麦写来的（收件箱导入）。
+  bool get isFromMaibot => source == DiarySource.maibot.code;
 
   Map<String, dynamic> toMap() {
     return {
@@ -43,6 +93,7 @@ class Diary {
       'weather': weather,
       'location': location,
       'is_favorite': isFavorite ? 1 : 0,
+      'source': source,
       'created_at': createdAt,
       'updated_at': updatedAt,
     };
@@ -61,6 +112,7 @@ class Diary {
       weather: map['weather'] as String?,
       location: map['location'] as String?,
       isFavorite: (map['is_favorite'] as int? ?? 0) == 1,
+      source: map['source'] is String ? map['source'] as String : null,
       createdAt: map['created_at'] as String?,
       updatedAt: map['updated_at'] as String?,
     );
@@ -78,6 +130,7 @@ class Diary {
     String? weather,
     String? location,
     bool? isFavorite,
+    String? source,
     String? createdAt,
     String? updatedAt,
   }) {
@@ -93,6 +146,7 @@ class Diary {
       weather: weather ?? this.weather,
       location: location ?? this.location,
       isFavorite: isFavorite ?? this.isFavorite,
+      source: source ?? this.source,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

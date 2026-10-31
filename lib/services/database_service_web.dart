@@ -470,6 +470,7 @@ class DatabaseService {
         location: map['location'],
         images: map['images'],
         isFavorite: map['is_favorite'] == 1,
+        source: map['source'] is String ? map['source'] as String : null,
         createdAt: map['created_at'],
         updatedAt: map['updated_at'],
       ));
@@ -614,6 +615,7 @@ class DatabaseService {
         location: map['location'],
         images: map['images'],
         isFavorite: map['is_favorite'] == 1,
+        source: map['source'] is String ? map['source'] as String : null,
         createdAt: map['created_at'],
         updatedAt: map['updated_at'],
       );
@@ -707,6 +709,7 @@ class DatabaseService {
           location: map['location'],
           images: map['images'],
           isFavorite: map['is_favorite'] == 1,
+          source: map['source'] is String ? map['source'] as String : null,
           createdAt: map['created_at'],
           updatedAt: map['updated_at'],
         ));

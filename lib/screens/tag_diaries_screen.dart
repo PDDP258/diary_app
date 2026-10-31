@@ -7,6 +7,7 @@ import '../providers/theme_provider.dart';
 import '../services/database_service.dart';
 import '../services/tag_system_service.dart';
 import '../utils/platform_helpers.dart';
+import '../widgets/diary_source_badge.dart';
 import 'diary_detail_screen.dart';
 
 /// 标签日记列表页
@@ -249,6 +250,11 @@ class _TagDiariesScreenState extends State<TagDiariesScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        // 来源标记（本人手写时不渲染）
+                        if (diary.isFromMaibot) ...[
+                          const SizedBox(width: 6),
+                          DiarySourceBadge(diary: diary),
+                        ],
                       ],
                     ),
                     const SizedBox(height: 6),

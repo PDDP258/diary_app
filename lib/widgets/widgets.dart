@@ -66,6 +66,9 @@ export 'smart_notifications.dart' show
     TooltipPosition,
     ConfettiCelebration;
 
+// ===== 日记来源标记 =====
+export 'diary_source_badge.dart' show DiarySourceBadge;
+
 // ===== 现有组件导出 =====
 export 'interactive_button.dart' show
     InteractiveButton,

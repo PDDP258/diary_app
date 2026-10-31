@@ -115,4 +115,52 @@ void main() {
       expect(restored.moodEmoji, original.moodEmoji);
     });
   });
+
+  group('Diary.source 来源标记', () {
+    test('没有 source 字段（历史数据）→ 不算麦麦写的', () {
+      final d = Diary.fromMap({'date': '2026-10-28', 'title': '旧日记'});
+      expect(d.source, isNull);
+      expect(d.sourceType, isNull);
+      expect(d.isFromMaibot, isFalse);
+    });
+
+    test('toMap / fromMap 往返保留 maibot 标记', () {
+      final original = Diary(
+        date: '2026-10-31',
+        content: '今天没什么好写的',
+        source: DiarySource.maibot.code,
+      );
+
+      final restored = Diary.fromMap(original.toMap());
+
+      expect(restored.source, DiarySource.maibot.code);
+      expect(restored.isFromMaibot, isTrue);
+      expect(restored.sourceType, DiarySource.maibot);
+      expect(restored.content, original.content);
+    });
+
+    test('认不出来的来源原样保留，不会被洗成 self', () {
+      // 老版本 App 读到新版本写下的陌生来源时，至少要能原样带回去，
+      // 否则一次「读 + 存」就把标记弄丢了。
+      final d = Diary.fromMap({'date': '2026-10-31', 'source': 'import-zz'});
+      expect(d.source, 'import-zz');
+      expect(d.sourceType, isNull);
+
+      expect(d.toMap()['source'], 'import-zz');
+    });
+
+    test('copyWith 保留 source（改心情不会丢来源）', () {
+      final d = Diary(date: '2026-10-31', source: DiarySource.maibot.code);
+      final changed = d.copyWith(moodName: '平静');
+      expect(changed.source, DiarySource.maibot.code);
+    });
+
+    test('从字符串解析：未知 / 空串 → null', () {
+      expect(DiarySource.fromCode(null), isNull);
+      expect(DiarySource.fromCode(''), isNull);
+      expect(DiarySource.fromCode('nope'), isNull);
+      expect(DiarySource.fromCode('maibot'), DiarySource.maibot);
+      expect(DiarySource.fromCode('self'), DiarySource.self);
+    });
+  });
 }
