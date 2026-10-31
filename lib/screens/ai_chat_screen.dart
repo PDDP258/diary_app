@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
+import '../models/diary.dart';
 import '../providers/theme_provider.dart';
 import '../services/maibot_service.dart';
 
@@ -9,7 +10,11 @@ import '../services/maibot_service.dart';
 /// 走的是服务器上的「对话桥」，只发一句话、拿一句回复；
 /// 对话历史存在本地，麦麦那边不会把它并进 QQ 的记忆。
 class AiChatScreen extends StatefulWidget {
-  const AiChatScreen({super.key});
+  /// 从某一篇日记进来时带上它：麦麦看到的就是这一页，
+  /// 不用去翻工具，也不会把别处的聊天带进来。
+  final Diary? diary;
+
+  const AiChatScreen({super.key, this.diary});
 
   @override
   State<AiChatScreen> createState() => _AiChatScreenState();
@@ -73,6 +78,27 @@ class _AiChatScreenState extends State<AiChatScreen> {
     });
   }
 
+  /// 把「这一页」压成一段话给麦麦看。
+  ///
+  /// 只带标题和正文前 300 字：整篇贴过去每轮 prompt 就多几百 token，而她要
+  /// 接一句话也用不上全文。
+  String _diaryContext() {
+    final diary = widget.diary;
+    if (diary == null) return '';
+    final meta = [
+      diary.date,
+      if ((diary.weather ?? '').trim().isNotEmpty) diary.weather!.trim(),
+      if ((diary.moodName ?? '').trim().isNotEmpty) diary.moodName!.trim(),
+    ].join(' · ');
+    final body = (diary.content ?? '').trim();
+    return [
+      meta,
+      if ((diary.title ?? '').trim().isNotEmpty) diary.title!.trim(),
+      if (body.isNotEmpty)
+        body.length <= 300 ? body : '${body.substring(0, 300)}…',
+    ].join('\n');
+  }
+
   Future<void> _send() async {
     final text = _input.text.trim();
     if (text.isEmpty || _sending) return;
@@ -95,7 +121,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
     await _service.appendHistory(userMessage);
     _jumpToBottom();
 
-    final reply = await _service.send(text);
+    final reply = await _service.send(text, context: _diaryContext());
     if (!mounted) return;
 
     if (reply.ok) {

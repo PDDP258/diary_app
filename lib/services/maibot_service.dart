@@ -184,11 +184,18 @@ class MaibotService {
     }
   }
 
-  /// 发一句话，等麦麦回
-  Future<MaibotReply> send(String text) async {
+  /// 发一句话，等麦麦回。
+  ///
+  /// [context] 是「用户此刻在看的那一页日记」，桥会把它贴在话前面一起发过去。
+  /// 带上它麦麦就不用调工具去查（一次工具往返要十几秒），上下文里也不会掺进
+  /// 别处的杂聊。
+  Future<MaibotReply> send(String text, {String context = ''}) async {
     final started = DateTime.now();
     try {
-      final data = await _request('POST', '/chat', body: {'text': text});
+      final data = await _request('POST', '/chat', body: {
+        'text': text,
+        if (context.trim().isNotEmpty) 'context': context.trim(),
+      });
       final elapsed = DateTime.now().difference(started).inMilliseconds;
       final replyText = (data['text'] as String? ?? '').trim();
       if (data['ok'] == true && replyText.isNotEmpty) {
@@ -219,6 +226,20 @@ class MaibotService {
     } catch (_) {
       // 预热失败不影响正式发送
     }
+  }
+
+  /// 清空麦麦那边的上下文，回到「第一次说话」。
+  ///
+  /// 聊久了那边会攒上百条历史，每轮 prompt 涨到几万 token，回答肉眼可见地
+  /// 变慢。清一次就回到几条。失败时抛 [_MaibotException]。
+  Future<String> resetContext() async {
+    final data = await _request('POST', '/reset');
+    if (data['ok'] == true) {
+      final message = (data['message'] as String? ?? '').trim();
+      return message.isEmpty ? '已清空' : message;
+    }
+    final error = (data['error'] as String? ?? '').trim();
+    throw _MaibotException(error.isEmpty ? '清空上下文失败' : error);
   }
 
   // ---------------------------------------------------------------- 历史 --

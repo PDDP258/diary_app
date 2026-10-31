@@ -15,6 +15,7 @@ import '../widgets/motion_photo_widget.dart';
 import '../widgets/diary_source_badge.dart';
 import '../widgets/random_sticker_overlay.dart';
 import 'write_diary_screen.dart';
+import 'ai_chat_screen.dart';
 import 'dart:io';
 
 class DiaryDetailScreen extends StatefulWidget {
@@ -202,6 +203,17 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
           IconButton(
             icon: const Icon(Icons.edit_outlined),
             onPressed: _editDiary,
+          ),
+          // 带着这一篇去找麦麦：她知道你在看哪一页，不用翻
+          IconButton(
+            icon: const Icon(Icons.chat_bubble_outline_rounded),
+            tooltip: '和麦麦聊这篇',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => AiChatScreen(diary: _currentDiary),
+              ),
+            ),
           ),
           const SizedBox(width: 8),
         ],

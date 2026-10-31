@@ -244,7 +244,7 @@ class MaibotSession:
 
     # -- 对话 ------------------------------------------------------------- #
 
-    async def ask(self, text: str) -> Reply:
+    async def ask(self, text: str, context: str = "") -> Reply:
         async with self._lock:  # 一次只跑一轮，避免会话串台
             await self.ensure_connected()
             assert self._ws is not None
@@ -260,7 +260,7 @@ class MaibotSession:
                         "domain": "chat",
                         "method": "message.send",
                         "session": self.config.client_session,
-                        "data": {"content": text},
+                        "data": {"content": _compose(text, context)},
                     }
                 )
             )
@@ -303,6 +303,38 @@ class MaibotSession:
             )
 
 
+    async def clear_remote_history(self) -> str:
+        """清空麦麦侧「内部统一聊天」的历史和内存上下文。
+
+        走 WebUI 的 ``DELETE /api/chat/history``：它同时清数据库和 heartflow
+        的内存上下文。比给麦麦发 ``/clear`` 干净——那条命令要管理员权限，
+        ``internal:owner`` 会被回一句「你没有权限使用此命令」。
+        """
+        async with httpx.AsyncClient(base_url=self.config.webui_base, timeout=30.0) as client:
+            resp = await client.post(
+                "/api/webui/auth/verify", json={"token": self._read_access_token()}
+            )
+            cookie = (resp.headers.get("set-cookie") or "").split(";")[0]
+            if not cookie:
+                raise RuntimeError("verify 没有返回 cookie，无法清历史")
+            resp = await client.delete("/api/chat/history", headers={"Cookie": cookie})
+            body = resp.json() if resp.content else {}
+        self._events.clear()
+        return str(body.get("message") or "已清空")
+
+
+def _compose(text: str, context: str = "") -> str:
+    """把「正在看的那一页」贴在用户这句话前面。
+
+    用中文括号做旁白而不是 ``[context]`` 这类标签：麦麦的人设是「两个人在灯下
+    说话」，方括号会把整段变成结构化数据，她的回话立刻跟着变硬、变成客服腔。
+    """
+    page = (context or "").strip()
+    if not page:
+        return text
+    return f"（我这一页写的是）\n{page}\n\n{text}"
+
+
 def _join_bot_text(events: list[dict[str, Any]]) -> str:
     """把同一轮的多个 bot_message 合成一段，跳过纯表情包占位。"""
     parts: list[str] = []
@@ -323,6 +355,10 @@ def _join_bot_text(events: list[dict[str, Any]]) -> str:
 
 class ChatRequest(BaseModel):
     text: str = Field(min_length=1, max_length=2000)
+    # App 把「用户此刻在看的那篇日记」一起带过来。
+    # 带过来的好处：她不用调工具去查（一次 show_emoji_list 就要 20 秒），
+    # 而且上下文里只有这一页，不会掺进别处的杂聊。
+    context: str = Field(default="", max_length=4000)
 
 
 class ChatResponse(BaseModel):
@@ -358,7 +394,7 @@ def create_app(config: BridgeConfig) -> FastAPI:
     ) -> ChatResponse:
         _auth(authorization)
         try:
-            reply = await session.ask(request.text)
+            reply = await session.ask(request.text, request.context)
         except Exception as exc:  # noqa: BLE001
             log.exception("对话失败")
             return ChatResponse(ok=False, error=str(exc))
@@ -375,6 +411,20 @@ def create_app(config: BridgeConfig) -> FastAPI:
         _auth(authorization)
         await session.ensure_connected()
         return {"ok": True}
+
+    @app.post("/reset")
+    async def reset(authorization: Optional[str] = Header(default=None)) -> dict[str, Any]:
+        """把这条流的历史清空，回到「第一次说话」。
+
+        对话聊久了麦麦那边会攒上百条上下文，每轮 prompt 涨到几万 token，
+        回答要十几秒。清一次就回到几条，肉眼可见地快。
+        """
+        _auth(authorization)
+        try:
+            return {"ok": True, "message": await session.clear_remote_history()}
+        except Exception as exc:  # noqa: BLE001
+            log.exception("清空上下文失败")
+            return {"ok": False, "error": str(exc)}
 
     app.state.session = session
     app.state.config = config
