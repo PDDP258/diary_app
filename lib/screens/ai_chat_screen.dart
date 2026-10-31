@@ -153,9 +153,10 @@ class _AiChatScreenState extends State<AiChatScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: scheme.cardColor,
-        title: Text('清空对话', style: TextStyle(color: scheme.textDarkColor)),
+        title: Text('重新开始', style: TextStyle(color: scheme.textDarkColor)),
         content: Text(
-          '本地这段对话记录会被删掉，麦麦那边本来就不知道。',
+          '这段记录和麦麦那边的上下文都会清掉。\n'
+          '聊久了那边会攒上百条，越攒越慢，清一次就回到刚开始。',
           style: TextStyle(color: scheme.textMediumColor),
         ),
         actions: [
@@ -172,8 +173,21 @@ class _AiChatScreenState extends State<AiChatScreen> {
     );
     if (confirmed != true) return;
     await _service.clearHistory();
+    // 本地清完再清她那边。远端失败不算致命：本地已经干净了，
+    // 只是下一轮还会捎带上旧上下文，说一声就够。
+    String? remoteError;
+    try {
+      await _service.resetContext();
+    } catch (e) {
+      remoteError = '$e';
+    }
     if (!mounted) return;
-    setState(() => _messages = []);
+    setState(() {
+      _messages = [];
+      if (remoteError != null) {
+        _hint = '本地已清空，她那边没清掉：$remoteError';
+      }
+    });
   }
 
   Future<void> _openSettings() async {
@@ -314,7 +328,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.delete_sweep_outlined, size: 20),
-            tooltip: '清空对话',
+            tooltip: '重新开始',
             onPressed: _messages.isEmpty ? null : _clearHistory,
           ),
         ],

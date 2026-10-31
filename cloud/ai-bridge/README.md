@@ -66,13 +66,25 @@ GET  /health
 
 POST /chat
 Authorization: Bearer <app_token>
-{"text": "今天有点累"}
+{"text": "今天有点累", "context": "2026-10-31 · 晴 · 平静\n今天跑了三公里。"}
 -> {"ok": true, "text": "…", "duration_ms": 8420, "events": [...]}
 
 POST /warmup
 Authorization: Bearer <app_token>
 -> {"ok": true}      # 提前建连，避免第一句话多等 1~2 秒
+
+POST /reset
+Authorization: Bearer <app_token>
+-> {"ok": true, "message": "已清空 17 条聊天记录"}
 ```
+
+`context` 是「用户此刻在看的那一页日记」，桥把它贴在话前面一起发过去。带上它
+麦麦不用调工具去查，上下文里也不会掺别处的杂聊；不带也能用，只是她会自己翻。
+实测带「今天跑了三公里」→ 回「三公里啊。」，9.6 秒。
+
+`/reset` 走 WebUI 的 `DELETE /api/chat/history`，同时清库和 heartflow 的内存
+上下文。**不要**改成给麦麦发 `/clear`：那条要管理员权限，`internal:owner` 只会
+被回一句「你没有权限使用此命令」。
 
 `ok=false` 且 `error` 有值时，通常是麦麦这一轮没给出可见回复（被 stale 判定丢弃、
 或模型空转）。桥不会重试——重试只会让用户等更久。
@@ -108,7 +120,15 @@ python3 install_session_prompt.py check   # 确认线上内容与脚本一致
 
 ## 已知边界
 
-- **回复延迟 5~15 秒**：这是麦麦规划链路的固有开销，桥不额外增加。
+- **回复延迟 6~12 秒**：planner 单轮 4~7 秒是模型固有开销，桥不额外增加。
+  一轮里她分几条发就要几轮，所以 3 条回复可能 20 秒。
+- **上下文按 `platform + user_id` 聚合，只涨不清**：`chat_manager` 用
+  `calculate_session_id(platform, user_id)` 算会话，跟连接无关——重启桥、换
+  `client_session` 都不会开新会话。聊久了攒到上百条，planner prompt 冲到几万
+  token，一轮就要十几秒。用 `/reset` 清，别指望重启。
+- **日记工具的白名单要单独给 `internal:owner`**：`data/mcp_acl.json` 的
+  `allow_private` 默认只有主人 QQ 号，不带 App 身份的话 8 个 `diary_*` 工具
+  全被隐藏，她会反复 `tool_search` 找不到、跑到 16 回合直到超时。
 - **表情包不转图**：`bot_message` 里形如 `[表情包: …]` 的帧会被过滤，只回文字。
 - **一次一轮**：桥内串行，避免同一会话并发串台。
 - **cookie 7 天**：桥每次建连都重新 `verify`，不缓存会话凭据。
