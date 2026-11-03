@@ -21,7 +21,15 @@ class StatsScreen extends StatefulWidget {
 }
 
 class _StatsScreenState extends State<StatsScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+  // ⚠️ 2026-10-31 切 tab 卡顿主因之一：原来四个 tab 都没有 keepAlive，
+  // PageView 切回来会走 dispose → initState，于是统计页每次都要
+  // 重跑 `_loadStats()` —— 全量遍历日记做聚合（天数/字数/连续打卡/
+  // 心情分布/天气/标签），数据量大时几百毫秒起步。
+  // 开启 keepAlive 后，切回去只是复用已构建的子树，不再重算。
+  @override
+  bool get wantKeepAlive => true;
+
   int _totalDiaries = 0;
   int _totalChars = 0;
   DateTime? _startDate;
@@ -249,6 +257,10 @@ class _StatsScreenState extends State<StatsScreen>
 
   @override
   Widget build(BuildContext context) {
+    // AutomaticKeepAliveClientMixin 要求 build 里必须调 super.build，
+    // 否则 keepAlive 不生效（框架靠它把 keep-alive 通知发回去）。
+    super.build(context);
+
     final scheme = AppTheme.schemeOf(context);
     
     if (_isLoading) {

@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -46,7 +46,14 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends State<ProfileScreen>
+    with AutomaticKeepAliveClientMixin {
+  // ⚠️ 2026-10-31：切 tab 卡顿。「我的」页 initState 里有 4 个并发服务调用
+  // （徽章 / 应用锁 / 生物识别 / 浮窗状态），每个都带 setState，
+  // 切回一次就把这个 100KB+ 的大页面重建一遍。keepAlive 后不再重跑。
+  @override
+  bool get wantKeepAlive => true;
+
   List<badge_service.Badge> _unlockedBadges = [];
   bool _hasNewBadge = false;
   bool _appLockEnabled = false;
@@ -207,6 +214,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // keepAlive 必须调 super.build，否则不生效
+    super.build(context);
+
     final scheme = AppTheme.schemeOf(context);
     final isAndroid = Theme.of(context).platform == TargetPlatform.android;
 

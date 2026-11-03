@@ -43,26 +43,39 @@ class CustomBottomNav extends StatelessWidget {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(AppTheme.xlRadius),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: scheme.cardColor.withValues(alpha: 0.75),
-                  borderRadius: BorderRadius.circular(AppTheme.xlRadius),
-                  border: Border.all(
-                    color: scheme.lightColor.withValues(alpha: 0.3),
-                    width: 0.5,
+            // 2026-11-02 修正记录：
+            //
+            // 上一轮我基于 **debug 版**的观感把 sigma 从 20 降到 12，
+            // 那是错误前提 —— debug 版帧率本来就不代表真实性能
+            // （JIT、无 AOT、大量断言检查），release 版是好的。
+            // 所以**盲降模糊半径没有必要**：用户没要求降级视觉，
+            // 而这是全 App 的气质组件。已恢复 sigma = 20。
+            //
+            // 只保留 `RepaintBoundary`：它把导航栏独立成一个图层，
+            // 页面内容滚动时不必连带重绘导航栏。这一项**没有任何视觉代价**，
+            // 属于「顺手就能拿到」的收益，与 blur 半径无关。
+            child: RepaintBoundary(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: scheme.cardColor.withValues(alpha: 0.75),
+                    borderRadius: BorderRadius.circular(AppTheme.xlRadius),
+                    border: Border.all(
+                      color: scheme.lightColor.withValues(alpha: 0.3),
+                      width: 0.5,
+                    ),
                   ),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    _buildNavItem(Icons.auto_stories_rounded, '日记', 0, scheme),
-                    _buildNavItem(Icons.calendar_month_rounded, '日历', 1, scheme),
-                    const SizedBox(width: 72), // 中间留出空间给FAB
-                    _buildNavItem(Icons.insights_rounded, '统计', 2, scheme),
-                    _buildNavItem(Icons.person_rounded, '我的', 3, scheme),
-                  ],
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      _buildNavItem(Icons.auto_stories_rounded, '日记', 0, scheme),
+                      _buildNavItem(Icons.calendar_month_rounded, '日历', 1, scheme),
+                      const SizedBox(width: 72), // 中间留出空间给FAB
+                      _buildNavItem(Icons.insights_rounded, '统计', 2, scheme),
+                      _buildNavItem(Icons.person_rounded, '我的', 3, scheme),
+                    ],
+                  ),
                 ),
               ),
             ),

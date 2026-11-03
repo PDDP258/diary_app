@@ -290,9 +290,32 @@ class ThemeProvider extends ChangeNotifier {
   Color get primaryColor => _currentScheme.primaryColor;
 
   // 获取当前主题
+  //
+  // ⚠️ 2026-10-31 帧率优化：原来 `theme` 是**纯计算 getter**，每次访问都
+  // 新建一整个 `ThemeData`（含 ColorScheme + 全套 TextTheme + 各组件主题，
+  // 几十个对象）。而 `main.dart` 里 `Consumer<ThemeProvider>` 包着整个
+  // `MaterialApp` —— 只要 ThemeProvider 通知一次（主题、字体大小、
+  // 甚至 `loadSettings` 完成），就会重算 ThemeData 并让**整棵树**重建。
+  //
+  // 现在按「方案 + 字号」缓存，相同输入直接返回同一实例，避免重复构建，
+  // 也让 Flutter 能识别出 theme 没变而跳过不必要的继承更新。
+  ThemeData? _themeCache;
+  Object? _themeCacheKey;
+
   ThemeData get theme {
     final scheme = _currentScheme;
+    // 缓存键：主题方案 + 字号。任一变化才重建。
+    final key = Object.hash(scheme, _fontSize);
+    final cached = _themeCache;
+    if (cached != null && _themeCacheKey == key) return cached;
 
+    final built = _buildTheme(scheme);
+    _themeCache = built;
+    _themeCacheKey = key;
+    return built;
+  }
+
+  ThemeData _buildTheme(ThemeScheme scheme) {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,

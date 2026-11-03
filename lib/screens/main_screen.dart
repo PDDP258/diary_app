@@ -380,6 +380,22 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     }
   }
 
+  /// 只在主题真正变化时同步系统导航栏颜色。
+  ///
+  /// 平台通道调用不便宜，放进 `build()` 会导致每次重建都跨平台往返。
+  void _syncSystemUiOverlay(ThemeProvider themeProvider) {
+    final bg = themeProvider.currentScheme.backgroundColor;
+    if (_lastSystemUiBackground == bg) return;
+    _lastSystemUiBackground = bg;
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      systemNavigationBarColor: bg,
+      systemNavigationBarIconBrightness: Brightness.light,
+    ));
+  }
+
+  /// 上一次设置过的系统导航栏背景色（用于避免重复的平台调用）
+  Color? _lastSystemUiBackground;
+
   void _onPageChanged(int index) {
     // 只在索引真正改变时才更新状态
     if (_currentIndex != index) {
@@ -594,13 +610,11 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       '星空主题', '樱花主题', '海洋主题', '极光主题', '黄金主题'
     ].contains(currentTheme);
 
-    // 设置系统导航栏颜色
-    // 极光主题：导航栏颜色与主题背景一致（特殊处理）
-    // 其他主题：导航栏颜色也与主题背景一致（与极光主题统一处理）
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-      systemNavigationBarColor: themeProvider.currentScheme.backgroundColor,
-      systemNavigationBarIconBrightness: Brightness.light,
-    ));
+    // ⚠️ 2026-10-31 帧率优化：`SystemChrome.setSystemUIOverlayStyle` 是
+    // **平台通道调用**，原来放在 `build()` 里 → 每次 MainScreen 重建
+    // （导航栏显隐、tab 切换、任何 setState）都会跨平台往返一次。
+    // 现在只在主题真正变化时调用一次。
+    _syncSystemUiOverlay(themeProvider);
 
     // 获取系统导航栏高度
     final systemNavBarHeight = MediaQuery.of(context).viewPadding.bottom;

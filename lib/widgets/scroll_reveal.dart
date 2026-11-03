@@ -82,6 +82,26 @@ class _ScrollRevealState extends State<ScrollReveal>
     ).animate(
       CurvedAnimation(parent: _controller, curve: widget.curve),
     );
+
+    // ⚠️ 2026-10-31 安全兜底（重要）：
+    //
+    // 原来触发揭示动画**只依赖** `_onVisibilityChanged`。一旦
+    // VisibilityDetector 因为任何原因没有回调（布局时机、父级裁剪、
+    // 测试环境、极端滚动状态），`_controller` 就永远停在 0.0，
+    // 而 `Opacity(0.0)` 会让内容**完全不可见且永远不出现**。
+    //
+    // 这属于「宁可不动画，也绝不能看不见」的底线问题 ——
+    // 和信息流里「图片不爱显示」是同一类风险。
+    //
+    // 兜底策略：首帧结束后如果还没被触发，就无条件播一遍。
+    // 列表项本来就该可见，动画只是锦上添花。
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (!_triggered) {
+        _triggered = true;
+        _controller.forward();
+      }
+    });
   }
 
   @override
@@ -111,8 +131,22 @@ class _ScrollRevealState extends State<ScrollReveal>
       child: AnimatedBuilder(
         animation: _controller,
         builder: (context, child) {
+          // ⚠️ 2026-10-31 帧率优化。
+          //
+          // 原实现无条件包 `Opacity(opacity: _opacity.value)`：
+          // 即使动画已经播完（value == 1.0），它仍然留在树里，
+          // 且列表里**每一个** item 都有一个。非 0/1 的 Opacity 会走
+          // saveLayer（离屏合成），列表滚动时几十个图层叠加，
+          // 这是全局帧率偏低的一个重要来源。
+          //
+          // 现在：动画完成后**直接返回 child**，把 Opacity/Transform
+          // 从树里摘掉 —— 稳态下零额外开销。
+          final value = _opacity.value;
+          if (value >= 1.0) {
+            return child ?? const SizedBox.shrink();
+          }
           return Opacity(
-            opacity: _opacity.value,
+            opacity: value,
             child: Transform.translate(
               offset: _translate.value,
               child: child,
